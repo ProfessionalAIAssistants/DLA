@@ -1,0 +1,55 @@
+Documentation
+
+<aside>
+<img src="/icons/profile_gray.svg" alt="/icons/profile_gray.svg" width="40px" /> **Contacts
+
+What is a Contact?**
+
+A Contact is a record that represents an individual whom your business interacts with. It contains key information such as name and contact details.
+
+</aside>
+
+<aside>
+<img src="/icons/city_gray.svg" alt="/icons/city_gray.svg" width="40px" /> **Accounts
+
+What is an Account?**
+
+An Account is a record that represents a Company. It serves as a central hub for storing and managing important information like your number of employees, website, and whether a company is a sales target or customer.
+
+</aside>
+
+<aside>
+<img src="/icons/currency_gray.svg" alt="/icons/currency_gray.svg" width="40px" /> **Opportunities
+
+What is an Opportunity?**
+
+An Opportunity refers to a potential sale or business deal with a customer. It represents a qualified lead or prospect that has progressed through the sales pipeline and has the potential to generate revenue for your business.
+
+</aside>
+
+<aside>
+<img src="/icons/barcode_gray.svg" alt="/icons/barcode_gray.svg" width="40px" /> **Products
+
+What is a Product?
+
+A** product refers to an item or service that your company sells. It encompasses the specific details and pricing information associated with that item or service. This acts a Pricebook (where prices are set) for your Opportunity Products. Mark old prices as inactive and current prices as active.
+
+</aside>
+
+<aside>
+<img src="/icons/checkmark-square_gray.svg" alt="/icons/checkmark-square_gray.svg" width="40px" /> **Tasks
+
+What are Tasks?**
+
+Tasks are actions or activities that need to be completed, such as calls, meetings, or follow-ups, associated with specific records or individuals. They serve as a way to track and manage important tasks, deadlines, and communication within your CRM, ensuring effective collaboration and productivity among team members.
+
+</aside>
+
+<aside>
+<img src="/icons/compose_gray.svg" alt="/icons/compose_gray.svg" width="40px" /> **Notes
+
+What are Notes?**
+
+Notes can be attached to Accounts, Contacts, and Opportunities to provide additional information or context. They serve as a centralized repository for storing important details, observations, or documentation related to specific records, enabling users to easily access and share information within the CRM and be able to access it in the future.
+
+</aside>

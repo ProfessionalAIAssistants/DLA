@@ -1,0 +1,591 @@
+2025-08-20 11:48:09,488 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 11:48:09,490 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 11:48:09,491 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 11:48:09,492 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 11:48:09,492 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 11:48:09,493 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 11:48:10,370 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 11:48:10,371 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 11:49:25,034 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://10.61.10.196:5000
+2025-08-20 11:49:25,038 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-08-20 11:49:25,042 - werkzeug - INFO -  * Restarting with stat
+2025-08-20 11:49:25,369 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 11:49:25,371 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 11:50:07,873 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\test_crm_app.py', reloading
+2025-08-20 11:50:08,055 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\test_pdf_files.py', reloading
+2025-08-20 11:50:08,057 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\test_pdf_count.py', reloading
+2025-08-20 11:50:08,058 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\crm_app.py', reloading
+2025-08-20 11:50:08,270 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 11:50:08,272 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 11:50:08,439 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 11:50:08,440 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 11:50:08,441 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 11:50:08,441 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 11:50:08,446 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 11:50:08,447 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 11:50:08,551 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\test_pdf_api.py', reloading
+2025-08-20 11:50:08,599 - werkzeug - INFO -  * Restarting with stat
+2025-08-20 11:50:08,922 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 11:50:08,923 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 11:50:09,443 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 11:50:09] "[35m[1mGET / HTTP/1.1[0m" 500 -
+2025-08-20 11:50:09,480 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 11:50:09] "[36mGET /?__debugger__=yes&cmd=resource&f=style.css HTTP/1.1[0m" 304 -
+2025-08-20 11:50:09,702 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 11:50:09] "[36mGET /?__debugger__=yes&cmd=resource&f=debugger.js HTTP/1.1[0m" 304 -
+2025-08-20 11:50:10,062 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 11:50:10] "GET /?__debugger__=yes&cmd=resource&f=console.png&s=7WmVnyCWeefjw2gyXe87 HTTP/1.1" 200 -
+2025-08-20 11:50:14,594 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 11:50:14] "[36mGET /?__debugger__=yes&cmd=resource&f=style.css HTTP/1.1[0m" 304 -
+2025-08-20 11:50:14,925 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 11:50:14] "[35m[1mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 500 -
+2025-08-20 11:51:19,179 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\crm_data.py', reloading
+2025-08-20 11:51:19,226 - werkzeug - INFO -  * Restarting with stat
+2025-08-20 11:51:19,525 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\crm_data.py', reloading
+2025-08-20 11:51:19,597 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 11:51:19,599 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 11:51:19,706 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\crm_data.py', reloading
+2025-08-20 11:51:19,715 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\crm_data.py', reloading
+2025-08-20 11:51:19,718 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\crm_data.py', reloading
+2025-08-20 11:51:19,917 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 11:51:19,919 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 11:51:20,094 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 11:51:20,095 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 11:51:20,108 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 11:51:20,109 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 11:51:20,109 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 11:51:20,110 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 11:51:29,643 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\crm_data.py', reloading
+2025-08-20 11:51:29,687 - werkzeug - INFO -  * Restarting with stat
+2025-08-20 11:51:29,963 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\crm_data.py', reloading
+2025-08-20 11:51:30,037 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 11:51:30,038 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 11:51:30,142 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\crm_data.py', reloading
+2025-08-20 11:51:30,151 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\crm_data.py', reloading
+2025-08-20 11:51:30,152 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\crm_data.py', reloading
+2025-08-20 11:51:30,353 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 11:51:30,354 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 11:51:30,530 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 11:51:30,531 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 11:51:30,535 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 11:51:30,536 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 11:51:30,536 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 11:51:30,537 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 11:51:48,606 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\crm_data.py', reloading
+2025-08-20 11:51:48,617 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\crm_data.py', reloading
+2025-08-20 11:51:48,617 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\crm_data.py', reloading
+2025-08-20 11:51:49,007 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 11:51:49,009 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 11:51:49,016 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 11:51:49,017 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 11:51:49,120 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\crm_data.py', reloading
+2025-08-20 11:51:49,167 - werkzeug - INFO -  * Restarting with stat
+2025-08-20 11:51:49,428 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\crm_data.py', reloading
+2025-08-20 11:51:49,508 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 11:51:49,510 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 11:51:49,802 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 11:51:49,803 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 11:52:52,041 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://10.61.10.196:5000
+2025-08-20 11:52:52,042 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-08-20 11:52:52,044 - werkzeug - INFO -  * Restarting with stat
+2025-08-20 11:52:52,378 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 11:52:52,379 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 11:54:07,686 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\crm_data.py', reloading
+2025-08-20 11:54:07,690 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\update_database.py', reloading
+2025-08-20 11:54:07,694 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\crm_data.py', reloading
+2025-08-20 11:54:07,737 - werkzeug - INFO -  * Restarting with stat
+2025-08-20 11:54:08,106 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 11:54:08,108 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 11:54:08,109 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 11:54:08,112 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 11:54:08,112 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 11:54:08,132 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\update_database.py', reloading
+2025-08-20 11:54:08,173 - werkzeug - INFO -  * Restarting with stat
+2025-08-20 11:54:08,432 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\update_database.py', reloading
+2025-08-20 11:54:08,484 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 11:54:08,485 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 11:54:08,789 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 11:54:08,791 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 11:54:15,257 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://10.61.10.196:5000
+2025-08-20 11:54:15,260 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-08-20 11:54:15,263 - werkzeug - INFO -  * Restarting with stat
+2025-08-20 11:54:15,578 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 11:54:15,579 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 11:54:17,736 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 11:54:17] "[35m[1mGET / HTTP/1.1[0m" 500 -
+2025-08-20 11:54:17,777 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 11:54:17] "[36mGET /?__debugger__=yes&cmd=resource&f=style.css HTTP/1.1[0m" 304 -
+2025-08-20 11:54:17,978 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 11:54:17] "[36mGET /?__debugger__=yes&cmd=resource&f=debugger.js HTTP/1.1[0m" 304 -
+2025-08-20 11:54:18,322 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 11:54:18] "GET /?__debugger__=yes&cmd=resource&f=console.png&s=4MUpP5Od6I8ruhLbtdBS HTTP/1.1" 200 -
+2025-08-20 11:55:30,158 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\crm_data.py', reloading
+2025-08-20 11:55:30,466 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\crm_data.py', reloading
+2025-08-20 11:55:30,519 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\crm_data.py', reloading
+2025-08-20 11:55:30,520 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\crm_data.py', reloading
+2025-08-20 11:55:30,573 - werkzeug - INFO -  * Restarting with stat
+2025-08-20 11:55:30,590 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 11:55:30,592 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 11:55:30,862 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\crm_data.py', reloading
+2025-08-20 11:55:30,885 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 11:55:30,891 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 11:55:30,917 - werkzeug - INFO -  * Restarting with stat
+2025-08-20 11:55:30,941 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 11:55:30,942 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 11:55:31,223 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 11:55:31,224 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 11:55:41,525 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 11:55:41] "[35m[1mGET / HTTP/1.1[0m" 500 -
+2025-08-20 11:55:51,986 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\crm_data.py', reloading
+2025-08-20 11:55:52,032 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\crm_data.py', reloading
+2025-08-20 11:55:52,312 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\crm_data.py', reloading
+2025-08-20 11:55:52,352 - werkzeug - INFO -  * Restarting with stat
+2025-08-20 11:55:52,398 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 11:55:52,399 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 11:55:52,414 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 11:55:52,415 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 11:55:52,651 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 11:55:52,652 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 11:55:52,687 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\crm_data.py', reloading
+2025-08-20 11:55:53,020 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 11:55:53,021 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 11:56:08,096 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\crm_automation.py', reloading
+2025-08-20 11:56:08,465 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 11:56:08,466 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 11:56:08,473 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\crm_automation.py', reloading
+2025-08-20 11:56:08,489 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\crm_automation.py', reloading
+2025-08-20 11:56:08,735 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\crm_automation.py', reloading
+2025-08-20 11:56:08,777 - werkzeug - INFO -  * Restarting with stat
+2025-08-20 11:56:08,853 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 11:56:08,855 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 11:56:08,864 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 11:56:08,866 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 11:56:09,090 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 11:56:09,091 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 11:56:31,187 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\crm_data.py', reloading
+2025-08-20 11:56:31,235 - werkzeug - INFO -  * Restarting with stat
+2025-08-20 11:56:31,572 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 11:56:31,573 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 11:56:31,581 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\crm_data.py', reloading
+2025-08-20 11:56:31,965 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 11:56:31,966 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 11:56:31,976 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\crm_data.py', reloading
+2025-08-20 11:56:31,976 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\crm_data.py', reloading
+2025-08-20 11:56:32,372 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 11:56:32,374 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 11:56:32,382 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 11:56:32,383 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 11:56:41,012 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\crm_data.py', reloading
+2025-08-20 11:56:41,386 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 11:56:41,388 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 11:56:41,429 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\crm_data.py', reloading
+2025-08-20 11:56:41,430 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\crm_data.py', reloading
+2025-08-20 11:56:41,626 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\crm_data.py', reloading
+2025-08-20 11:56:41,667 - werkzeug - INFO -  * Restarting with stat
+2025-08-20 11:56:41,822 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 11:56:41,822 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 11:56:41,823 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 11:56:41,823 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 11:56:41,973 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 11:56:41,975 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 11:57:36,636 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\update_database.py', reloading
+2025-08-20 11:57:37,009 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 11:57:37,010 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 11:57:37,107 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\update_database.py', reloading
+2025-08-20 11:57:37,107 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\update_database.py', reloading
+2025-08-20 11:57:37,241 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\update_database.py', reloading
+2025-08-20 11:57:37,282 - werkzeug - INFO -  * Restarting with stat
+2025-08-20 11:57:37,507 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 11:57:37,508 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 11:57:37,508 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 11:57:37,509 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 11:57:37,613 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 11:57:37,615 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 11:58:27,661 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://10.61.10.196:5000
+2025-08-20 11:58:27,661 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-08-20 11:58:27,663 - werkzeug - INFO -  * Restarting with stat
+2025-08-20 11:58:27,993 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 11:58:27,995 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 11:59:36,530 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\crm_automation.py', reloading
+2025-08-20 11:59:36,898 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 11:59:36,900 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 11:59:37,123 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\crm_automation.py', reloading
+2025-08-20 11:59:37,124 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\crm_data.py', reloading
+2025-08-20 11:59:37,156 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\crm_data.py', reloading
+2025-08-20 11:59:37,203 - werkzeug - INFO -  * Restarting with stat
+2025-08-20 11:59:37,301 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\crm_data.py', reloading
+2025-08-20 11:59:37,344 - werkzeug - INFO -  * Restarting with stat
+2025-08-20 11:59:37,522 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 11:59:37,524 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 11:59:37,524 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 11:59:37,525 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 11:59:37,532 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 11:59:37,533 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 11:59:37,668 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 11:59:37,669 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 11:59:56,237 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://10.61.10.196:5000
+2025-08-20 11:59:56,240 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-08-20 11:59:56,244 - werkzeug - INFO -  * Restarting with stat
+2025-08-20 11:59:56,567 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 11:59:56,570 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 11:59:58,732 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 11:59:58] "GET / HTTP/1.1" 200 -
+2025-08-20 11:59:59,656 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 11:59:59] "GET /api/pdf-count HTTP/1.1" 200 -
+2025-08-20 12:00:00,579 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:00:00] "[35m[1mGET /favicon.ico HTTP/1.1[0m" 500 -
+2025-08-20 12:01:07,428 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:01:07] "GET /tasks HTTP/1.1" 200 -
+2025-08-20 12:01:07,585 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:01:07] "[35m[1mGET /favicon.ico HTTP/1.1[0m" 500 -
+2025-08-20 12:01:08,188 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:01:08] "GET /opportunities HTTP/1.1" 200 -
+2025-08-20 12:01:08,478 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:01:08] "[35m[1mGET /favicon.ico HTTP/1.1[0m" 500 -
+2025-08-20 12:01:18,602 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:01:18] "GET / HTTP/1.1" 200 -
+2025-08-20 12:01:18,741 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:01:18] "GET /api/pdf-count HTTP/1.1" 200 -
+2025-08-20 12:01:18,862 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:01:18] "[35m[1mGET /favicon.ico HTTP/1.1[0m" 500 -
+2025-08-20 12:06:19,387 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:06:19] "GET / HTTP/1.1" 200 -
+2025-08-20 12:06:19,589 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:06:19] "GET /api/pdf-count HTTP/1.1" 200 -
+2025-08-20 12:06:19,858 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:06:19] "[35m[1mGET /favicon.ico HTTP/1.1[0m" 500 -
+2025-08-20 12:07:49,533 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://10.61.10.196:5000
+2025-08-20 12:07:49,533 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-08-20 12:07:49,536 - werkzeug - INFO -  * Restarting with stat
+2025-08-20 12:07:49,866 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 12:07:49,868 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 12:08:41,960 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://10.61.10.196:5000
+2025-08-20 12:08:41,961 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-08-20 12:08:41,965 - werkzeug - INFO -  * Restarting with stat
+2025-08-20 12:08:42,304 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 12:08:42,305 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 12:08:44,362 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:08:44] "GET / HTTP/1.1" 200 -
+2025-08-20 12:08:44,497 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:08:44] "GET /api/pdf-count HTTP/1.1" 200 -
+2025-08-20 12:08:44,707 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:08:44] "[35m[1mGET /favicon.ico HTTP/1.1[0m" 500 -
+2025-08-20 12:08:53,959 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:08:53] "GET /opportunities HTTP/1.1" 200 -
+2025-08-20 12:08:54,101 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:08:54] "[35m[1mGET /favicon.ico HTTP/1.1[0m" 500 -
+2025-08-20 12:08:54,862 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:08:54] "GET /tasks HTTP/1.1" 200 -
+2025-08-20 12:08:55,171 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:08:55] "[35m[1mGET /favicon.ico HTTP/1.1[0m" 500 -
+2025-08-20 12:08:56,016 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:08:56] "GET /opportunities HTTP/1.1" 200 -
+2025-08-20 12:08:56,127 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:08:56] "[35m[1mGET /favicon.ico HTTP/1.1[0m" 500 -
+2025-08-20 12:08:57,376 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:08:57] "[35m[1mGET /projects HTTP/1.1[0m" 500 -
+2025-08-20 12:08:57,716 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:08:57] "GET /projects?__debugger__=yes&cmd=resource&f=style.css HTTP/1.1" 200 -
+2025-08-20 12:08:57,726 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:08:57] "GET /projects?__debugger__=yes&cmd=resource&f=debugger.js HTTP/1.1" 200 -
+2025-08-20 12:08:58,069 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:08:58] "GET /projects?__debugger__=yes&cmd=resource&f=console.png&s=yXdemawKTWviaCy1uSL3 HTTP/1.1" 200 -
+2025-08-20 12:08:58,317 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:08:58] "GET /projects?__debugger__=yes&cmd=resource&f=console.png HTTP/1.1" 200 -
+2025-08-20 12:10:45,717 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\update_database.py', reloading
+2025-08-20 12:10:45,718 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\update_database.py', reloading
+2025-08-20 12:10:45,763 - werkzeug - INFO -  * Restarting with stat
+2025-08-20 12:10:45,970 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\update_database.py', reloading
+2025-08-20 12:10:46,013 - werkzeug - INFO -  * Restarting with stat
+2025-08-20 12:10:46,029 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\update_database.py', reloading
+2025-08-20 12:10:46,030 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\update_database.py', reloading
+2025-08-20 12:10:46,124 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 12:10:46,126 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 12:10:46,126 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 12:10:46,128 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 12:10:46,269 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\update_database.py', reloading
+2025-08-20 12:10:46,365 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 12:10:46,367 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 12:10:46,375 - werkzeug - INFO -  * Restarting with stat
+2025-08-20 12:10:46,422 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 12:10:46,423 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 12:10:46,426 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 12:10:46,427 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 12:10:46,693 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 12:10:46,699 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 12:12:55,275 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://10.61.10.196:5000
+2025-08-20 12:12:55,276 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-08-20 12:12:55,278 - werkzeug - INFO -  * Restarting with stat
+2025-08-20 12:12:55,609 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 12:12:55,611 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 12:16:42,929 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\simplified_dla_processor.py', reloading
+2025-08-20 12:16:42,947 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\simplified_dla_processor.py', reloading
+2025-08-20 12:16:42,947 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\simplified_dla_processor.py', reloading
+2025-08-20 12:16:42,981 - werkzeug - INFO -  * Restarting with stat
+2025-08-20 12:16:43,004 - werkzeug - INFO -  * Restarting with stat
+2025-08-20 12:16:43,330 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 12:16:43,331 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 12:16:43,345 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 12:16:43,345 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 12:16:43,346 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 12:16:43,347 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 12:17:31,695 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\test_pdf.py', reloading
+2025-08-20 12:17:31,805 - werkzeug - INFO -  * Restarting with stat
+2025-08-20 12:17:31,879 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\update_database.py', reloading
+2025-08-20 12:17:31,925 - werkzeug - INFO -  * Restarting with stat
+2025-08-20 12:17:32,141 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 12:17:32,143 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 12:17:32,233 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 12:17:32,235 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 12:17:32,492 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\test_pdf.py', reloading
+2025-08-20 12:17:32,493 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\simplified_dla_processor.py', reloading
+2025-08-20 12:17:32,524 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\simplified_dla_processor.py', reloading
+2025-08-20 12:17:32,554 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\update_database.py', reloading
+2025-08-20 12:17:32,557 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\update_database.py', reloading
+2025-08-20 12:17:32,567 - werkzeug - INFO -  * Restarting with stat
+2025-08-20 12:17:32,604 - werkzeug - INFO -  * Restarting with stat
+2025-08-20 12:17:32,886 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 12:17:32,886 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 12:17:32,888 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 12:17:32,888 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 12:17:32,911 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 12:17:32,912 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 12:17:32,939 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 12:17:32,940 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 12:17:32,940 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 12:17:32,942 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 12:17:37,985 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://10.61.10.196:5000
+2025-08-20 12:17:37,986 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-08-20 12:17:37,987 - werkzeug - INFO -  * Restarting with stat
+2025-08-20 12:17:38,331 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 12:17:38,334 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 12:17:40,488 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:17:40] "GET / HTTP/1.1" 200 -
+2025-08-20 12:17:40,645 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:17:40] "GET /api/pdf-count HTTP/1.1" 200 -
+2025-08-20 12:17:40,891 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:17:40] "[35m[1mGET /favicon.ico HTTP/1.1[0m" 500 -
+2025-08-20 12:17:43,727 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:17:43] "GET /tasks HTTP/1.1" 200 -
+2025-08-20 12:17:43,904 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:17:43] "[35m[1mGET /favicon.ico HTTP/1.1[0m" 500 -
+2025-08-20 12:17:44,378 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:17:44] "GET /opportunities HTTP/1.1" 200 -
+2025-08-20 12:17:44,656 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:17:44] "[35m[1mGET /favicon.ico HTTP/1.1[0m" 500 -
+2025-08-20 12:17:45,030 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:17:45] "GET /interactions HTTP/1.1" 200 -
+2025-08-20 12:17:45,182 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:17:45] "GET /api/contacts HTTP/1.1" 200 -
+2025-08-20 12:17:45,270 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:17:45] "GET /api/opportunities HTTP/1.1" 200 -
+2025-08-20 12:17:45,390 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:17:45] "[35m[1mGET /favicon.ico HTTP/1.1[0m" 500 -
+2025-08-20 12:17:45,796 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:17:45] "GET /accounts HTTP/1.1" 200 -
+2025-08-20 12:17:46,090 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:17:46] "[35m[1mGET /favicon.ico HTTP/1.1[0m" 500 -
+2025-08-20 12:17:48,185 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:17:48] "GET /products HTTP/1.1" 200 -
+2025-08-20 12:17:48,299 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:17:48] "[35m[1mGET /favicon.ico HTTP/1.1[0m" 500 -
+2025-08-20 12:17:49,742 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:17:49] "GET /rfqs HTTP/1.1" 200 -
+2025-08-20 12:17:50,048 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:17:50] "[35m[1mGET /favicon.ico HTTP/1.1[0m" 500 -
+2025-08-20 12:17:51,346 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:17:51] "GET /products HTTP/1.1" 200 -
+2025-08-20 12:17:51,476 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:17:51] "[35m[1mGET /favicon.ico HTTP/1.1[0m" 500 -
+2025-08-20 12:17:53,231 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:17:53] "GET /rfqs HTTP/1.1" 200 -
+2025-08-20 12:17:53,536 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:17:53] "[35m[1mGET /favicon.ico HTTP/1.1[0m" 500 -
+2025-08-20 12:17:54,436 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:17:54] "GET /accounts HTTP/1.1" 200 -
+2025-08-20 12:17:54,575 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:17:54] "[35m[1mGET /favicon.ico HTTP/1.1[0m" 500 -
+2025-08-20 12:17:55,477 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:17:55] "GET /contacts HTTP/1.1" 200 -
+2025-08-20 12:17:55,764 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:17:55] "[35m[1mGET /favicon.ico HTTP/1.1[0m" 500 -
+2025-08-20 12:17:56,357 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:17:56] "GET /interactions HTTP/1.1" 200 -
+2025-08-20 12:17:56,481 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:17:56] "GET /api/contacts HTTP/1.1" 200 -
+2025-08-20 12:17:56,620 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:17:56] "GET /api/opportunities HTTP/1.1" 200 -
+2025-08-20 12:17:56,721 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:17:56] "[35m[1mGET /favicon.ico HTTP/1.1[0m" 500 -
+2025-08-20 12:17:57,675 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:17:57] "[35m[1mGET /projects HTTP/1.1[0m" 500 -
+2025-08-20 12:17:57,995 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:17:57] "[36mGET /projects?__debugger__=yes&cmd=resource&f=style.css HTTP/1.1[0m" 304 -
+2025-08-20 12:17:58,010 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:17:58] "[36mGET /projects?__debugger__=yes&cmd=resource&f=debugger.js HTTP/1.1[0m" 304 -
+2025-08-20 12:17:58,335 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:17:58] "GET /projects?__debugger__=yes&cmd=resource&f=console.png&s=Ojla6Nyin1zXBY5bC5Pa HTTP/1.1" 200 -
+2025-08-20 12:20:01,410 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\test_db_tables.py', reloading
+2025-08-20 12:20:01,505 - werkzeug - INFO -  * Restarting with stat
+2025-08-20 12:20:01,896 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 12:20:01,898 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 12:20:55,369 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\test_pdf_count.py', reloading
+2025-08-20 12:20:55,479 - werkzeug - INFO -  * Restarting with stat
+2025-08-20 12:20:55,823 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 12:20:55,825 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 12:20:55,845 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\test_pdf_count.py', reloading
+2025-08-20 12:20:55,901 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\test_pdf_count.py', reloading
+2025-08-20 12:20:55,901 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\test_pdf_count.py', reloading
+2025-08-20 12:20:55,947 - werkzeug - INFO -  * Restarting with stat
+2025-08-20 12:20:55,999 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\test_pdf_count.py', reloading
+2025-08-20 12:20:55,999 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\test_pdf_count.py', reloading
+2025-08-20 12:20:56,053 - werkzeug - INFO -  * Restarting with stat
+2025-08-20 12:20:56,148 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\test_pdf_count.py', reloading
+2025-08-20 12:20:56,195 - werkzeug - INFO -  * Restarting with stat
+2025-08-20 12:20:56,246 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 12:20:56,248 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 12:20:56,296 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 12:20:56,297 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 12:20:56,302 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 12:20:56,304 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 12:20:56,402 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 12:20:56,403 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 12:20:56,405 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 12:20:56,406 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 12:20:56,530 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 12:20:56,531 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 12:21:24,547 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\test_dibbs_script.py', reloading
+2025-08-20 12:21:24,547 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\test_dibbs_script.py', reloading
+2025-08-20 12:21:24,592 - werkzeug - INFO -  * Restarting with stat
+2025-08-20 12:21:24,655 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\test_dibbs_script.py', reloading
+2025-08-20 12:21:24,699 - werkzeug - INFO -  * Restarting with stat
+2025-08-20 12:21:24,962 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 12:21:24,962 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 12:21:24,963 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 12:21:24,964 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 12:21:25,046 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 12:21:25,047 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 12:22:30,634 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\test_dibbs_script.py', reloading
+2025-08-20 12:22:30,741 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\test_dibbs_script.py', reloading
+2025-08-20 12:22:30,741 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\test_pdf_count.py', reloading
+2025-08-20 12:22:30,791 - werkzeug - INFO -  * Restarting with stat
+2025-08-20 12:22:31,029 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 12:22:31,030 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 12:22:31,134 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 12:22:31,134 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 12:22:31,135 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 12:22:31,136 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 12:22:31,333 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\test_db_tables.py', reloading
+2025-08-20 12:22:31,342 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\test_dibbs_script.py', reloading
+2025-08-20 12:22:31,343 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\test_pdf_count.py', reloading
+2025-08-20 12:22:31,398 - werkzeug - INFO -  * Restarting with stat
+2025-08-20 12:22:31,402 - werkzeug - INFO -  * Restarting with stat
+2025-08-20 12:22:31,611 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\test_pdf_count.py', reloading
+2025-08-20 12:22:31,712 - werkzeug - INFO -  * Restarting with stat
+2025-08-20 12:22:31,757 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 12:22:31,759 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 12:22:31,762 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 12:22:31,762 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 12:22:31,764 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 12:22:31,764 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 12:22:32,032 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 12:22:32,033 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 12:25:08,920 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\simple_test.py', reloading
+2025-08-20 12:25:08,920 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\simple_test.py', reloading
+2025-08-20 12:25:08,967 - werkzeug - INFO -  * Restarting with stat
+2025-08-20 12:25:09,312 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 12:25:09,313 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 12:25:09,315 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 12:25:09,317 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 12:25:33,425 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\full_diagnostic.py', reloading
+2025-08-20 12:25:33,427 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\full_diagnostic.py', reloading
+2025-08-20 12:25:33,469 - werkzeug - INFO -  * Restarting with stat
+2025-08-20 12:25:33,527 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\full_diagnostic.py', reloading
+2025-08-20 12:25:33,551 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\full_diagnostic.py', reloading
+2025-08-20 12:25:33,573 - werkzeug - INFO -  * Restarting with stat
+2025-08-20 12:25:33,666 - werkzeug - INFO -  * Restarting with stat
+2025-08-20 12:25:33,835 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 12:25:33,837 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 12:25:33,837 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 12:25:33,927 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 12:25:33,928 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 12:25:34,017 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 12:25:34,019 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 12:25:59,405 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:25:59] "GET /?id=f0cbf468-90a8-42f3-ae7b-abd6596bf6c6&vscodeBrowserReqId=1755714359379 HTTP/1.1" 200 -
+2025-08-20 12:26:00,055 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:26:00] "GET /api/pdf-count HTTP/1.1" 200 -
+2025-08-20 12:26:18,910 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\direct_diagnostic.py', reloading
+2025-08-20 12:26:18,912 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\direct_diagnostic.py', reloading
+2025-08-20 12:26:18,961 - werkzeug - INFO -  * Restarting with stat
+2025-08-20 12:26:19,325 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 12:26:19,326 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 12:26:20,667 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:26:20] "GET /tasks HTTP/1.1" 200 -
+2025-08-20 12:26:21,889 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:26:21] "GET /opportunities HTTP/1.1" 200 -
+2025-08-20 12:26:26,152 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:26:26] "GET / HTTP/1.1" 200 -
+2025-08-20 12:26:26,167 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:26:26] "GET /api/pdf-count HTTP/1.1" 200 -
+2025-08-20 12:26:27,033 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:26:27] "GET /tasks HTTP/1.1" 200 -
+2025-08-20 12:26:29,285 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:26:29] "[35m[1mGET /projects HTTP/1.1[0m" 500 -
+2025-08-20 12:26:29,350 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:26:29] "[36mGET /projects?__debugger__=yes&cmd=resource&f=style.css HTTP/1.1[0m" 304 -
+2025-08-20 12:26:29,351 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:26:29] "[36mGET /projects?__debugger__=yes&cmd=resource&f=debugger.js HTTP/1.1[0m" 304 -
+2025-08-20 12:26:29,365 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:26:29] "GET /projects?__debugger__=yes&cmd=resource&f=console.png&s=pyV9IT6O7B37JOcdUfTK HTTP/1.1" 200 -
+2025-08-20 12:27:21,331 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\add_projects_table.py', reloading
+2025-08-20 12:27:21,355 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\add_projects_table.py', reloading
+2025-08-20 12:27:21,356 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\add_projects_table.py', reloading
+2025-08-20 12:27:21,375 - werkzeug - INFO -  * Restarting with stat
+2025-08-20 12:27:21,401 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\add_projects_table.py', reloading
+2025-08-20 12:27:21,460 - werkzeug - INFO -  * Restarting with stat
+2025-08-20 12:27:21,570 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\add_projects_table.py', reloading
+2025-08-20 12:27:21,727 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 12:27:21,728 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 12:27:21,747 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 12:27:21,748 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 12:27:21,749 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 12:27:21,750 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 12:27:21,787 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 12:27:21,789 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 12:27:21,920 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 12:27:21,921 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 12:27:47,036 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\add_projects_table.py', reloading
+2025-08-20 12:27:47,128 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\direct_diagnostic.py', reloading
+2025-08-20 12:27:47,236 - werkzeug - INFO -  * Restarting with stat
+2025-08-20 12:27:47,420 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 12:27:47,421 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 12:27:47,569 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 12:27:47,571 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 12:27:47,854 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\add_projects_table.py', reloading
+2025-08-20 12:27:47,882 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\add_projects_table.py', reloading
+2025-08-20 12:27:47,882 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\full_diagnostic.py', reloading
+2025-08-20 12:27:47,898 - werkzeug - INFO -  * Restarting with stat
+2025-08-20 12:27:47,903 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\simple_test.py', reloading
+2025-08-20 12:27:47,951 - werkzeug - INFO -  * Restarting with stat
+2025-08-20 12:27:48,246 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 12:27:48,247 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 12:27:48,278 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 12:27:48,279 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 12:27:48,289 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 12:27:48,291 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 12:27:48,291 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 12:27:48,292 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 12:33:52,603 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:33:52] "GET / HTTP/1.1" 200 -
+2025-08-20 12:33:52,716 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:33:52] "GET /api/pdf-count HTTP/1.1" 200 -
+2025-08-20 12:33:52,888 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:33:52] "[35m[1mGET /favicon.ico HTTP/1.1[0m" 500 -
+2025-08-20 12:33:55,214 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:33:55] "[35m[1mGET /projects HTTP/1.1[0m" 500 -
+2025-08-20 12:33:55,399 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:33:55] "[36mGET /projects?__debugger__=yes&cmd=resource&f=style.css HTTP/1.1[0m" 304 -
+2025-08-20 12:33:55,473 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:33:55] "[36mGET /projects?__debugger__=yes&cmd=resource&f=debugger.js HTTP/1.1[0m" 304 -
+2025-08-20 12:33:55,549 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:33:55] "GET /projects?__debugger__=yes&cmd=resource&f=console.png&s=xWjOBurnnLF2fULJtkbJ HTTP/1.1" 200 -
+2025-08-20 12:33:57,390 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:33:57] "[35m[1mGET /favicon.ico HTTP/1.1[0m" 500 -
+2025-08-20 12:33:59,766 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:33:59] "GET /tasks HTTP/1.1" 200 -
+2025-08-20 12:34:00,031 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:34:00] "[35m[1mGET /favicon.ico HTTP/1.1[0m" 500 -
+2025-08-20 12:34:00,787 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:34:00] "GET /opportunities HTTP/1.1" 200 -
+2025-08-20 12:34:00,906 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:34:00] "[35m[1mGET /favicon.ico HTTP/1.1[0m" 500 -
+2025-08-20 12:34:01,869 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:34:01] "GET /interactions HTTP/1.1" 200 -
+2025-08-20 12:34:02,126 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:34:02] "GET /api/contacts HTTP/1.1" 200 -
+2025-08-20 12:34:02,237 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:34:02] "GET /api/opportunities HTTP/1.1" 200 -
+2025-08-20 12:34:02,299 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:34:02] "[35m[1mGET /favicon.ico HTTP/1.1[0m" 500 -
+2025-08-20 12:34:02,808 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:34:02] "[35m[1mGET /projects HTTP/1.1[0m" 500 -
+2025-08-20 12:34:02,944 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:34:02] "[36mGET /projects?__debugger__=yes&cmd=resource&f=style.css HTTP/1.1[0m" 304 -
+2025-08-20 12:34:03,066 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:34:03] "[36mGET /projects?__debugger__=yes&cmd=resource&f=debugger.js HTTP/1.1[0m" 304 -
+2025-08-20 12:34:03,130 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:34:03] "[36mGET /projects?__debugger__=yes&cmd=resource&f=console.png&s=xWjOBurnnLF2fULJtkbJ HTTP/1.1[0m" 304 -
+2025-08-20 12:35:13,173 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\fix_projects_table.py', reloading
+2025-08-20 12:35:13,211 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\fix_projects_table.py', reloading
+2025-08-20 12:35:13,224 - werkzeug - INFO -  * Restarting with stat
+2025-08-20 12:35:13,280 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\fix_projects_table.py', reloading
+2025-08-20 12:35:13,324 - werkzeug - INFO -  * Restarting with stat
+2025-08-20 12:35:13,326 - werkzeug - INFO -  * Restarting with stat
+2025-08-20 12:35:13,382 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\fix_projects_table.py', reloading
+2025-08-20 12:35:13,385 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\fix_projects_table.py', reloading
+2025-08-20 12:35:13,385 - werkzeug - INFO -  * Detected change in 'C:\\Users\\212343205\\Desktop\\AI Stuff\\DLA\\fix_projects_table.py', reloading
+2025-08-20 12:35:13,600 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 12:35:13,601 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 12:35:13,674 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 12:35:13,675 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 12:35:13,675 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 12:35:13,676 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 12:35:13,771 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 12:35:13,772 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 12:35:13,773 - werkzeug - WARNING -  * Debugger is active!
+2025-08-20 12:35:13,774 - werkzeug - INFO -  * Debugger PIN: 139-898-246
+2025-08-20 12:35:18,042 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:35:18] "GET / HTTP/1.1" 200 -
+2025-08-20 12:35:18,198 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:35:18] "GET /api/pdf-count HTTP/1.1" 200 -
+2025-08-20 12:35:18,355 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:35:18] "[35m[1mGET /favicon.ico HTTP/1.1[0m" 500 -
+2025-08-20 12:35:20,010 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:35:20] "GET /tasks HTTP/1.1" 200 -
+2025-08-20 12:35:20,114 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:35:20] "[35m[1mGET /favicon.ico HTTP/1.1[0m" 500 -
+2025-08-20 12:35:20,691 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:35:20] "GET /opportunities HTTP/1.1" 200 -
+2025-08-20 12:35:20,977 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:35:20] "[35m[1mGET /favicon.ico HTTP/1.1[0m" 500 -
+2025-08-20 12:35:21,780 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:35:21] "[35m[1mGET /projects HTTP/1.1[0m" 500 -
+2025-08-20 12:35:21,895 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:35:21] "[36mGET /projects?__debugger__=yes&cmd=resource&f=style.css HTTP/1.1[0m" 304 -
+2025-08-20 12:35:22,044 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:35:22] "[36mGET /projects?__debugger__=yes&cmd=resource&f=debugger.js HTTP/1.1[0m" 304 -
+2025-08-20 12:35:22,106 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:35:22] "GET /projects?__debugger__=yes&cmd=resource&f=console.png&s=zGuaEIdiRdwZTbbykilO HTTP/1.1" 200 -
+2025-08-20 12:35:23,842 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:35:23] "[35m[1mGET /favicon.ico HTTP/1.1[0m" 500 -
+2025-08-20 12:35:24,782 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:35:24] "GET /interactions HTTP/1.1" 200 -
+2025-08-20 12:35:25,066 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:35:25] "GET /api/contacts HTTP/1.1" 200 -
+2025-08-20 12:35:25,139 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:35:25] "GET /api/opportunities HTTP/1.1" 200 -
+2025-08-20 12:35:25,204 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:35:25] "[35m[1mGET /favicon.ico HTTP/1.1[0m" 500 -
+2025-08-20 12:35:25,703 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:35:25] "GET /contacts HTTP/1.1" 200 -
+2025-08-20 12:35:25,838 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:35:25] "[35m[1mGET /favicon.ico HTTP/1.1[0m" 500 -
+2025-08-20 12:35:26,423 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:35:26] "GET /accounts HTTP/1.1" 200 -
+2025-08-20 12:35:26,721 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:35:26] "[35m[1mGET /favicon.ico HTTP/1.1[0m" 500 -
+2025-08-20 12:35:27,423 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:35:27] "GET /accounts HTTP/1.1" 200 -
+2025-08-20 12:35:27,540 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:35:27] "[35m[1mGET /favicon.ico HTTP/1.1[0m" 500 -
+2025-08-20 12:35:27,726 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:35:27] "GET /rfqs HTTP/1.1" 200 -
+2025-08-20 12:35:28,018 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:35:28] "[35m[1mGET /favicon.ico HTTP/1.1[0m" 500 -
+2025-08-20 12:35:28,530 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:35:28] "GET /products HTTP/1.1" 200 -
+2025-08-20 12:35:28,648 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:35:28] "[35m[1mGET /favicon.ico HTTP/1.1[0m" 500 -
+2025-08-20 12:35:30,936 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:35:30] "GET / HTTP/1.1" 200 -
+2025-08-20 12:35:31,239 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:35:31] "GET /api/pdf-count HTTP/1.1" 200 -
+2025-08-20 12:35:31,354 - werkzeug - INFO - 127.0.0.1 - - [20/Aug/2025 12:35:31] "[35m[1mGET /favicon.ico HTTP/1.1[0m" 500 -

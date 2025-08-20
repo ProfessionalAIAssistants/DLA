@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block title %}Test - DLA Codebase CRM{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1>Test Page</h1>
+    <p>This is a simple test to see if the template rendering works.</p>
+    <p>Stats: {{ stats }}</p>
+    <p>Opportunities count: {{ opportunities|length }}</p>
+</div>
+{% endblock %}

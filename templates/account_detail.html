@@ -1,0 +1,308 @@
+{% extends "base.html" %}
+
+{% block title %}{{ account.name }} - Account Details{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-building me-2"></i>{{ account.name }}
+        <span class="badge bg-{{ 'primary' if account.type == 'Customer' else 'warning' if account.type == 'Prospect Customer' else 'info' if account.type == 'Prospect Vendor' else 'success' if account.type == 'Vendor' else 'dark' if account.type == 'QPL' else 'danger' if account.type == 'Competitor' else 'secondary' }} ms-2">
+            {{ account.type or 'N/A' }}
+        </span>
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-primary">
+                <i class="fas fa-edit me-1"></i>
+                Edit Account
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-plus me-1"></i>
+                Add Contact
+            </button>
+        </div>
+        <a href="{{ url_for('accounts') }}" class="btn btn-sm btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i>
+            Back to Accounts
+        </a>
+    </div>
+</div>
+
+<!-- Account Summary -->
+<div class="row">
+    <div class="col-xl-8">
+        <!-- Basic Information -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-info-circle me-2"></i>Basic Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <td><strong>Name:</strong></td>
+                                <td>{{ account.name }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Type:</strong></td>
+                                <td>
+                                    <span class="badge bg-{{ 'primary' if account.type == 'Customer' else 'warning' if account.type == 'Prospect Customer' else 'info' if account.type == 'Prospect Vendor' else 'success' if account.type == 'Vendor' else 'dark' if account.type == 'QPL' else 'danger' if account.type == 'Competitor' else 'secondary' }}">
+                                        {{ account.type or 'N/A' }}
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Location:</strong></td>
+                                <td>{{ account.location or 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Parent Company:</strong></td>
+                                <td>{{ account.parent_co or 'N/A' }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <td><strong>CAGE Code:</strong></td>
+                                <td>{{ account.cage or 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Website:</strong></td>
+                                <td>
+                                    {% if account.website %}
+                                        <a href="{{ account.website }}" target="_blank" class="text-decoration-none">
+                                            <i class="fas fa-external-link-alt me-1"></i>{{ account.website }}
+                                        </a>
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Email:</strong></td>
+                                <td>
+                                    {% if account.email %}
+                                        <a href="mailto:{{ account.email }}" class="text-decoration-none">
+                                            <i class="fas fa-envelope me-1"></i>{{ account.email }}
+                                        </a>
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>LinkedIn:</strong></td>
+                                <td>
+                                    {% if account.linkedin %}
+                                        <a href="{{ account.linkedin }}" target="_blank" class="text-decoration-none">
+                                            <i class="fab fa-linkedin me-1"></i>LinkedIn Profile
+                                        </a>
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                
+                {% if account.summary %}
+                <div class="mt-3">
+                    <h6><strong>Summary:</strong></h6>
+                    <p class="text-muted">{{ account.summary }}</p>
+                </div>
+                {% endif %}
+                
+                {% if account.detail %}
+                <div class="mt-3">
+                    <h6><strong>Details:</strong></h6>
+                    <p class="text-muted">{{ account.detail }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Contacts -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-users me-2"></i>Contacts ({{ contacts|length }})
+                </h5>
+                <button type="button" class="btn btn-sm btn-primary">
+                    <i class="fas fa-plus me-1"></i>Add Contact
+                </button>
+            </div>
+            <div class="card-body">
+                {% if contacts %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Title</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for contact in contacts %}
+                            <tr>
+                                <td>
+                                    <a href="{{ url_for('contact_detail', contact_id=contact.id) }}" class="text-decoration-none">
+                                        <strong>{{ contact.first_name }} {{ contact.last_name }}</strong>
+                                    </a>
+                                </td>
+                                <td>{{ contact.title or 'N/A' }}</td>
+                                <td>
+                                    {% if contact.email %}
+                                        <a href="mailto:{{ contact.email }}">{{ contact.email }}</a>
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </td>
+                                <td>{{ contact.phone or 'N/A' }}</td>
+                                <td>
+                                    <a href="{{ url_for('contact_detail', contact_id=contact.id) }}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-users fa-2x text-muted mb-3"></i>
+                    <h6 class="text-muted">No Contacts</h6>
+                    <p class="text-muted">No contacts have been added to this account yet.</p>
+                    <button type="button" class="btn btn-primary">
+                        <i class="fas fa-plus me-1"></i>Add First Contact
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- QPLs (if applicable) -->
+        {% if account.type in ['QPL', 'Vendor'] %}
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-certificate me-2"></i>QPL Qualifications
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center py-4">
+                    <i class="fas fa-certificate fa-2x text-muted mb-3"></i>
+                    <h6 class="text-muted">No QPL Data</h6>
+                    <p class="text-muted">QPL qualifications will be displayed here when available.</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-xl-4">
+        <!-- Quick Stats -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="fas fa-chart-pie me-2"></i>Quick Stats
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="p-2">
+                            <h4 class="text-primary mb-0">{{ contacts|length }}</h4>
+                            <small class="text-muted">Contacts</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-2">
+                            <h4 class="text-success mb-0">{{ opportunities|length }}</h4>
+                            <small class="text-muted">Opportunities</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Account Info -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="fas fa-calendar me-2"></i>Account Information
+                </h6>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless table-sm">
+                    <tr>
+                        <td><strong>Created:</strong></td>
+                        <td>{{ account.created_date[:10] if account.created_date else 'N/A' }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Account ID:</strong></td>
+                        <td>{{ account.id }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Status:</strong></td>
+                        <td>
+                            <span class="badge bg-success">Active</span>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- Media -->
+        {% if account.image or account.video %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="fas fa-image me-2"></i>Media
+                </h6>
+            </div>
+            <div class="card-body">
+                {% if account.image %}
+                <div class="mb-3">
+                    <strong>Image:</strong>
+                    <br><small class="text-muted">{{ account.image }}</small>
+                </div>
+                {% endif %}
+                {% if account.video %}
+                <div class="mb-3">
+                    <strong>Video:</strong>
+                    <br><small class="text-muted">{{ account.video }}</small>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Recent Activity -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="fas fa-clock me-2"></i>Recent Activity
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="text-center py-4">
+                    <i class="fas fa-clock fa-2x text-muted mb-3"></i>
+                    <h6 class="text-muted">No Recent Activity</h6>
+                    <p class="text-muted">Activity tracking will appear here.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

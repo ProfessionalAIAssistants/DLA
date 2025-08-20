@@ -1,0 +1,358 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - ModernCRM{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Modern Header -->
+    <div class="d-flex justify-content-between align-items-center mb-5">
+        <div>
+            <h1 class="display-6 fw-bold mb-2">
+                <i class="fas fa-cog me-3" style="background: var(--gradient-primary); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;"></i>
+                Settings
+            </h1>
+            <p class="text-muted mb-0 fs-5">Configure PDF processing filters and automation rules</p>
+        </div>
+    </div>
+
+    <!-- PDF Processing Filters -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-filter me-2"></i>PDF Processing Filters
+                    </h5>
+                    <small class="text-muted">Configure which PDFs should be automatically processed vs. moved to review</small>
+                </div>
+                <div class="card-body">
+                    <form id="settingsForm">
+                        <div class="row">
+                            <!-- Delivery Days Filter -->
+                            <div class="col-md-6 mb-4">
+                                <label for="minDeliveryDays" class="form-label fw-bold">
+                                    <i class="fas fa-shipping-fast me-2"></i>Minimum Delivery Days
+                                </label>
+                                <input type="number" class="form-control" id="minDeliveryDays" 
+                                       value="{{ settings.min_delivery_days }}" min="0" max="999">
+                                <div class="form-text">Only process RFQs with delivery days >= this value</div>
+                            </div>
+
+                            <!-- ISO Requirement -->
+                            <div class="col-md-6 mb-4">
+                                <label class="form-label fw-bold">
+                                    <i class="fas fa-certificate me-2"></i>ISO Requirement
+                                </label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="isoRequired" id="isoNo" 
+                                           value="NO" {% if settings.iso_required == 'NO' %}checked{% endif %}>
+                                    <label class="form-check-label" for="isoNo">
+                                        Process only NON-ISO required RFQs
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="isoRequired" id="isoYes" 
+                                           value="YES" {% if settings.iso_required == 'YES' %}checked{% endif %}>
+                                    <label class="form-check-label" for="isoYes">
+                                        Process only ISO required RFQs
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="isoRequired" id="isoAny" 
+                                           value="ANY" {% if settings.iso_required == 'ANY' %}checked{% endif %}>
+                                    <label class="form-check-label" for="isoAny">
+                                        Process regardless of ISO requirement
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Sampling Requirement -->
+                            <div class="col-md-6 mb-4">
+                                <label class="form-label fw-bold">
+                                    <i class="fas fa-vial me-2"></i>Sampling Requirement
+                                </label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="samplingRequired" id="samplingNo" 
+                                           value="NO" {% if settings.sampling_required == 'NO' %}checked{% endif %}>
+                                    <label class="form-check-label" for="samplingNo">
+                                        Process only NON-sampling required RFQs
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="samplingRequired" id="samplingYes" 
+                                           value="YES" {% if settings.sampling_required == 'YES' %}checked{% endif %}>
+                                    <label class="form-check-label" for="samplingYes">
+                                        Process only sampling required RFQs
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="samplingRequired" id="samplingAny" 
+                                           value="ANY" {% if settings.sampling_required == 'ANY' %}checked{% endif %}>
+                                    <label class="form-check-label" for="samplingAny">
+                                        Process regardless of sampling requirement
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Inspection Point -->
+                            <div class="col-md-6 mb-4">
+                                <label class="form-label fw-bold">
+                                    <i class="fas fa-search me-2"></i>Inspection Point
+                                </label>
+                                <select class="form-select" id="inspectionPoint">
+                                    <option value="ANY" {% if settings.inspection_point == 'ANY' %}selected{% endif %}>Any Inspection Point</option>
+                                    <option value="DESTINATION" {% if settings.inspection_point == 'DESTINATION' %}selected{% endif %}>Destination Only</option>
+                                    <option value="ORIGIN" {% if settings.inspection_point == 'ORIGIN' %}selected{% endif %}>Origin Only</option>
+                                    <option value="SOURCE" {% if settings.inspection_point == 'SOURCE' %}selected{% endif %}>Source Only</option>
+                                </select>
+                                <div class="form-text">Which inspection points to accept</div>
+                            </div>
+
+                            <!-- Manufacturer Filter -->
+                            <div class="col-12 mb-4">
+                                <label for="manufacturerFilter" class="form-label fw-bold">
+                                    <i class="fas fa-industry me-2"></i>Manufacturer Filter
+                                </label>
+                                <textarea class="form-control" id="manufacturerFilter" rows="3" 
+                                          placeholder="Enter manufacturer names, one per line">{{ settings.manufacturer_filter }}</textarea>
+                                <div class="form-text">Only process RFQs from these manufacturers (leave empty to accept all)</div>
+                            </div>
+
+                            <!-- Additional Filters -->
+                            <div class="col-12 mb-4">
+                                <h6 class="fw-bold mb-3">
+                                    <i class="fas fa-sliders-h me-2"></i>Additional Filters
+                                </h6>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="autoCreateOpportunities" 
+                                                   {% if settings.auto_create_opportunities %}checked{% endif %}>
+                                            <label class="form-check-label" for="autoCreateOpportunities">
+                                                Automatically create opportunities from RFQs
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="linkRelatedRecords" 
+                                                   {% if settings.link_related_records %}checked{% endif %}>
+                                            <label class="form-check-label" for="linkRelatedRecords">
+                                                Auto-link related accounts, contacts, and products
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="moveProcessedFiles" 
+                                                   {% if settings.move_processed_files %}checked{% endif %}>
+                                            <label class="form-check-label" for="moveProcessedFiles">
+                                                Move processed PDFs to Reviewed folder
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="skipDuplicates" 
+                                                   {% if settings.skip_duplicates %}checked{% endif %}>
+                                            <label class="form-check-label" for="skipDuplicates">
+                                                Skip duplicate RFQ numbers
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-3">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Save Settings
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="resetToDefaults()">
+                                <i class="fas fa-undo me-2"></i>Reset to Defaults
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Preview -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-eye me-2"></i>Filter Preview
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <h6 class="alert-heading">Current Filter Criteria:</h6>
+                        <ul class="mb-0" id="filterPreview">
+                            <li>Delivery Days: >= <span id="previewDeliveryDays">{{ settings.min_delivery_days }}</span></li>
+                            <li>ISO Required: <span id="previewISO">{{ settings.iso_required }}</span></li>
+                            <li>Sampling Required: <span id="previewSampling">{{ settings.sampling_required }}</span></li>
+                            <li>Inspection Point: <span id="previewInspection">{{ settings.inspection_point }}</span></li>
+                            <li>Manufacturers: <span id="previewManufacturers">
+                                {% if settings.manufacturer_filter %}
+                                    {{ settings.manufacturer_filter.split('\n')|length }} configured
+                                {% else %}
+                                    All accepted
+                                {% endif %}
+                            </span></li>
+                        </ul>
+                    </div>
+
+                    <div class="mt-4">
+                        <h6 class="fw-bold">Processing Statistics</h6>
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <div class="card card-metric h-100">
+                                    <div class="card-body">
+                                        <h4 class="text-success mb-1">{{ stats.processed or 0 }}</h4>
+                                        <small class="text-muted">Processed</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="card card-metric h-100">
+                                    <div class="card-body">
+                                        <h4 class="text-warning mb-1">{{ stats.skipped or 0 }}</h4>
+                                        <small class="text-muted">Skipped</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('settingsForm');
+    
+    // Update preview when inputs change
+    form.addEventListener('input', updatePreview);
+    form.addEventListener('change', updatePreview);
+    
+    // Handle form submission
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        saveSettings();
+    });
+});
+
+function updatePreview() {
+    // Update delivery days preview
+    const deliveryDays = document.getElementById('minDeliveryDays').value;
+    document.getElementById('previewDeliveryDays').textContent = deliveryDays;
+    
+    // Update ISO preview
+    const isoRequired = document.querySelector('input[name="isoRequired"]:checked').value;
+    document.getElementById('previewISO').textContent = isoRequired;
+    
+    // Update sampling preview
+    const samplingRequired = document.querySelector('input[name="samplingRequired"]:checked').value;
+    document.getElementById('previewSampling').textContent = samplingRequired;
+    
+    // Update inspection preview
+    const inspectionPoint = document.getElementById('inspectionPoint').value;
+    document.getElementById('previewInspection').textContent = inspectionPoint;
+    
+    // Update manufacturers preview
+    const manufacturerFilter = document.getElementById('manufacturerFilter').value.trim();
+    const manufacturerCount = manufacturerFilter ? manufacturerFilter.split('\n').filter(m => m.trim()).length : 0;
+    document.getElementById('previewManufacturers').textContent = manufacturerCount > 0 ? 
+        `${manufacturerCount} configured` : 'All accepted';
+}
+
+function saveSettings() {
+    const btn = form.querySelector('button[type="submit"]');
+    const originalText = btn.innerHTML;
+    
+    // Show loading state
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
+    btn.disabled = true;
+    
+    const formData = {
+        min_delivery_days: parseInt(document.getElementById('minDeliveryDays').value),
+        iso_required: document.querySelector('input[name="isoRequired"]:checked').value,
+        sampling_required: document.querySelector('input[name="samplingRequired"]:checked').value,
+        inspection_point: document.getElementById('inspectionPoint').value,
+        manufacturer_filter: document.getElementById('manufacturerFilter').value,
+        auto_create_opportunities: document.getElementById('autoCreateOpportunities').checked,
+        link_related_records: document.getElementById('linkRelatedRecords').checked,
+        move_processed_files: document.getElementById('moveProcessedFiles').checked,
+        skip_duplicates: document.getElementById('skipDuplicates').checked
+    };
+    
+    fetch('/api/settings', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('success', 'Settings saved successfully!');
+        } else {
+            showAlert('error', 'Error saving settings: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('error', 'Network error while saving settings');
+    })
+    .finally(() => {
+        // Restore button
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    });
+}
+
+function resetToDefaults() {
+    if (confirm('Reset all settings to default values? This cannot be undone.')) {
+        document.getElementById('minDeliveryDays').value = 120;
+        document.querySelector('input[value="NO"][name="isoRequired"]').checked = true;
+        document.querySelector('input[value="NO"][name="samplingRequired"]').checked = true;
+        document.getElementById('inspectionPoint').value = 'DESTINATION';
+        document.getElementById('manufacturerFilter').value = 'Parker\nMonkey Monkey';
+        document.getElementById('autoCreateOpportunities').checked = true;
+        document.getElementById('linkRelatedRecords').checked = true;
+        document.getElementById('moveProcessedFiles').checked = true;
+        document.getElementById('skipDuplicates').checked = true;
+        
+        updatePreview();
+        showAlert('info', 'Settings reset to defaults. Click "Save Settings" to apply.');
+    }
+}
+
+function showAlert(type, message) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type === 'success' ? 'success' : type === 'error' ? 'danger' : 'info'} alert-dismissible fade show position-fixed`;
+    alertDiv.style.top = '20px';
+    alertDiv.style.right = '20px';
+    alertDiv.style.zIndex = '9999';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(alertDiv);
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
+}
+</script>
+{% endblock %}

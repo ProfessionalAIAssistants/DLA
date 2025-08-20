@@ -1,0 +1,285 @@
+{% extends "base.html" %}
+
+{% block title %}RFQs - ModernCRM{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-5">
+        <div>
+            <h1 class="display-6 fw-bold mb-2">
+                <i class="fas fa-file-contract me-3" style="background: var(--gradient-primary); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;"></i>
+                RFQs
+            </h1>
+            <p class="text-muted mb-0 fs-5">Request for Quote management and tracking</p>
+        </div>
+        <div>
+            <button type="button" class="btn btn-primary btn-lg" onclick="location.reload()">
+                <i class="fas fa-sync-alt me-2"></i>
+                Refresh
+            </button>
+        </div>
+    </div>
+
+    <!-- RFQ Statistics - Modern Cards -->
+    <div class="row mb-5">
+        <div class="col-md-2">
+            <div class="card card-metric h-100">
+                <div class="card-body d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="text-dark mb-2 text-uppercase fw-bold" style="font-size: 0.75rem; letter-spacing: 1px; opacity: 0.8;">New</h6>
+                        <h2 class="mb-0 fw-bold text-dark">{{ rfqs | selectattr('status', 'equalto', 'New') | list | length }}</h2>
+                        <small class="text-dark" style="opacity: 0.7;">Unprocessed</small>
+                    </div>
+                    <div class="ms-3">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center" 
+                             style="width: 50px; height: 50px; background: rgba(255,255,255,0.2);">
+                            <i class="fas fa-file-plus fa-lg"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card card-metric warning h-100">
+                <div class="card-body d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="text-dark mb-2 text-uppercase fw-bold" style="font-size: 0.75rem; letter-spacing: 1px; opacity: 0.8;">Reviewed</h6>
+                        <h2 class="mb-0 fw-bold text-dark">{{ rfqs | selectattr('status', 'equalto', 'Reviewed') | list | length }}</h2>
+                        <small class="text-dark" style="opacity: 0.7;">Under review</small>
+                    </div>
+                    <div class="ms-3">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center" 
+                             style="width: 50px; height: 50px; background: rgba(255,255,255,0.2);">
+                            <i class="fas fa-search fa-lg"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card card-metric info h-100">
+                <div class="card-body d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="text-dark mb-2 text-uppercase fw-bold" style="font-size: 0.75rem; letter-spacing: 1px; opacity: 0.8;">Qualified</h6>
+                        <h2 class="mb-0 fw-bold text-dark">{{ rfqs | selectattr('status', 'equalto', 'Qualified') | list | length }}</h2>
+                        <small class="text-dark" style="opacity: 0.7;">Ready to quote</small>
+                    </div>
+                    <div class="ms-3">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center" 
+                             style="width: 50px; height: 50px; background: rgba(255,255,255,0.2);">
+                            <i class="fas fa-check-circle fa-lg"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card card-metric secondary h-100">
+                <div class="card-body d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="text-dark mb-2 text-uppercase fw-bold" style="font-size: 0.75rem; letter-spacing: 1px; opacity: 0.8;">Quoted</h6>
+                        <h2 class="mb-0 fw-bold text-dark">{{ rfqs | selectattr('status', 'equalto', 'Quoted') | list | length }}</h2>
+                        <small class="text-dark" style="opacity: 0.7;">Quote sent</small>
+                    </div>
+                    <div class="ms-3">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center" 
+                             style="width: 50px; height: 50px; background: rgba(255,255,255,0.2);">
+                            <i class="fas fa-paper-plane fa-lg"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card card-metric success h-100">
+                <div class="card-body d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="text-dark mb-2 text-uppercase fw-bold" style="font-size: 0.75rem; letter-spacing: 1px; opacity: 0.8;">Won</h6>
+                        <h2 class="mb-0 fw-bold text-dark">{{ rfqs | selectattr('status', 'equalto', 'Won') | list | length }}</h2>
+                        <small class="text-dark" style="opacity: 0.7;">Successful</small>
+                    </div>
+                    <div class="ms-3">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center" 
+                             style="width: 50px; height: 50px; background: rgba(255,255,255,0.2);">
+                            <i class="fas fa-trophy fa-lg"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card card-metric danger h-100">
+                <div class="card-body d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="text-dark mb-2 text-uppercase fw-bold" style="font-size: 0.75rem; letter-spacing: 1px; opacity: 0.8;">Lost</h6>
+                        <h2 class="mb-0 fw-bold text-dark">{{ rfqs | selectattr('status', 'equalto', 'Lost') | list | length }}</h2>
+                        <small class="text-dark" style="opacity: 0.7;">Unsuccessful</small>
+                    </div>
+                    <div class="ms-3">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center" 
+                             style="width: 50px; height: 50px; background: rgba(255,255,255,0.2);">
+                            <i class="fas fa-times-circle fa-lg"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modern Search and Filters -->
+    <div class="card mb-5">
+        <div class="card-header">
+            <h5 class="mb-0 d-flex align-items-center">
+                <i class="fas fa-filter me-2"></i>
+                Search & Filters
+            </h5>
+        </div>
+        <div class="card-body">
+            <form method="GET" class="row g-4">
+                <div class="col-md-3">
+                    <label for="vendor" class="form-label">Vendor</label>
+                    <input type="text" class="form-control" id="vendor" name="vendor" value="{{ vendor }}" placeholder="Filter by vendor...">
+                </div>
+                <div class="col-md-3">
+                    <label for="product" class="form-label">Product</label>
+                    <input type="text" class="form-control" id="product" name="product" value="{{ product }}" placeholder="Filter by product...">
+                </div>
+                <div class="col-md-3">
+                    <label for="status" class="form-label">Status</label>
+                    <select class="form-select" id="status" name="status">
+                        <option value="">All Status</option>
+                        <option value="active" {{ 'selected' if status == 'active' }}>Active</option>
+                        <option value="expired" {{ 'selected' if status == 'expired' }}>Expired</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="fas fa-filter me-1"></i>
+                        Filter
+                    </button>
+                    <a href="{{ url_for('rfqs') }}" class="btn btn-secondary">
+                        <i class="fas fa-times me-1"></i>
+                        Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- RFQs Table -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0 d-flex align-items-center">
+                <i class="fas fa-table me-2"></i>
+                RFQs ({{ rfqs|length }} found)
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if rfqs %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Product</th>
+                            <th>Vendor</th>
+                            <th>Quantity</th>
+                            <th>Quote</th>
+                            <th>Unit Price</th>
+                            <th>Lead Time</th>
+                            <th>Effective Date</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rfq in rfqs %}
+                        <tr class="{{ 'table-warning' if rfq.is_expired else '' }}">
+                            <td>
+                                {% if rfq.product_name %}
+                                    <strong>{{ rfq.product_name }}</strong>
+                                    {% if rfq.nsn %}
+                                    <br><small class="text-muted">NSN: {{ rfq.nsn }}</small>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="text-muted">No Product</span>
+                                {% endif %}
+                        </td>
+                        <td>
+                            {% if rfq.vendor_name %}
+                                <a href="{{ url_for('account_detail', account_id=rfq.vendor_id) }}" class="text-decoration-none">
+                                    {{ rfq.vendor_name }}
+                                </a>
+                                {% if rfq.cage_code %}
+                                <br><small class="text-muted">CAGE: {{ rfq.cage_code }}</small>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-muted">No Vendor</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ rfq.quantity or 'N/A' }}</td>
+                        <td>
+                            {% if rfq.quote %}
+                                ${{ "{:,.2f}".format(rfq.quote) }}
+                            {% else %}
+                                <span class="text-muted">N/A</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if rfq.quote and rfq.quantity and rfq.quantity > 0 %}
+                                ${{ "{:,.2f}".format(rfq.quote / rfq.quantity) }}
+                            {% else %}
+                                <span class="text-muted">N/A</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ rfq.lead_time or 'TBD' }}</td>
+                        <td>
+                            {% if rfq.effective_date %}
+                                {{ rfq.effective_date.strftime('%m/%d/%Y') }}
+                                {% if rfq.is_expired %}
+                                    <br><small class="text-danger">Expired</small>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-muted">N/A</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if rfq.is_expired %}
+                                <span class="badge bg-danger">Expired</span>
+                            {% else %}
+                                <span class="badge bg-success">Active</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <button class="btn btn-outline-primary" title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="btn btn-outline-secondary" title="Edit RFQ">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                {% if rfq.document %}
+                                <button class="btn btn-outline-info" title="View Document">
+                                    <i class="fas fa-file-alt"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-file-contract fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">No RFQs Found</h5>
+            <p class="text-muted">No RFQs match your current filters.</p>
+        </div>
+        {% endif %}
+        
+        <!-- Pagination -->
+        {% include 'pagination.html' %}
+    </div>
+</div>
+{% endblock %}

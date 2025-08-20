@@ -1,0 +1,299 @@
+{% extends "base.html" %}
+
+{% block title %}RFQ {{ rfq.request_number }} - Local CRM{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">RFQ {{ rfq.request_number }}</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <a href="{{ url_for('rfqs') }}" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i>
+                Back to RFQs
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Status Update Buttons -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Current Status: 
+                            <span class="badge bg-{{ 'success' if rfq.status == 'Won' else 'primary' if rfq.status == 'Qualified' else 'info' if rfq.status == 'Quoted' else 'danger' if rfq.status == 'Lost' else 'secondary' if rfq.status == 'Skipped' else 'warning' }}">
+                                {{ rfq.status }}
+                            </span>
+                        </h6>
+                    </div>
+                    <div class="btn-group" role="group">
+                        {% if rfq.status == 'New' %}
+                        <button class="btn btn-sm btn-success" onclick="updateRFQStatus({{ rfq.id }}, 'Reviewed')">
+                            Mark Reviewed
+                        </button>
+                        <button class="btn btn-sm btn-info" onclick="updateRFQStatus({{ rfq.id }}, 'Qualified')">
+                            Mark Qualified
+                        </button>
+                        {% endif %}
+                        {% if rfq.status in ['New', 'Reviewed', 'Qualified'] %}
+                        <button class="btn btn-sm btn-primary" onclick="updateRFQStatus({{ rfq.id }}, 'Quoted')">
+                            Mark Quoted
+                        </button>
+                        {% endif %}
+                        {% if rfq.status == 'Quoted' %}
+                        <button class="btn btn-sm btn-success" onclick="updateRFQStatus({{ rfq.id }}, 'Won')">
+                            Mark Won
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="updateRFQStatus({{ rfq.id }}, 'Lost')">
+                            Mark Lost
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Content -->
+<div class="row">
+    <!-- RFQ Details -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">RFQ Details</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-sm">
+                            <tr>
+                                <th width="40%">Request Number:</th>
+                                <td>{{ rfq.request_number }}</td>
+                            </tr>
+                            <tr>
+                                <th>NSN:</th>
+                                <td>{{ rfq.nsn or 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>FSC:</th>
+                                <td>{{ rfq.fsc or 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Purchase Number:</th>
+                                <td>{{ rfq.purchase_number or 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Open Date:</th>
+                                <td>{{ rfq.open_date | date }}</td>
+                            </tr>
+                            <tr>
+                                <th>Close Date:</th>
+                                <td>{{ rfq.close_date | date }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table table-sm">
+                            <tr>
+                                <th width="40%">Quantity:</th>
+                                <td>{{ rfq.quantity or 'N/A' }} {{ rfq.unit or '' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Delivery Days:</th>
+                                <td>
+                                    {% if rfq.delivery_days %}
+                                        <span class="badge bg-{{ 'success' if rfq.delivery_days|int >= 120 else 'warning' if rfq.delivery_days|int >= 60 else 'danger' }}">
+                                            {{ rfq.delivery_days }} days
+                                        </span>
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>FOB:</th>
+                                <td>{{ rfq.fob or 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>ISO Required:</th>
+                                <td>
+                                    <span class="badge bg-{{ 'danger' if rfq.iso == 'YES' else 'success' }}">
+                                        {{ rfq.iso or 'N/A' }}
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Sampling:</th>
+                                <td>
+                                    <span class="badge bg-{{ 'danger' if rfq.sampling == 'YES' else 'success' }}">
+                                        {{ rfq.sampling or 'N/A' }}
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Inspection Point:</th>
+                                <td>{{ rfq.inspection_point or 'N/A' }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Product Description -->
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6>Product Description:</h6>
+                        <p class="text-muted">{{ rfq.product_description or 'N/A' }}</p>
+                    </div>
+                </div>
+                
+                <!-- Manufacturer -->
+                <div class="row">
+                    <div class="col-12">
+                        <h6>Manufacturer Information:</h6>
+                        <pre class="text-muted">{{ rfq.manufacturer or 'N/A' }}</pre>
+                    </div>
+                </div>
+                
+                <!-- Packaging -->
+                {% if rfq.packaging %}
+                <div class="row">
+                    <div class="col-12">
+                        <h6>Packaging Requirements:</h6>
+                        <p class="text-muted">{{ rfq.packaging }}</p>
+                        {% if rfq.package_type %}
+                        <small><strong>Package Type:</strong> {{ rfq.package_type }}</small>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Payment History -->
+                {% if rfq.payment_history %}
+                <div class="row">
+                    <div class="col-12">
+                        <h6>Historical Pricing:</h6>
+                        <pre class="text-muted">{{ rfq.payment_history }}</pre>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Related Information -->
+    <div class="col-md-4">
+        <!-- Account Information -->
+        {% if account %}
+        <div class="card mb-3">
+            <div class="card-header">
+                <h6 class="card-title mb-0">Account</h6>
+            </div>
+            <div class="card-body">
+                <h6><a href="{{ url_for('account_detail', account_id=account.id) }}" class="text-decoration-none">{{ account.name }}</a></h6>
+                <p class="text-muted mb-2">{{ account.account_type or 'N/A' }}</p>
+                <small class="text-muted">{{ account.industry or 'N/A' }}</small>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Contact Information -->
+        {% if contact %}
+        <div class="card mb-3">
+            <div class="card-header">
+                <h6 class="card-title mb-0">Buyer Contact</h6>
+            </div>
+            <div class="card-body">
+                <h6>{{ contact.first_name }} {{ contact.last_name }}</h6>
+                <p class="text-muted mb-1">{{ contact.title or 'N/A' }}</p>
+                {% if contact.email %}
+                <p class="mb-1"><i class="fas fa-envelope me-1"></i> {{ contact.email }}</p>
+                {% endif %}
+                {% if contact.phone %}
+                <p class="mb-1"><i class="fas fa-phone me-1"></i> {{ contact.phone }}</p>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Buyer Information from RFQ -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h6 class="card-title mb-0">Buyer Information</h6>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <tr>
+                        <th>Office:</th>
+                        <td>{{ rfq.office or 'N/A' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Division:</th>
+                        <td>{{ rfq.division or 'N/A' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Buyer:</th>
+                        <td>{{ rfq.buyer_name or 'N/A' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Buyer Code:</th>
+                        <td>{{ rfq.buyer_code or 'N/A' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Email:</th>
+                        <td>{{ rfq.buyer_email or 'N/A' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Phone:</th>
+                        <td>{{ rfq.buyer_telephone or 'N/A' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Fax:</th>
+                        <td>{{ rfq.buyer_fax or 'N/A' }}</td>
+                    </tr>
+                </table>
+                
+                {% if rfq.buyer_address %}
+                <h6 class="mt-3">Address:</h6>
+                <p class="text-muted">{{ rfq.buyer_address }}</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Opportunity Link -->
+        {% if opportunity %}
+        <div class="card mb-3">
+            <div class="card-header">
+                <h6 class="card-title mb-0">Linked Opportunity</h6>
+            </div>
+            <div class="card-body">
+                <h6>{{ opportunity.name }}</h6>
+                <p class="text-muted">{{ opportunity.stage }}</p>
+                {% if opportunity.bid_price %}
+                <p class="text-success">${{ opportunity.bid_price | currency }}</p>
+                {% endif %}
+                <small class="text-muted">Close: {{ opportunity.close_date | date }}</small>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- File Information -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="card-title mb-0">File Information</h6>
+            </div>
+            <div class="card-body">
+                <p><strong>PDF Name:</strong> {{ rfq.pdf_name or 'N/A' }}</p>
+                {% if rfq.pdf_path %}
+                <p><strong>File Path:</strong><br>
+                <small class="text-muted">{{ rfq.pdf_path }}</small></p>
+                {% endif %}
+                <p><strong>Created:</strong> {{ rfq.created_date | datetime }}</p>
+                <p><strong>Modified:</strong> {{ rfq.modified_date | datetime }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,433 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - ModernCRM{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Modern Header -->
+    <div class="d-flex justify-content-between align-items-center mb-5">
+        <div>
+            <h1 class="display-6 fw-bold mb-2">
+                <i class="fas fa-tachometer-alt me-3" style="background: var(--gradient-primary); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;"></i>
+                Dashboard
+            </h1>
+            <p class="text-muted mb-0 fs-5">Overview of your business performance</p>
+        </div>
+        <div class="d-flex gap-3">
+            <button type="button" class="btn btn-primary btn-lg" onclick="loadPDFs()" id="loadPDFsBtn">
+                <i class="fas fa-file-pdf me-2"></i>
+                Load PDFs
+                <span class="badge bg-warning ms-2" id="pdfCount">0</span>
+            </button>
+            <button type="button" class="btn btn-outline-primary btn-lg">
+                <i class="fas fa-calendar-day me-2"></i>
+                Today: <span id="currentDate"></span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Key Metrics -->
+    <div class="row mb-5">
+        <div class="col-md-3">
+            <div class="card card-metric h-100">
+                <div class="card-body d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="text-dark mb-2 text-uppercase fw-bold" style="font-size: 0.75rem; letter-spacing: 1px; opacity: 0.8;">Pipeline Value</h6>
+                        <h2 class="mb-0 fw-bold text-dark">{{ data.metrics.total_pipeline_value | currency if data and data.metrics else "$0" }}</h2>
+                        <small class="text-dark" style="opacity: 0.7;">Active opportunities</small>
+                    </div>
+                    <div class="ms-3">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center" 
+                             style="width: 50px; height: 50px; background: rgba(255,255,255,0.2);">
+                            <i class="fas fa-chart-line fa-lg"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card card-metric success h-100">
+                <div class="card-body d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="text-dark mb-2 text-uppercase fw-bold" style="font-size: 0.75rem; letter-spacing: 1px; opacity: 0.8;">Total Won</h6>
+                        <h2 class="mb-0 fw-bold text-dark">{{ data.metrics.total_won_value | currency if data and data.metrics else "$0" }}</h2>
+                        <small class="text-dark" style="opacity: 0.7;">Successful bids</small>
+                    </div>
+                    <div class="ms-3">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center" 
+                             style="width: 50px; height: 50px; background: rgba(255,255,255,0.2);">
+                            <i class="fas fa-trophy fa-lg"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card card-metric warning h-100">
+                <div class="card-body d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="text-dark mb-2 text-uppercase fw-bold" style="font-size: 0.75rem; letter-spacing: 1px; opacity: 0.8;">Pending Tasks</h6>
+                        <h2 class="mb-0 fw-bold text-dark">{{ data.metrics.pending_tasks if data and data.metrics else 0 }}</h2>
+                        <small class="text-dark" style="opacity: 0.7;">Need attention</small>
+                    </div>
+                    <div class="ms-3">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center" 
+                             style="width: 50px; height: 50px; background: rgba(255,255,255,0.2);">
+                            <i class="fas fa-tasks fa-lg"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card card-metric danger h-100">
+                <div class="card-body d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="text-dark mb-2 text-uppercase fw-bold" style="font-size: 0.75rem; letter-spacing: 1px; opacity: 0.8;">Overdue Tasks</h6>
+                        <h2 class="mb-0 fw-bold text-dark">{{ data.metrics.overdue_tasks if data and data.metrics else 0 }}</h2>
+                        <small class="text-dark" style="opacity: 0.7;">Require action</small>
+                    </div>
+                    <div class="ms-3">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center" 
+                             style="width: 50px; height: 50px; background: rgba(255,255,255,0.2);">
+                            <i class="fas fa-exclamation-triangle fa-lg"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Opportunities Section -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-dollar-sign me-2"></i>Recent Opportunities
+                    </h5>
+                    <a href="{{ url_for('opportunities') }}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-arrow-right me-1"></i>View All
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if data.recent_opportunities %}
+                        <div class="row">
+                            {% for opp in data.recent_opportunities[:6] %}
+                            <div class="col-md-6 mb-3">
+                                <div class="card card-metric h-100" style="border: 1px solid rgba(155,123,216,0.2);">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <h6 class="card-title mb-1 text-dark fw-bold">{{ opp.name }}</h6>
+                                            <span class="badge bg-{{ 'success' if opp.stage == 'Closed Won' else 'warning' if opp.stage == 'Negotiation' else 'info' if opp.stage == 'Proposal' else 'primary' }}">
+                                                {{ opp.stage }}
+                                            </span>
+                                        </div>
+                                        <div class="mb-2">
+                                            <small class="text-muted">
+                                                <i class="fas fa-building me-1"></i>{{ opp.account_name or 'No Account' }}
+                                            </small>
+                                        </div>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <strong class="text-success">{{ opp.bid_price | currency if opp.bid_price else 'TBD' }}</strong>
+                                                <br>
+                                                <small class="text-muted">
+                                                    <i class="fas fa-calendar me-1"></i>{{ opp.close_date | date if opp.close_date else 'No close date' }}
+                                                </small>
+                                            </div>
+                                            <a href="{{ url_for('opportunity_detail', opportunity_id=opp.id) }}" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-dollar-sign fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No recent opportunities</h5>
+                            <p class="text-muted">Recent opportunities will appear here once they are created.</p>
+                            <a href="{{ url_for('opportunities') }}" class="btn btn-primary">
+                                <i class="fas fa-plus me-2"></i>Create Opportunity
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+<!-- Main Content Row -->
+<div class="row">
+    <!-- Today's Tasks -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Today's Tasks</h5>
+                <a href="{{ url_for('tasks') }}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body">
+                {% if data.today_tasks %}
+                    {% for task in data.today_tasks %}
+                    <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+                        <div>
+                            <h6 class="mb-1">{{ task.subject }}</h6>
+                            <small class="text-muted">
+                                <i class="fas fa-user me-1"></i>{{ task.assigned_to or 'Unassigned' }}
+                                <span class="badge bg-{{ 'danger' if task.priority == 'High' else 'warning' if task.priority == 'Normal' else 'secondary' }} ms-2">
+                                    {{ task.priority }}
+                                </span>
+                            </small>
+                        </div>
+                        <button class="btn btn-sm btn-success" onclick="completeTask({{ task.id }})">
+                            <i class="fas fa-check"></i>
+                        </button>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">No tasks scheduled for today.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Overdue Tasks -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0 text-danger">Overdue Tasks</h5>
+                <a href="{{ url_for('tasks') }}?status=overdue" class="btn btn-sm btn-outline-danger">View All</a>
+            </div>
+            <div class="card-body">
+                {% if data.overdue_tasks %}
+                    {% for task in data.overdue_tasks[:5] %}
+                    <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+                        <div>
+                            <h6 class="mb-1">{{ task.subject }}</h6>
+                            <small class="text-muted">
+                                Due: {{ task.due_date | date }}
+                                <span class="badge bg-danger ms-2">{{ task.priority }}</span>
+                            </small>
+                        </div>
+                        <button class="btn btn-sm btn-success" onclick="completeTask({{ task.id }})">
+                            <i class="fas fa-check"></i>
+                        </button>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">No overdue tasks.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <!-- New RFQs -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Recent RFQs</h5>
+                <a href="{{ url_for('rfqs') }}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body">
+                {% if data.new_rfqs %}
+                    {% for rfq in data.new_rfqs %}
+                    <div class="border-bottom py-2">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">
+                                    <a href="{{ url_for('rfq_detail', rfq_id=rfq.id) }}" class="text-decoration-none">
+                                        RFQ {{ rfq.request_number }}
+                                    </a>
+                                </h6>
+                                <small class="text-muted">
+                                    {{ rfq.product_description[:50] }}...
+                                    <br>
+                                    NSN: {{ rfq.nsn }} | Close: {{ rfq.close_date | date }}
+                                </small>
+                            </div>
+                            <span class="badge bg-{{ 'success' if rfq.status == 'Qualified' else 'primary' if rfq.status == 'New' else 'secondary' }}">
+                                {{ rfq.status }}
+                            </span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">No recent RFQs.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Closing Opportunities -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Closing Soon</h5>
+                <a href="{{ url_for('opportunities') }}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body">
+                {% if data.closing_opportunities %}
+                    {% for opp in data.closing_opportunities %}
+                    <div class="border-bottom py-2">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">{{ opp.name }}</h6>
+                                <small class="text-muted">
+                                    {{ opp.bid_price | currency }} | {{ opp.stage }} | Close: {{ opp.close_date | date }}
+                                </small>
+                            </div>
+                            <span class="badge bg-{{ 'warning' if opp.stage == 'Negotiation' else 'info' if opp.stage == 'Proposal' else 'primary' }}">
+                                {{ opp.stage }}
+                            </span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">No opportunities closing soon.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Recent Activity</h5>
+                <a href="{{ url_for('interactions') }}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body">
+                {% if data.recent_interactions %}
+                    {% for interaction in data.recent_interactions %}
+                    <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+                        <div>
+                            <h6 class="mb-1">{{ interaction.subject }}</h6>
+                            <small class="text-muted">
+                                <i class="fas fa-{{ 'phone' if interaction.type == 'Call' else 'envelope' if interaction.type == 'Email' else 'users' if interaction.type == 'Meeting' else 'comment' }} me-1"></i>
+                                {{ interaction.type }} - {{ interaction.interaction_date | datetime }}
+                                {% if interaction.account_name %}
+                                    | {{ interaction.account_name }}
+                                {% endif %}
+                            </small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">No recent activity.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Display current date
+    document.addEventListener('DOMContentLoaded', function() {
+        const dateElement = document.getElementById('currentDate');
+        if (dateElement) {
+            const today = new Date();
+            const options = { year: 'numeric', month: 'short', day: '2-digit' };
+            dateElement.textContent = today.toLocaleDateString('en-US', options);
+        }
+        
+        // Load PDF count on page load
+        loadPDFCount();
+    });
+    
+    // Load PDF count from server
+    function loadPDFCount() {
+        fetch('/api/pdf-count')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('pdfCount').textContent = data.count;
+                const btn = document.getElementById('loadPDFsBtn');
+                if (data.count > 0) {
+                    btn.classList.remove('btn-secondary');
+                    btn.classList.add('btn-primary');
+                } else {
+                    btn.classList.remove('btn-primary');
+                    btn.classList.add('btn-secondary');
+                }
+            })
+            .catch(error => console.error('Error loading PDF count:', error));
+    }
+    
+    // Load PDFs function
+    function loadPDFs() {
+        const btn = document.getElementById('loadPDFsBtn');
+        const originalText = btn.innerHTML;
+        
+        // Show loading state
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
+        btn.disabled = true;
+        
+        fetch('/api/load-pdfs', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show success message
+                showAlert('success', `Successfully processed ${data.processed} PDFs. ${data.created} new records created, ${data.updated} records updated.`);
+                
+                // Refresh PDF count
+                loadPDFCount();
+                
+                // Refresh page after 2 seconds to show updated data
+                setTimeout(() => {
+                    location.reload();
+                }, 2000);
+            } else {
+                showAlert('error', 'Error processing PDFs: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('error', 'Network error while processing PDFs');
+        })
+        .finally(() => {
+            // Restore button
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        });
+    }
+    
+    // Show alert function
+    function showAlert(type, message) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show position-fixed`;
+        alertDiv.style.top = '20px';
+        alertDiv.style.right = '20px';
+        alertDiv.style.zIndex = '9999';
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(alertDiv);
+        
+        // Auto-dismiss after 5 seconds
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.remove();
+            }
+        }, 5000);
+    }
+    
+    // Auto-refresh dashboard every 5 minutes
+    setTimeout(function() {
+        location.reload();
+    }, 300000);
+</script>
+{% endblock %}
