@@ -162,34 +162,96 @@
 
 <!-- Main Content Row -->
 <div class="row">
-    <!-- Today's Tasks -->
+    <!-- Task Schedule -->
     <div class="col-md-6">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="card-title mb-0">Today's Tasks</h5>
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="taskRangeDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        <span id="currentTaskRange">Today's Tasks</span>
+                    </button>
+                    <ul class="dropdown-menu" aria-labelledby="taskRangeDropdown">
+                        <li><a class="dropdown-item" href="#" onclick="showTasks('today')">Today's Tasks</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="showTasks('this_week')">This Week</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="showTasks('next_week')">Next Week</a></li>
+                    </ul>
+                </div>
                 <a href="{{ url_for('tasks') }}" class="btn btn-sm btn-outline-primary">View All</a>
             </div>
             <div class="card-body">
-                {% if data.today_tasks %}
-                    {% for task in data.today_tasks %}
-                    <div class="d-flex justify-content-between align-items-center border-bottom py-2">
-                        <div>
-                            <h6 class="mb-1">{{ task.subject }}</h6>
-                            <small class="text-muted">
-                                <i class="fas fa-user me-1"></i>{{ task.assigned_to or 'Unassigned' }}
-                                <span class="badge bg-{{ 'danger' if task.priority == 'High' else 'warning' if task.priority == 'Normal' else 'secondary' }} ms-2">
-                                    {{ task.priority }}
-                                </span>
-                            </small>
+                <!-- Today's Tasks -->
+                <div id="today-tasks" class="task-range active">
+                    {% if data.today_tasks %}
+                        {% for task in data.today_tasks %}
+                        <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+                            <div>
+                                <h6 class="mb-1">{{ task.subject }}</h6>
+                                <small class="text-muted">
+                                    <i class="fas fa-user me-1"></i>{{ task.assigned_to or 'Unassigned' }}
+                                    <span class="badge bg-{{ 'danger' if task.priority == 'High' else 'warning' if task.priority == 'Normal' else 'secondary' }} ms-2">
+                                        {{ task.priority }}
+                                    </span>
+                                </small>
+                            </div>
+                            <button class="btn btn-sm btn-success" onclick="completeTask({{ task.id }})">
+                                <i class="fas fa-check"></i>
+                            </button>
                         </div>
-                        <button class="btn btn-sm btn-success" onclick="completeTask({{ task.id }})">
-                            <i class="fas fa-check"></i>
-                        </button>
-                    </div>
-                    {% endfor %}
-                {% else %}
-                    <p class="text-muted">No tasks scheduled for today.</p>
-                {% endif %}
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted">No tasks scheduled for today.</p>
+                    {% endif %}
+                </div>
+                
+                <!-- This Week's Tasks -->
+                <div id="this_week-tasks" class="task-range" style="display: none;">
+                    {% if data.this_week_tasks %}
+                        {% for task in data.this_week_tasks %}
+                        <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+                            <div>
+                                <h6 class="mb-1">{{ task.subject }}</h6>
+                                <small class="text-muted">
+                                    <i class="fas fa-calendar me-1"></i>{{ task.due_date if task.due_date else 'No due date' }}
+                                    <i class="fas fa-user ms-2 me-1"></i>{{ task.assigned_to or 'Unassigned' }}
+                                    <span class="badge bg-{{ 'danger' if task.priority == 'High' else 'warning' if task.priority == 'Normal' else 'secondary' }} ms-2">
+                                        {{ task.priority }}
+                                    </span>
+                                </small>
+                            </div>
+                            <button class="btn btn-sm btn-success" onclick="completeTask({{ task.id }})">
+                                <i class="fas fa-check"></i>
+                            </button>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted">No tasks scheduled for this week.</p>
+                    {% endif %}
+                </div>
+                
+                <!-- Next Week's Tasks -->
+                <div id="next_week-tasks" class="task-range" style="display: none;">
+                    {% if data.next_week_tasks %}
+                        {% for task in data.next_week_tasks %}
+                        <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+                            <div>
+                                <h6 class="mb-1">{{ task.subject }}</h6>
+                                <small class="text-muted">
+                                    <i class="fas fa-calendar me-1"></i>{{ task.due_date if task.due_date else 'No due date' }}
+                                    <i class="fas fa-user ms-2 me-1"></i>{{ task.assigned_to or 'Unassigned' }}
+                                    <span class="badge bg-{{ 'danger' if task.priority == 'High' else 'warning' if task.priority == 'Normal' else 'secondary' }} ms-2">
+                                        {{ task.priority }}
+                                    </span>
+                                </small>
+                            </div>
+                            <button class="btn btn-sm btn-success" onclick="completeTask({{ task.id }})">
+                                <i class="fas fa-check"></i>
+                            </button>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted">No tasks scheduled for next week.</p>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>
@@ -423,6 +485,25 @@
                 alertDiv.remove();
             }
         }, 5000);
+    }
+    
+    // Task range switching function
+    function showTasks(range) {
+        // Hide all task ranges
+        document.querySelectorAll('.task-range').forEach(el => {
+            el.style.display = 'none';
+        });
+        
+        // Show selected range
+        document.getElementById(range + '-tasks').style.display = 'block';
+        
+        // Update dropdown text
+        const rangeNames = {
+            'today': "Today's Tasks",
+            'this_week': 'This Week',
+            'next_week': 'Next Week'
+        };
+        document.getElementById('currentTaskRange').textContent = rangeNames[range];
     }
     
     // Auto-refresh dashboard every 5 minutes

@@ -70,6 +70,9 @@
             </nav>
         </div>
         <div class="d-flex gap-2">
+            <!-- Test Button -->
+            <button type="button" class="btn btn-info btn-sm" onclick="alert('Basic JS works!')">Test JS</button>
+            
             <button type="button" class="btn btn-primary" onclick="editOpportunity({{ opportunity.id }})">
                 <i class="fas fa-edit me-2"></i>Edit
             </button>
@@ -601,36 +604,36 @@
 </style>
 
 <script>
+// Global functions - available immediately when page loads
+console.log('JavaScript functions loaded');
+
 function changeStage(newStage) {
     console.log('changeStage called with:', newStage);
     const opportunityId = {{ opportunity.id }};
-    console.log('opportunityId:', opportunityId);
     
-    if (confirm(`Change opportunity stage to "${newStage}"?`)) {
-        fetch(`/api/opportunities/${opportunityId}`, {
-            method: 'PATCH',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ stage: newStage })
-        })
-        .then(response => response.json())
-        .then(data => {
-            console.log('API response:', data);
-            if (data.success) {
-                location.reload();
-            } else {
-                alert('Error updating stage: ' + data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Error updating stage');
-        });
-    }
+    fetch(`/api/opportunities/${opportunityId}`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ stage: newStage })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error updating stage: ' + (data.message || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error updating stage');
+    });
 }
 
 function editOpportunity(opportunityId) {
+    console.log('editOpportunity called with ID:', opportunityId);
     // Populate the form with current values
     document.getElementById('editName').value = '{{ opportunity.name or "" }}';
     document.getElementById('editStage').value = '{{ opportunity.stage or "Prospecting" }}';
@@ -702,195 +705,86 @@ function saveOpportunity() {
     });
 }
 
-    fetch(`/api/opportunities/${opportunityId}`, {
-        method: 'PATCH',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData)
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            location.reload();
-        } else {
-            alert('Error updating opportunity: ' + data.message);
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Error updating opportunity');
-    });
-}
-
 function advanceStage(opportunityId) {
-    if (confirm('Advance this opportunity to the next stage?')) {
-        fetch(`/api/opportunities/${opportunityId}/advance`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                location.reload();
-            } else {
-                alert('Error advancing stage: ' + data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Error advancing stage');
-        });
+    console.log('advanceStage called');
+    // Get current stage and advance to next
+    const currentStage = '{{ opportunity.stage }}';
+    const stages = ['Prospecting', 'RFQ Requested', 'RFQ Received', 'Submit Bid', 'Project Started'];
+    const currentIndex = stages.indexOf(currentStage);
+    if (currentIndex < stages.length - 1) {
+        changeStage(stages[currentIndex + 1]);
+    } else {
+        alert('Already at the final stage');
     }
-}
-
-function markWon(opportunityId) {
-    if (confirm('Mark this opportunity as won?')) {
-        fetch(`/api/opportunities/${opportunityId}/won`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                location.reload();
-            } else {
-                alert('Error marking as won: ' + data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Error marking as won');
-        });
-    }
-}
-
-function markLost(opportunityId) {
-    if (confirm('Mark this opportunity as lost?')) {
-        fetch(`/api/opportunities/${opportunityId}/lost`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                location.reload();
-            } else {
-                alert('Error marking as lost: ' + data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Error marking as lost');
-        });
-    }
-}
-
-function deleteOpportunity(opportunityId) {
-    if (confirm('Are you sure you want to delete this opportunity? This action cannot be undone.')) {
-        fetch(`/api/opportunities/${opportunityId}`, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                window.location.href = '/opportunities';
-            } else {
-                alert('Error deleting opportunity: ' + data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Error deleting opportunity');
-        });
-    }
-}
-
-function createInteraction(opportunityId) {
-    // Simple prompt for now - could be enhanced with a modal
-    const subject = prompt('Interaction subject:');
-    if (subject) {
-        const description = prompt('Interaction description (optional):') || '';
-        const type = prompt('Interaction type (Call/Email/Note):') || 'Note';
-        
-        fetch('/api/interactions', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                subject: subject,
-                description: description,
-                type: type,
-                opportunity_id: opportunityId,
-                date_time: new Date().toISOString()
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                location.reload();
-            } else {
-                alert('Error creating interaction: ' + data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Error creating interaction');
-        });
-    }
-}
-
-function editInteraction(interactionId) {
-    alert('Edit interaction functionality coming soon!');
 }
 
 function requestRFQ(opportunityId) {
-    if (confirm('Send RFQ requests to vendors for this opportunity?')) {
-        // This would integrate with your RFQ system
-        alert('RFQ request functionality will be implemented to send emails to qualified vendors.');
-    }
+    console.log('requestRFQ called');
+    changeStage('RFQ Requested');
+}
+
+function markWon(opportunityId) {
+    console.log('markWon called');
+    fetch(`/api/opportunities/${opportunityId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ state: 'Won' })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) location.reload();
+        else alert('Error: ' + data.message);
+    });
+}
+
+function markLost(opportunityId) {
+    console.log('markLost called');
+    fetch(`/api/opportunities/${opportunityId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ state: 'Lost' })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) location.reload();
+        else alert('Error: ' + data.message);
+    });
 }
 
 function markNoBid(opportunityId) {
-    if (confirm('Mark this opportunity as No Bid?')) {
-        const formData = { state: 'No Bid' };
-        
+    console.log('markNoBid called');
+    fetch(`/api/opportunities/${opportunityId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ state: 'No Bid' })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) location.reload();
+        else alert('Error: ' + data.message);
+    });
+}
+
+function createProject(opportunityId) {
+    console.log('createProject called');
+    alert('Create Project functionality to be implemented');
+}
+
+function deleteOpportunity(opportunityId) {
+    console.log('deleteOpportunity called - requires confirmation');
+    if (confirm('Are you sure you want to delete this opportunity? This action cannot be undone.')) {
         fetch(`/api/opportunities/${opportunityId}`, {
-            method: 'PATCH',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(formData)
+            method: 'DELETE'
         })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                location.reload();
+                alert('Opportunity deleted successfully');
+                window.location.href = '/opportunities';
             } else {
-                alert('Error updating state: ' + data.message);
+                alert('Error: ' + data.message);
             }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Error updating state');
         });
-    }
-}
-
-function createProject(opportunityId) {
-    if (confirm('Create a project from this won opportunity?')) {
-        // This would create a project record
-        alert('Project creation functionality will be implemented to convert won opportunities to active projects.');
     }
 }
 </script>

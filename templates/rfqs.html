@@ -14,6 +14,10 @@
             <p class="text-muted mb-0 fs-5">Request for Quote management and tracking</p>
         </div>
         <div>
+            <button type="button" class="btn btn-success btn-lg me-2" data-bs-toggle="modal" data-bs-target="#addRFQModal">
+                <i class="fas fa-plus me-2"></i>
+                Add RFQ
+            </button>
             <button type="button" class="btn btn-primary btn-lg" onclick="location.reload()">
                 <i class="fas fa-sync-alt me-2"></i>
                 Refresh
@@ -146,6 +150,10 @@
                     <input type="text" class="form-control" id="product" name="product" value="{{ product }}" placeholder="Filter by product...">
                 </div>
                 <div class="col-md-3">
+                    <label for="manufacturer" class="form-label">Manufacturer</label>
+                    <input type="text" class="form-control" id="manufacturer" name="manufacturer" value="{{ manufacturer }}" placeholder="Manufacturer...">
+                </div>
+                <div class="col-md-3">
                     <label for="status" class="form-label">Status</label>
                     <select class="form-select" id="status" name="status">
                         <option value="">All Status</option>
@@ -153,15 +161,15 @@
                         <option value="expired" {{ 'selected' if status == 'expired' }}>Expired</option>
                     </select>
                 </div>
-                <div class="col-md-3 d-flex align-items-end">
+                <div class="col-12 d-flex align-items-end">
                     <button type="submit" class="btn btn-primary me-2">
                         <i class="fas fa-filter me-1"></i>
                         Filter
                     </button>
-                    <a href="{{ url_for('rfqs') }}" class="btn btn-secondary">
+                    <button type="button" class="btn btn-secondary" onclick="clearFilters()">
                         <i class="fas fa-times me-1"></i>
                         Clear
-                    </a>
+                    </button>
                 </div>
             </form>
         </div>
@@ -181,62 +189,71 @@
                 <table class="table table-hover">
                     <thead class="table-dark">
                         <tr>
+                            <th>Request Number</th>
                             <th>Product</th>
-                            <th>Vendor</th>
+                            <th>Account</th>
                             <th>Quantity</th>
-                            <th>Quote</th>
-                            <th>Unit Price</th>
-                            <th>Lead Time</th>
-                            <th>Effective Date</th>
+                            <th>Delivery Days</th>
+                            <th>Open Date</th>
+                            <th>Close Date</th>
                             <th>Status</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for rfq in rfqs %}
-                        <tr class="{{ 'table-warning' if rfq.is_expired else '' }}">
+                        <tr class="{{ 'table-warning' if rfq.close_date and rfq.close_date < current_date else '' }}">
+                            <td>
+                                <strong>{{ rfq.request_number }}</strong>
+                                {% if rfq.purchase_number %}
+                                <br><small class="text-muted">PO: {{ rfq.purchase_number }}</small>
+                                {% endif %}
+                            </td>
                             <td>
                                 {% if rfq.product_name %}
                                     <strong>{{ rfq.product_name }}</strong>
-                                    {% if rfq.nsn %}
-                                    <br><small class="text-muted">NSN: {{ rfq.nsn }}</small>
+                                    {% if rfq.product_nsn %}
+                                    <br><small class="text-muted">NSN: {{ rfq.product_nsn }}</small>
+                                    {% endif %}
+                                {% elif rfq.nsn %}
+                                    <strong>{{ rfq.nsn }}</strong>
+                                    {% if rfq.product_description %}
+                                    <br><small class="text-muted">{{ rfq.product_description[:50] }}...</small>
                                     {% endif %}
                                 {% else %}
-                                    <span class="text-muted">No Product</span>
+                                    <span class="text-muted">No Product Info</span>
                                 {% endif %}
                         </td>
                         <td>
-                            {% if rfq.vendor_name %}
-                                <a href="{{ url_for('account_detail', account_id=rfq.vendor_id) }}" class="text-decoration-none">
-                                    {{ rfq.vendor_name }}
+                            {% if rfq.account_name %}
+                                <a href="{{ url_for('account_detail', account_id=rfq.account_id) }}" class="text-decoration-none">
+                                    {{ rfq.account_name }}
                                 </a>
-                                {% if rfq.cage_code %}
-                                <br><small class="text-muted">CAGE: {{ rfq.cage_code }}</small>
-                                {% endif %}
                             {% else %}
-                                <span class="text-muted">No Vendor</span>
+                                <span class="text-muted">No Account</span>
                             {% endif %}
-                        </td>
-                        <td>{{ rfq.quantity or 'N/A' }}</td>
-                        <td>
-                            {% if rfq.quote %}
-                                ${{ "{:,.2f}".format(rfq.quote) }}
-                            {% else %}
-                                <span class="text-muted">N/A</span>
+                            {% if rfq.contact_name %}
+                            <br><small class="text-muted">{{ rfq.contact_name }}</small>
                             {% endif %}
                         </td>
                         <td>
-                            {% if rfq.quote and rfq.quantity and rfq.quantity > 0 %}
-                                ${{ "{:,.2f}".format(rfq.quote / rfq.quantity) }}
+                            {{ rfq.quantity or 'N/A' }}
+                            {% if rfq.unit %}{{ rfq.unit }}{% endif %}
+                        </td>
+                        <td>
+                            {% if rfq.delivery_days %}
+                                <span class="badge bg-{{ 'success' if rfq.delivery_days >= 120 else 'warning' if rfq.delivery_days >= 60 else 'danger' }}">
+                                    {{ rfq.delivery_days }} days
+                                </span>
                             {% else %}
                                 <span class="text-muted">N/A</span>
                             {% endif %}
                         </td>
-                        <td>{{ rfq.lead_time or 'TBD' }}</td>
+                        <td>{{ rfq.open_date or 'N/A' }}</td>
                         <td>
-                            {% if rfq.effective_date %}
-                                {{ rfq.effective_date.strftime('%m/%d/%Y') }}
-                                {% if rfq.is_expired %}
+                            {% if rfq.close_date %}
+                                {{ rfq.close_date }}
+                                {% if rfq.close_date < current_date %}
                                     <br><small class="text-danger">Expired</small>
                                 {% endif %}
                             {% else %}
@@ -244,25 +261,26 @@
                             {% endif %}
                         </td>
                         <td>
-                            {% if rfq.is_expired %}
-                                <span class="badge bg-danger">Expired</span>
-                            {% else %}
-                                <span class="badge bg-success">Active</span>
-                            {% endif %}
+                            <span class="badge bg-{{ 'success' if rfq.status == 'Won' else 'primary' if rfq.status == 'Qualified' else 'info' if rfq.status == 'Quoted' else 'danger' if rfq.status == 'Lost' else 'warning' if rfq.status == 'Reviewed' else 'secondary' }}">
+                                {{ rfq.status }}
+                            </span>
                         </td>
                         <td>
                             <div class="btn-group btn-group-sm" role="group">
-                                <button class="btn btn-outline-primary" title="View Details">
+                                <button class="btn btn-outline-primary" title="View Details" onclick="viewRFQ({{ rfq.id }})">
                                     <i class="fas fa-eye"></i>
                                 </button>
-                                <button class="btn btn-outline-secondary" title="Edit RFQ">
+                                <button class="btn btn-outline-secondary" title="Edit RFQ" onclick="editRFQ({{ rfq.id }})">
                                     <i class="fas fa-edit"></i>
                                 </button>
                                 {% if rfq.document %}
-                                <button class="btn btn-outline-info" title="View Document">
+                                <button class="btn btn-outline-info" title="View Document" onclick="viewDocument({{ rfq.id }}, '{{ rfq.document }}')">
                                     <i class="fas fa-file-alt"></i>
                                 </button>
                                 {% endif %}
+                                <button class="btn btn-outline-danger" title="Delete RFQ" onclick="deleteRFQ({{ rfq.id }}, '{{ rfq.product }}')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
                             </div>
                         </td>
                     </tr>
@@ -282,4 +300,305 @@
         {% include 'pagination.html' %}
     </div>
 </div>
+
+<!-- Add RFQ Modal -->
+<div class="modal fade" id="addRFQModal" tabindex="-1" aria-labelledby="addRFQModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addRFQModalLabel">
+                    <i class="fas fa-plus me-2"></i>Add New RFQ
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="addRFQForm">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="requestNumber" class="form-label">Request Number</label>
+                                <input type="text" class="form-control" id="requestNumber" name="request_number" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="status" class="form-label">Status</label>
+                                <select class="form-select" id="status" name="status" required>
+                                    <option value="">Select Status</option>
+                                    <option value="New">New</option>
+                                    <option value="Reviewed">Reviewed</option>
+                                    <option value="Qualified">Qualified</option>
+                                    <option value="Quoted">Quoted</option>
+                                    <option value="Won">Won</option>
+                                    <option value="Lost">Lost</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="productId" class="form-label">Product</label>
+                                <select class="form-select" id="productId" name="product_id" required>
+                                    <option value="">Select Product</option>
+                                    <!-- Products will be loaded dynamically -->
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="quantity" class="form-label">Quantity</label>
+                                <input type="number" class="form-control" id="quantity" name="quantity" min="1" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="accountId" class="form-label">Account</label>
+                                <select class="form-select" id="accountId" name="account_id" required>
+                                    <option value="">Select Account</option>
+                                    <!-- Accounts will be loaded dynamically -->
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="contactId" class="form-label">Contact</label>
+                                <select class="form-select" id="contactId" name="contact_id">
+                                    <option value="">Select Contact</option>
+                                    <!-- Contacts will be loaded dynamically based on account -->
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="deliveryDays" class="form-label">Delivery Days</label>
+                                <input type="number" class="form-control" id="deliveryDays" name="delivery_days" min="0">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="opportunityId" class="form-label">Opportunity (Optional)</label>
+                                <select class="form-select" id="opportunityId" name="opportunity_id">
+                                    <option value="">Select Opportunity</option>
+                                    <!-- Opportunities will be loaded dynamically -->
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-save me-2"></i>Create RFQ
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Load data for dropdowns when modal opens
+document.getElementById('addRFQModal').addEventListener('show.bs.modal', function () {
+    loadProducts();
+    loadAccounts();
+    loadOpportunities();
+});
+
+// Handle account change to load related contacts
+document.getElementById('accountId').addEventListener('change', function() {
+    const accountId = this.value;
+    loadContacts(accountId);
+});
+
+// Handle form submission
+document.getElementById('addRFQForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const rfqData = Object.fromEntries(formData.entries());
+    
+    // Convert empty strings to null for optional fields
+    if (!rfqData.contact_id) rfqData.contact_id = null;
+    if (!rfqData.opportunity_id) rfqData.opportunity_id = null;
+    if (!rfqData.delivery_days) rfqData.delivery_days = null;
+    if (!rfqData.notes) rfqData.notes = null;
+    
+    fetch('/api/rfqs', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(rfqData)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        alert('RFQ created successfully!');
+        bootstrap.Modal.getInstance(document.getElementById('addRFQModal')).hide();
+        location.reload(); // Refresh the page to show new RFQ
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error creating RFQ. Please try again.');
+    });
+});
+
+function loadProducts() {
+    fetch('/api/products')
+    .then(response => response.json())
+    .then(products => {
+        const select = document.getElementById('productId');
+        select.innerHTML = '<option value="">Select Product</option>';
+        products.forEach(product => {
+            const option = document.createElement('option');
+            option.value = product.nsn || product.id;
+            option.textContent = `${product.nsn || product.id} - ${product.name}`;
+            select.appendChild(option);
+        });
+    })
+    .catch(error => console.error('Error loading products:', error));
+}
+
+function loadAccounts() {
+    fetch('/api/accounts')
+    .then(response => response.json())
+    .then(accounts => {
+        const select = document.getElementById('accountId');
+        select.innerHTML = '<option value="">Select Account</option>';
+        accounts.forEach(account => {
+            const option = document.createElement('option');
+            option.value = account.id;
+            option.textContent = account.name;
+            select.appendChild(option);
+        });
+    })
+    .catch(error => console.error('Error loading accounts:', error));
+}
+
+function loadContacts(accountId) {
+    const select = document.getElementById('contactId');
+    select.innerHTML = '<option value="">Select Contact</option>';
+    
+    if (!accountId) return;
+    
+    fetch(`/api/contacts?account_id=${accountId}`)
+    .then(response => response.json())
+    .then(contacts => {
+        contacts.forEach(contact => {
+            const option = document.createElement('option');
+            option.value = contact.id;
+            option.textContent = contact.name || `${contact.first_name} ${contact.last_name}`;
+            select.appendChild(option);
+        });
+    })
+    .catch(error => console.error('Error loading contacts:', error));
+}
+
+function loadOpportunities() {
+    fetch('/api/opportunities')
+    .then(response => response.json())
+    .then(opportunities => {
+        const select = document.getElementById('opportunityId');
+        select.innerHTML = '<option value="">Select Opportunity</option>';
+        opportunities.forEach(opportunity => {
+            const option = document.createElement('option');
+            option.value = opportunity.id;
+            option.textContent = opportunity.name;
+            select.appendChild(option);
+        });
+    })
+    .catch(error => console.error('Error loading opportunities:', error));
+}
+
+// RFQ management functions
+function viewRFQ(rfqId) {
+    console.log('Viewing RFQ:', rfqId);
+    window.location.href = `/rfq/${rfqId}`;
+}
+
+function editRFQ(rfqId) {
+    console.log('Editing RFQ:', rfqId);
+    // For now, redirect to view page - could add edit modal later
+    window.location.href = `/rfq/${rfqId}`;
+}
+
+function viewDocument(rfqId, documentPath) {
+    console.log('Viewing document for RFQ:', rfqId);
+    // Open document in new tab/window
+    window.open(documentPath, '_blank');
+}
+
+// Filter functionality
+function applyFilters() {
+    const vendor = document.getElementById('vendor').value;
+    const product = document.getElementById('product').value;
+    const manufacturer = document.getElementById('manufacturer').value;
+    const status = document.getElementById('status').value;
+    
+    // Build query string
+    const params = new URLSearchParams();
+    if (vendor) params.append('vendor', vendor);
+    if (product) params.append('product', product);
+    if (manufacturer) params.append('manufacturer', manufacturer);
+    if (status) params.append('status', status);
+    
+    // Redirect with filters
+    const queryString = params.toString();
+    window.location.href = `/rfqs${queryString ? '?' + queryString : ''}`;
+}
+
+function clearFilters() {
+    window.location.href = '/rfqs';
+}
+
+function deleteRFQ(rfqId, productName) {
+    if (confirm(`Are you sure you want to delete the RFQ for "${productName}"? This action cannot be undone.`)) {
+        fetch(`/api/rfqs/${rfqId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            alert('RFQ deleted successfully!');
+            location.reload(); // Refresh the page to show updates
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error deleting RFQ. Please try again.');
+        });
+    }
+}
+
+// Add event listeners when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Make filter form submit use JavaScript
+    const filterForm = document.querySelector('form');
+    if (filterForm) {
+        filterForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            applyFilters();
+        });
+    }
+});
+</script>
 {% endblock %}

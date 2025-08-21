@@ -4,6 +4,8 @@
   "sampling_required": "NO",
   "inspection_point": "DESTINATION",
   "manufacturer_filter": "Parker",
+  "fsc_filter": "",
+  "packaging_filter": "",
   "auto_create_opportunities": true,
   "link_related_records": true,
   "move_processed_files": true,

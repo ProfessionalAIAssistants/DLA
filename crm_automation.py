@@ -9,62 +9,61 @@ class CRMAutomation:
     
     def __init__(self):
         self.automation_rules = {
-            'rfq_qualification': self.qualify_rfq,
+            'rfq_qualification': self.qualify_opportunity,
             'opportunity_creation': self.auto_create_opportunity,
             'task_assignment': self.auto_assign_tasks,
             'account_matching': self.match_or_create_account,
             'contact_matching': self.match_or_create_contact
         }
     
-    def process_dibbs_rfq(self, dibbs_data):
-        """Main automation workflow for processing DIBBs RFQ data"""
+    def process_dibbs_solicitation(self, dibbs_data):
+        """Main automation workflow for processing DIBBs DLA solicitation data"""
         
-        # 1. Create RFQ record
-        rfq_id = crm_data.create_rfq_from_dibbs(dibbs_data)
-        
-        # 2. Match or create account (government agency)
+        # 1. Match or create account (government agency)
         account_id = self.match_or_create_account(dibbs_data)
         
-        # 3. Match or create contact (buyer)
+        # 2. Match or create contact (buyer)
         contact_id = self.match_or_create_contact(dibbs_data, account_id)
         
-        # 4. Update RFQ with account and contact links
-        crm_data.execute_update(
-            "UPDATE rfqs SET account_id = ?, contact_id = ? WHERE id = ?",
-            [account_id, contact_id, rfq_id]
-        )
+        # 3. Check qualification criteria
+        is_qualified = self.qualify_opportunity(dibbs_data)
         
-        # 5. Check qualification criteria
-        is_qualified = self.qualify_rfq(dibbs_data)
+        # 4. Auto-create opportunity if qualified and setting is enabled
+        from pdf_processor import pdf_processor
+        settings = pdf_processor.get_filter_settings()
         
-        # 6. Auto-create opportunity if qualified
         opportunity_id = None
-        if is_qualified and not dibbs_data.get('skipped'):
-            opportunity_id = self.auto_create_opportunity(rfq_id, account_id, contact_id, dibbs_data)
-            crm_data.update_rfq_status(rfq_id, 'Qualified', opportunity_id)
+        if is_qualified and not dibbs_data.get('skipped') and settings.get('auto_create_opportunities', True):
+            opportunity_id = self.auto_create_opportunity_from_solicitation(account_id, contact_id, dibbs_data)
         
-        # 7. Auto-assign tasks
-        self.auto_assign_tasks(rfq_id, opportunity_id, dibbs_data)
+        # 5. Auto-assign tasks
+        self.auto_assign_tasks(None, opportunity_id, dibbs_data)
         
         return {
-            'rfq_id': rfq_id,
             'account_id': account_id,
             'contact_id': contact_id,
             'opportunity_id': opportunity_id,
             'qualified': is_qualified
         }
     
-    def qualify_rfq(self, dibbs_data):
-        """Determine if RFQ meets qualification criteria"""
+    def qualify_opportunity(self, dibbs_data):
+        """Determine if DLA solicitation meets qualification criteria"""
         
-        # Configuration-based qualification rules
+        # Get settings from pdf_processor
+        from pdf_processor import pdf_processor
+        settings = pdf_processor.get_filter_settings()
+        
+        # Configuration-based qualification rules from settings
         qualification_rules = {
-            'min_delivery_days': 120,
-            'required_iso': 'NO',
-            'required_sampling': 'NO',
-            'required_inspection_point': 'DESTINATION',
-            'preferred_manufacturers': ['Parker', 'Monkey Monkey'],
+            'min_delivery_days': settings.get('min_delivery_days', 120),
+            'required_iso': settings.get('iso_required', 'NO'),
+            'required_sampling': settings.get('sampling_required', 'NO'),
+            'required_inspection_point': settings.get('inspection_point', 'DESTINATION'),
+            'preferred_manufacturers': [m.strip() for m in settings.get('manufacturer_filter', '').split('\n') if m.strip()],
             'excluded_fsc': [],  # Add FSCs to exclude if needed
+            'preferred_fsc': [f.strip() for f in settings.get('fsc_filter', '').split('\n') if f.strip()],
+            'excluded_packaging_types': [],  # Add packaging types to exclude
+            'preferred_packaging_types': [p.strip() for p in settings.get('packaging_filter', '').split('\n') if p.strip()],
             'min_quantity': 1
         }
         
@@ -95,6 +94,26 @@ class CRMAutomation:
         if quantity and int(quantity) < qualification_rules['min_quantity']:
             return False
         
+        # Check FSC criteria
+        fsc = dibbs_data.get('fsc', '')
+        if fsc:
+            # Check if FSC is in excluded list
+            if qualification_rules['excluded_fsc'] and fsc in qualification_rules['excluded_fsc']:
+                return False
+            # Check if FSC is in preferred list (if list is not empty)
+            if qualification_rules['preferred_fsc'] and fsc not in qualification_rules['preferred_fsc']:
+                return False
+        
+        # Check packaging type criteria
+        packaging_type = dibbs_data.get('package_type', '')
+        if packaging_type:
+            # Check if packaging type is in excluded list
+            if qualification_rules['excluded_packaging_types'] and packaging_type in qualification_rules['excluded_packaging_types']:
+                return False
+            # Check if packaging type is in preferred list (if list is not empty)
+            if qualification_rules['preferred_packaging_types'] and packaging_type not in qualification_rules['preferred_packaging_types']:
+                return False
+
         return True
     
     def match_or_create_account(self, dibbs_data):
@@ -161,11 +180,78 @@ class CRMAutomation:
         
         return crm_data.create_contact(**contact_data)
     
+    def auto_create_opportunity_from_solicitation(self, account_id, contact_id, dibbs_data):
+        """Auto-create opportunity from DLA solicitation"""
+        
+        # Create opportunity name from solicitation data
+        request_number = dibbs_data.get('request_number', 'Unknown')
+        opportunity_name = f"DLA Solicitation {request_number}"
+        
+        # Check for duplicates
+        from pdf_processor import pdf_processor
+        settings = pdf_processor.get_filter_settings()
+        
+        if settings.get('skip_duplicates', True):
+            existing_opps = crm_data.execute_query(
+                "SELECT id FROM opportunities WHERE name LIKE ? OR description LIKE ?",
+                [f"%{request_number}%", f"%{request_number}%"]
+            )
+            if existing_opps:
+                print(f"Skipping duplicate opportunity for solicitation {request_number}")
+                return existing_opps[0]['id']
+        
+        # Build description
+        description = f"DLA Solicitation: {request_number}\n"
+        if dibbs_data.get('product_description'):
+            description += f"Product: {dibbs_data['product_description']}\n"
+        if dibbs_data.get('nsn'):
+            description += f"NSN: {dibbs_data['nsn']}\n"
+        if dibbs_data.get('quantity'):
+            description += f"Quantity: {dibbs_data['quantity']}\n"
+        if dibbs_data.get('delivery_days'):
+            description += f"Delivery Days: {dibbs_data['delivery_days']}\n"
+            
+        opportunity_data = {
+            'name': opportunity_name,
+            'account_id': account_id,
+            'contact_id': contact_id,
+            'stage': 'Prospecting',
+            'type': 'New Business',
+            'lead_source': 'DLA Solicitation',
+            'description': description,
+            'close_date': dibbs_data.get('close_date'),
+            'quantity': dibbs_data.get('quantity'),
+            'iso': 'Yes' if dibbs_data.get('iso') == 'YES' else 'No',
+            'sampling': 'Yes' if dibbs_data.get('sampling') == 'YES' else 'No',
+            'fob': dibbs_data.get('fob'),
+            'mfr': dibbs_data.get('manufacturer')
+        }
+        
+        opportunity_id = crm_data.create_opportunity(opportunity_data)
+        
+        print(f"Auto-created opportunity {opportunity_id} for DLA solicitation {request_number}")
+        return opportunity_id
+    
     def auto_create_opportunity(self, rfq_id, account_id, contact_id, dibbs_data):
         """Auto-create opportunity for qualified RFQs"""
         
-        # Get RFQ data for opportunity name
+        # Check for duplicate opportunities if setting is enabled
+        from pdf_processor import pdf_processor
+        settings = pdf_processor.get_filter_settings()
+        
         request_number = dibbs_data.get('request_number', 'Unknown')
+        
+        if settings.get('skip_duplicates', True):
+            # Check if opportunity already exists for this RFQ number
+            existing_opps = crm_data.execute_query(
+                "SELECT id FROM opportunities WHERE name LIKE ? OR description LIKE ?",
+                [f"%{request_number}%", f"%{request_number}%"]
+            )
+            if existing_opps:
+                print(f"Skipping duplicate opportunity for RFQ {request_number}")
+                return existing_opps[0]['id']  # Return existing opportunity ID
+        
+        # Get RFQ data for opportunity name
         product_desc = dibbs_data.get('product_description', '')
         nsn = dibbs_data.get('nsn', '')
         
@@ -331,7 +417,7 @@ class CRMAutomation:
         metrics['total_won_value'] = sum((opp['amount'] if opp['amount'] is not None else 0) for opp in won_opps)
         
         # Task Metrics
-        overdue_tasks = crm_data.get_tasks({'overdue': True})
+        overdue_tasks = crm_data.get_tasks({'due_date_range': 'overdue'})
         pending_tasks = crm_data.get_tasks({'status': 'Not Started'})
         
         metrics['overdue_tasks'] = len(overdue_tasks)
@@ -347,6 +433,8 @@ class CRMAutomation:
         dashboard = {
             'today_tasks': crm_data.get_tasks({'due_date_range': 'today'}),
             'overdue_tasks': crm_data.get_tasks({'due_date_range': 'overdue'}),
+            'this_week_tasks': crm_data.get_tasks({'due_date_range': 'this_week'}),
+            'next_week_tasks': crm_data.get_tasks({'due_date_range': 'next_week'}),
             'new_rfqs': crm_data.get_rfqs({'status': 'New'}, limit=10),
             'closing_opportunities': crm_data.execute_query(
                 "SELECT * FROM opportunities WHERE close_date <= ? AND stage NOT IN ('Closed Won', 'Closed Lost') ORDER BY close_date",

@@ -311,6 +311,20 @@ def create_opportunity_api():
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
 
+@app.route('/api/opportunities/<int:opportunity_id>', methods=['GET'])
+def get_opportunity_api(opportunity_id):
+    """Get a single opportunity via API"""
+    try:
+        opportunity = crm_data.get_opportunity_by_id(opportunity_id)
+        if opportunity:
+            # Convert Row object to dict for JSON serialization
+            opportunity_dict = dict(opportunity) if opportunity else None
+            return jsonify({'success': True, 'opportunity': opportunity_dict})
+        else:
+            return jsonify({'success': False, 'message': 'Opportunity not found'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
 @app.route('/api/opportunities/<int:opportunity_id>', methods=['PATCH'])
 def update_opportunity_api(opportunity_id):
     """Update an opportunity via API"""
@@ -400,6 +414,8 @@ def rfqs():
     """RFQs list view with pagination"""
     status = request.args.get('status', '')
     manufacturer = request.args.get('manufacturer', '')
+    vendor = request.args.get('vendor', '')
+    product = request.args.get('product', '')
     page = int(request.args.get('page', 1))
     
     filters = {}
@@ -407,6 +423,10 @@ def rfqs():
         filters['status'] = status
     if manufacturer:
         filters['manufacturer'] = manufacturer
+    if vendor:
+        filters['vendor'] = vendor
+    if product:
+        filters['product'] = product
     
     rfqs_list = crm_data.get_rfqs(filters)
     pagination = paginate_results(rfqs_list, page)
@@ -415,7 +435,9 @@ def rfqs():
                          rfqs=pagination['items'], 
                          pagination=pagination,
                          status=status, 
-                         manufacturer=manufacturer)
+                         manufacturer=manufacturer,
+                         vendor=vendor,
+                         product=product)
 
 @app.route('/rfq/<int:rfq_id>')
 def rfq_detail(rfq_id):
@@ -452,27 +474,49 @@ def tasks():
     """Tasks list view with pagination"""
     from datetime import date
     
+    # Get filter parameters
     status = request.args.get('status', '')
-    assigned_to = request.args.get('assigned_to', '')
+    priority = request.args.get('priority', '')
+    due_date = request.args.get('due_date_range', '') or request.args.get('due_date', '')
+    owner = request.args.get('owner', '')
+    search = request.args.get('search', '')
     page = int(request.args.get('page', 1))
     
+    # Build filters
     filters = {}
     if status:
         filters['status'] = status
-    if assigned_to:
-        filters['assigned_to'] = assigned_to
+    if priority:
+        filters['priority'] = priority
+    if owner:
+        filters['owner'] = owner
+    if search:
+        filters['search'] = search
+    if due_date:
+        if due_date == 'overdue':
+            filters['due_date_range'] = 'overdue'
+        elif due_date == 'today':
+            filters['due_date_range'] = 'today'
+        elif due_date == 'this_week':
+            filters['due_date_range'] = 'this_week'
+        elif due_date == 'next_week':
+            filters['due_date_range'] = 'next_week'
     
+    # Get tasks and stats
     tasks_list = crm_data.get_tasks(filters)
-    overdue_tasks = crm_data.get_tasks({'overdue': True})
+    stats = crm_data.get_task_stats()
     pagination = paginate_results(tasks_list, page)
     
     return render_template('tasks.html', 
                          tasks=pagination['items'], 
                          pagination=pagination,
-                         overdue_count=len(overdue_tasks),
+                         stats=stats,
                          today=date.today().isoformat(),
                          status=status, 
-                         assigned_to=assigned_to)
+                         priority=priority,
+                         due_date_range=due_date,
+                         owner=owner,
+                         search=search)
 
 @app.route('/products')
 def products():
@@ -543,6 +587,44 @@ def api_update_product(nsn):
             
     except ValueError as ve:
         return jsonify({'error': str(ve)}), 400
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/products/<nsn>', methods=['DELETE'])
+def api_delete_product(nsn):
+    """API endpoint to delete product by NSN"""
+    try:
+        # Get the product first to get its ID
+        products = crm_data.get_products({'nsn': nsn})
+        if not products:
+            return jsonify({'error': 'Product not found'}), 404
+            
+        product = products[0]
+        product_id = product['id']
+        
+        # Check for dependencies (RFQs, opportunities, etc.)
+        # Check RFQs
+        rfqs = crm_data.execute_query("SELECT COUNT(*) as count FROM rfqs WHERE product_id = ?", [product_id])
+        if rfqs and rfqs[0]['count'] > 0:
+            return jsonify({
+                'error': f'Cannot delete product. It is referenced by {rfqs[0]["count"]} RFQ(s). Please remove these references first.'
+            }), 400
+            
+        # Check opportunities
+        opportunities = crm_data.execute_query("SELECT COUNT(*) as count FROM opportunities WHERE product_id = ?", [product_id])
+        if opportunities and opportunities[0]['count'] > 0:
+            return jsonify({
+                'error': f'Cannot delete product. It is referenced by {opportunities[0]["count"]} opportunity(ies). Please remove these references first.'
+            }), 400
+        
+        # Delete the product
+        rows_affected = crm_data.execute_update("DELETE FROM products WHERE id = ?", [product_id])
+        
+        if rows_affected > 0:
+            return jsonify({'success': True, 'message': 'Product deleted successfully'})
+        else:
+            return jsonify({'error': 'Product not found or already deleted'}), 404
+            
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -628,6 +710,60 @@ def update_rfq_status(rfq_id):
         return jsonify({'success': True, 'message': 'RFQ status updated'})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/api/rfqs/<int:rfq_id>', methods=['DELETE'])
+def delete_rfq(rfq_id):
+    """Delete an RFQ"""
+    try:
+        # Check if RFQ exists
+        rfq = crm_data.get_rfq_by_id(rfq_id)
+        if not rfq:
+            return jsonify({'error': 'RFQ not found'}), 404
+        
+        # Delete the RFQ
+        deleted = crm_data.delete_rfq(rfq_id)
+        if deleted:
+            return jsonify({'success': True, 'message': 'RFQ deleted successfully'})
+        else:
+            return jsonify({'error': 'Failed to delete RFQ'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/rfqs', methods=['POST'])
+def create_rfq():
+    """Create a new RFQ"""
+    try:
+        data = request.json
+        
+        # Validate required fields
+        required_fields = ['request_number', 'status', 'product_id', 'account_id', 'quantity']
+        for field in required_fields:
+            if not data.get(field):
+                return jsonify({'error': f'Missing required field: {field}'}), 400
+        
+        # Create the RFQ
+        rfq_id = crm_data.create_rfq(**data)
+        if rfq_id:
+            return jsonify({'success': True, 'rfq_id': rfq_id, 'message': 'RFQ created successfully'})
+        else:
+            return jsonify({'error': 'Failed to create RFQ'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/rfqs/<int:rfq_id>', methods=['PUT'])
+def update_rfq(rfq_id):
+    """Update an RFQ"""
+    try:
+        data = request.json
+        
+        # Update the RFQ
+        updated = crm_data.update_rfq(rfq_id, **data)
+        if updated:
+            return jsonify({'success': True, 'message': 'RFQ updated successfully'})
+        else:
+            return jsonify({'error': 'RFQ not found or no changes made'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/create_task', methods=['POST'])
 def create_task():
@@ -756,9 +892,17 @@ def api_delete_interaction(interaction_id):
 
 @app.route('/api/contacts', methods=['GET'])
 def api_get_contacts():
-    """Get all contacts for dropdowns"""
+    """Get all contacts for dropdowns with optional account filtering"""
     try:
-        contacts = crm_data.get_contacts()
+        # Get query parameters
+        account_id = request.args.get('account_id')
+        
+        # Build filters
+        filters = {}
+        if account_id:
+            filters['account_id'] = account_id
+        
+        contacts = crm_data.get_contacts(filters=filters if filters else None)
         # Convert sqlite3.Row objects to dictionaries
         contacts_list = []
         for contact in contacts:
@@ -829,7 +973,7 @@ def process_dibbs():
     """Process DIBBs data (called by integrated DIBBs parser)"""
     try:
         dibbs_data = request.json
-        result = crm_automation.process_dibbs_rfq(dibbs_data)
+        result = crm_automation.process_dibbs_solicitation(dibbs_data)
         return jsonify({'success': True, 'result': result})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
@@ -1269,6 +1413,38 @@ def update_account(account_id):
             return jsonify({'success': True, 'message': 'Account updated successfully'})
         else:
             return jsonify({'error': 'Account not found or no changes made'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/accounts/<int:account_id>', methods=['DELETE'])
+def delete_account(account_id):
+    """Delete an account"""
+    try:
+        # Check if account has any related data
+        account = crm_data.get_account_by_id(account_id)
+        if not account:
+            return jsonify({'error': 'Account not found'}), 404
+        
+        # Check for related contacts
+        contacts = crm_data.get_contacts_by_account(account_id)
+        if contacts:
+            return jsonify({
+                'error': f'Cannot delete account. It has {len(contacts)} associated contact(s). Please remove these contacts first.'
+            }), 400
+        
+        # Check for related opportunities
+        opportunities = crm_data.get_opportunities(account_id=account_id)
+        if opportunities:
+            return jsonify({
+                'error': f'Cannot delete account. It has {len(opportunities)} associated opportunity(ies). Please remove these opportunities first.'
+            }), 400
+        
+        # Delete the account
+        deleted = crm_data.delete_account(account_id)
+        if deleted:
+            return jsonify({'success': True, 'message': 'Account deleted successfully'})
+        else:
+            return jsonify({'error': 'Failed to delete account'}), 500
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

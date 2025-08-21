@@ -72,6 +72,10 @@ class CRMData:
         
         return db.execute_update(query, params)
     
+    def delete_account(self, account_id):
+        """Delete an account"""
+        return db.execute_update("DELETE FROM accounts WHERE id = ?", [account_id])
+    
     # ==================== CONTACTS ====================
     
     def create_contact(self, **kwargs):
@@ -138,6 +142,10 @@ class CRMData:
             query += f" LIMIT {limit}"
         
         return db.execute_query(query, params if params else None)
+    
+    def get_contacts_by_account(self, account_id):
+        """Get all contacts for a specific account"""
+        return self.get_contacts(filters={'account_id': account_id})
     
     def get_contact_by_id(self, contact_id):
         """Get specific contact by ID"""
@@ -840,6 +848,16 @@ class CRMData:
             if filters.get('status'):
                 query += " AND r.status = ?"
                 params.append(filters['status'])
+            if filters.get('manufacturer'):
+                query += " AND r.manufacturer LIKE ?"
+                params.append(f"%{filters['manufacturer']}%")
+            if filters.get('vendor'):
+                query += " AND a.name LIKE ?"
+                params.append(f"%{filters['vendor']}%")
+            if filters.get('product'):
+                query += " AND (p.name LIKE ? OR r.product_description LIKE ?)"
+                params.append(f"%{filters['product']}%")
+                params.append(f"%{filters['product']}%")
             if filters.get('open_date_from'):
                 query += " AND r.open_date >= ?"
                 params.append(filters['open_date_from'])
@@ -884,6 +902,10 @@ class CRMData:
         params = list(valid_fields.values()) + [rfq_id]
         
         return db.execute_update(query, params)
+    
+    def delete_rfq(self, rfq_id):
+        """Delete an RFQ"""
+        return db.execute_update("DELETE FROM rfqs WHERE id = ?", [rfq_id])
     
     # ==================== TASKS ====================
     
@@ -1705,13 +1727,12 @@ class CRMData:
             SUM(CASE WHEN status = 'In Progress' THEN 1 ELSE 0 END) as in_progress,
             SUM(CASE WHEN status = 'Completed' THEN 1 ELSE 0 END) as completed,
             SUM(CASE WHEN priority = 'High' THEN 1 ELSE 0 END) as high_priority,
-            SUM(CASE WHEN priority = 'Medium' THEN 1 ELSE 0 END) as medium_priority,
+            SUM(CASE WHEN priority = 'Normal' THEN 1 ELSE 0 END) as medium_priority,
             SUM(CASE WHEN priority = 'Low' THEN 1 ELSE 0 END) as low_priority,
             SUM(CASE WHEN due_date < date('now') AND status != 'Completed' THEN 1 ELSE 0 END) as overdue,
             SUM(CASE WHEN due_date = date('now') THEN 1 ELSE 0 END) as due_today,
             SUM(CASE WHEN due_date BETWEEN date('now', '+1 day') AND date('now', '+7 days') THEN 1 ELSE 0 END) as due_this_week,
-            SUM(CASE WHEN due_date IS NULL THEN 1 ELSE 0 END) as needs_scheduling,
-            AVG(time_taken) as avg_time_taken
+            SUM(CASE WHEN due_date IS NULL THEN 1 ELSE 0 END) as needs_scheduling
         FROM tasks
         """
         

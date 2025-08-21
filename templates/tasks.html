@@ -130,7 +130,7 @@
                     <select class="form-select" id="priority" name="priority">
                         <option value="">All Priorities</option>
                         <option value="High" {{ 'selected' if priority == 'High' }}>High</option>
-                        <option value="Medium" {{ 'selected' if priority == 'Medium' }}>Medium</option>
+                        <option value="Normal" {{ 'selected' if priority == 'Normal' }}>Normal</option>
                         <option value="Low" {{ 'selected' if priority == 'Low' }}>Low</option>
                     </select>
                 </div>
@@ -335,6 +335,7 @@
                                 <select class="form-select" id="task_status" name="status">
                                     <option value="Not Started">Not Started</option>
                                     <option value="In Progress">In Progress</option>
+                                    <option value="Completed">Completed</option>
                                 </select>
                             </div>
                         </div>
@@ -370,42 +371,6 @@
                                 <label for="related_to_id" class="form-label">Related Item</label>
                                 <select class="form-select" id="related_to_id" name="related_to_id">
                                     <option value="">Select item first</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="task_account_id" class="form-label">Related Account</label>
-                                <select class="form-select" id="task_account_id" name="account_id">
-                                    <option value="">Select Account</option>
-                                    {% for account in accounts %}
-                                    <option value="{{ account.id }}">{{ account.name }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="task_contact_id" class="form-label">Related Contact</label>
-                                <select class="form-select" id="task_contact_id" name="contact_id">
-                                    <option value="">Select Contact</option>
-                                    {% for contact in contacts %}
-                                    <option value="{{ contact.id }}">{{ contact.name }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="task_opportunity_id" class="form-label">Related Opportunity</label>
-                                <select class="form-select" id="task_opportunity_id" name="opportunity_id">
-                                    <option value="">Select Opportunity</option>
-                                    {% for opportunity in opportunities %}
-                                    <option value="{{ opportunity.id }}">{{ opportunity.name }}</option>
-                                    {% endfor %}
                                 </select>
                             </div>
                         </div>

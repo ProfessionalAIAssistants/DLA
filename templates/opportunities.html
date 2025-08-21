@@ -14,7 +14,7 @@
             <p class="text-muted mb-0 fs-5">Manage bids, proposals, and sales opportunities</p>
         </div>
         <div>
-            <button type="button" class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#addOpportunityModal">
+            <button type="button" class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#addOpportunityModal" onclick="resetModalForAdd()">
                 <i class="fas fa-plus me-2"></i>
                 Add Opportunity
             </button>
@@ -691,26 +691,69 @@
 </div>
 
 <script>
+function resetModalForAdd() {
+    // Reset the form
+    document.getElementById('addOpportunityForm').reset();
+    // Remove edit ID if present
+    document.getElementById('addOpportunityForm').removeAttribute('data-edit-id');
+    // Reset modal title
+    document.querySelector('#addOpportunityModal .modal-title').textContent = 'Add New Opportunity';
+}
+
 function saveOpportunity() {
     const form = document.getElementById('addOpportunityForm');
     const formData = new FormData(form);
+    const editId = form.getAttribute('data-edit-id');
     
-    fetch('/api/opportunities', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            location.reload();
-        } else {
-            alert('Error: ' + data.message);
+    if (editId) {
+        // Edit existing opportunity
+        const updateData = {};
+        for (let [key, value] of formData.entries()) {
+            updateData[key] = value;
         }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('An error occurred while saving the opportunity');
-    });
+        
+        fetch(`/api/opportunities/${editId}`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(updateData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Reset form and modal for next use
+                form.reset();
+                form.removeAttribute('data-edit-id');
+                document.querySelector('#addOpportunityModal .modal-title').textContent = 'Add New Opportunity';
+                location.reload();
+            } else {
+                alert('Error updating opportunity: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while updating the opportunity');
+        });
+    } else {
+        // Add new opportunity
+        fetch('/api/opportunities', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while saving the opportunity');
+        });
+    }
 }
 
 function advanceStage(opportunityId) {
@@ -763,8 +806,51 @@ function markLost(opportunityId) {
 }
 
 function editOpportunity(opportunityId) {
-    // Implementation for editing opportunities
     console.log('Edit opportunity:', opportunityId);
+    
+    // Fetch the opportunity data
+    fetch(`/api/opportunities/${opportunityId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.opportunity) {
+                const opp = data.opportunity;
+                
+                // Change modal title to Edit
+                document.querySelector('#addOpportunityModal .modal-title').textContent = 'Edit Opportunity';
+                
+                // Populate form fields with existing data
+                document.getElementById('name').value = opp.name || '';
+                document.getElementById('opp_stage').value = opp.stage || 'Prospecting';
+                document.getElementById('opp_state').value = opp.state || 'Active';
+                document.getElementById('bid_price').value = opp.bid_price || '';
+                document.getElementById('purchase_costs').value = opp.purchase_costs || '';
+                document.getElementById('packaging_shipping').value = opp.packaging_shipping || '';
+                document.getElementById('bid_date').value = opp.bid_date || '';
+                document.getElementById('close_date').value = opp.close_date || '';
+                document.getElementById('quantity').value = opp.quantity || '';
+                document.getElementById('unit').value = opp.unit || '';
+                document.getElementById('mfr').value = opp.mfr || '';
+                document.getElementById('fob').value = opp.fob || 'Origin';
+                document.getElementById('packaging_type').value = opp.packaging_type || 'MIL-STD-2073-1E';
+                document.getElementById('iso').value = opp.iso || 'No';
+                document.getElementById('sampling').value = opp.sampling || 'No';
+                document.getElementById('buyer').value = opp.buyer || '';
+                document.getElementById('description').value = opp.description || '';
+                
+                // Store the opportunity ID for saving
+                document.getElementById('addOpportunityForm').setAttribute('data-edit-id', opportunityId);
+                
+                // Show the modal
+                const modal = new bootstrap.Modal(document.getElementById('addOpportunityModal'));
+                modal.show();
+            } else {
+                alert('Error loading opportunity data: ' + (data.message || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error loading opportunity data');
+        });
 }
 
 function deleteOpportunity(opportunityId) {

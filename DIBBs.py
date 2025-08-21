@@ -488,7 +488,7 @@ def main(pdf_input_dir=None):
                   pdf_data['iso'] == "NO" and
                   pdf_data['sampling'] == "NO" and
                   pdf_data['inspection_point'] == "DESTINATION" and
-                  any(manufacturer.lower() in pdf_data['mfr'].lower() for manufacturer in ["Parker", "Monkey Monkey"])):
+                  any(manufacturer.lower() in pdf_data['mfr'].lower() for manufacturer in ["Parker"])):
                     pdf_destination = automation_dir / pdf_data['nsn'] / pdf_data['request_number']
                     pdf_destination.mkdir(parents=True, exist_ok=True)
                     print("Made PDF Folder: " + str(pdf_destination))

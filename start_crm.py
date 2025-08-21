@@ -52,7 +52,7 @@ The system automatically qualifies RFQs based on:
 - ISO requirement = NO
 - Sampling requirement = NO  
 - Inspection point = DESTINATION
-- Preferred manufacturers (Parker, Monkey Monkey)
+- Preferred manufacturers (Parker)
 
 AUTOMATION FEATURES:
 - Auto-create accounts for government agencies

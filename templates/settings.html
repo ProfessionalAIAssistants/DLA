@@ -118,6 +118,26 @@
                                 <div class="form-text">Only process RFQs from these manufacturers (leave empty to accept all)</div>
                             </div>
 
+                            <!-- FSC Filter -->
+                            <div class="col-md-6 mb-4">
+                                <label for="fscFilter" class="form-label fw-bold">
+                                    <i class="fas fa-filter me-2"></i>FSC Filter
+                                </label>
+                                <textarea class="form-control" id="fscFilter" rows="3" 
+                                          placeholder="Enter FSC codes to include, one per line">{{ settings.fsc_filter }}</textarea>
+                                <div class="form-text">Only process RFQs with these FSC codes (leave empty to accept all)</div>
+                            </div>
+
+                            <!-- Packaging Type Filter -->
+                            <div class="col-md-6 mb-4">
+                                <label for="packagingFilter" class="form-label fw-bold">
+                                    <i class="fas fa-box me-2"></i>Packaging Type Filter
+                                </label>
+                                <textarea class="form-control" id="packagingFilter" rows="3" 
+                                          placeholder="Enter packaging types to include, one per line">{{ settings.packaging_filter }}</textarea>
+                                <div class="form-text">Only process RFQs with these packaging types (leave empty to accept all)</div>
+                            </div>
+
                             <!-- Additional Filters -->
                             <div class="col-12 mb-4">
                                 <h6 class="fw-bold mb-3">
@@ -130,7 +150,7 @@
                                             <input class="form-check-input" type="checkbox" id="autoCreateOpportunities" 
                                                    {% if settings.auto_create_opportunities %}checked{% endif %}>
                                             <label class="form-check-label" for="autoCreateOpportunities">
-                                                Automatically create opportunities from RFQs
+                                                Auto-create opportunities for qualified RFQs
                                             </label>
                                         </div>
                                     </div>
@@ -157,7 +177,7 @@
                                             <input class="form-check-input" type="checkbox" id="skipDuplicates" 
                                                    {% if settings.skip_duplicates %}checked{% endif %}>
                                             <label class="form-check-label" for="skipDuplicates">
-                                                Skip duplicate RFQ numbers
+                                                Skip duplicate opportunities (same RFQ number)
                                             </label>
                                         </div>
                                     </div>
@@ -286,6 +306,8 @@ function saveSettings() {
         sampling_required: document.querySelector('input[name="samplingRequired"]:checked').value,
         inspection_point: document.getElementById('inspectionPoint').value,
         manufacturer_filter: document.getElementById('manufacturerFilter').value,
+        fsc_filter: document.getElementById('fscFilter').value,
+        packaging_filter: document.getElementById('packagingFilter').value,
         auto_create_opportunities: document.getElementById('autoCreateOpportunities').checked,
         link_related_records: document.getElementById('linkRelatedRecords').checked,
         move_processed_files: document.getElementById('moveProcessedFiles').checked,
@@ -324,7 +346,9 @@ function resetToDefaults() {
         document.querySelector('input[value="NO"][name="isoRequired"]').checked = true;
         document.querySelector('input[value="NO"][name="samplingRequired"]').checked = true;
         document.getElementById('inspectionPoint').value = 'DESTINATION';
-        document.getElementById('manufacturerFilter').value = 'Parker\nMonkey Monkey';
+        document.getElementById('manufacturerFilter').value = '';
+        document.getElementById('fscFilter').value = '';
+        document.getElementById('packagingFilter').value = '';
         document.getElementById('autoCreateOpportunities').checked = true;
         document.getElementById('linkRelatedRecords').checked = true;
         document.getElementById('moveProcessedFiles').checked = true;

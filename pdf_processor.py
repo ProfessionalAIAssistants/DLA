@@ -35,7 +35,9 @@ class PDFProcessor:
             'iso_required': 'YES',
             'sampling_required': 'NO', 
             'inspection_point': 'DESTINATION',
-            'manufacturer_filter': 'Parker',
+            'manufacturer_filter': '',
+            'fsc_filter': '',
+            'packaging_filter': '',
             'auto_create_opportunities': True,
             'link_related_records': True,
             'move_processed_files': True,
@@ -114,6 +116,22 @@ class PDFProcessor:
             if not any(mfr in rfq_mfr for mfr in manufacturers):
                 return False
         
+        # Check FSC filter
+        fsc_filter = self.settings.get('fsc_filter', '').strip()
+        if fsc_filter:
+            fsc_codes = [f.strip().upper() for f in fsc_filter.split('\n') if f.strip()]
+            rfq_fsc = rfq_data.get('fsc', '').upper()
+            if rfq_fsc not in fsc_codes:
+                return False
+        
+        # Check packaging type filter  
+        packaging_filter = self.settings.get('packaging_filter', '').strip()
+        if packaging_filter:
+            packaging_types = [p.strip().upper() for p in packaging_filter.split('\n') if p.strip()]
+            rfq_packaging = rfq_data.get('package_type', '').upper()
+            if rfq_packaging not in packaging_types:
+                return False
+
         return True
     
     def _get_database_stats(self) -> Dict[str, int]:
@@ -610,7 +628,7 @@ class PDFProcessor:
             r'MFR[:\s]*([A-Z][A-Za-z\s&\-\.]+?)(?:\n|$|[0-9])',
             r'MANUFACTURER[:\s]*([A-Z][A-Za-z\s&\-\.]+?)(?:\n|$|[0-9])',
             r'(?:MADE BY|BRAND)[:\s]*([A-Z][A-Za-z\s&\-\.]+?)(?:\n|$|[0-9])',
-            r'([A-Z][A-Za-z\s&\-\.]*(?:PARKER|MONKEY MONKEY|BOEING|LOCKHEED|GENERAL|HONEYWELL)[A-Za-z\s&\-\.]*)',
+            r'([A-Z][A-Za-z\s&\-\.]*(?:PARKER|BOEING|LOCKHEED|GENERAL|HONEYWELL)[A-Za-z\s&\-\.]*)',
         ]
         
         for pattern in mfr_patterns:
