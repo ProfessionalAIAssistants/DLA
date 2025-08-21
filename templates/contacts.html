@@ -132,7 +132,7 @@
                                 <button class="btn btn-outline-primary">
                                     <i class="fas fa-eye"></i>
                                 </button>
-                                <button class="btn btn-outline-secondary">
+                                <button class="btn btn-outline-secondary" onclick="editContact({{ contact.id }})">
                                     <i class="fas fa-edit"></i>
                                 </button>
                             </div>
@@ -234,6 +234,90 @@
     </div>
 </div>
 
+<!-- Edit Contact Modal -->
+<div class="modal fade" id="editContactModal" tabindex="-1" aria-labelledby="editContactModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editContactModalLabel">Edit Contact</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="editContactForm">
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <label for="editName" class="form-label">Name *</label>
+                            <input type="text" class="form-control" id="editName" name="name" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="editQuality" class="form-label">Quality (1-5)</label>
+                            <select class="form-select" id="editQuality" name="quality">
+                                <option value="">Select Quality</option>
+                                <option value="5">5 - Excellent</option>
+                                <option value="4">4 - Good</option>
+                                <option value="3">3 - Average</option>
+                                <option value="2">2 - Fair</option>
+                                <option value="1">1 - Poor</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="editEmail" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="editEmail" name="email">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="editPhone" class="form-label">Phone</label>
+                            <input type="tel" class="form-control" id="editPhone" name="phone">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="editTitle" class="form-label">Title</label>
+                            <input type="text" class="form-control" id="editTitle" name="title">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="editDepartment" class="form-label">Department</label>
+                            <input type="text" class="form-control" id="editDepartment" name="department">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="editAccountId" class="form-label">Account</label>
+                            <select class="form-select" id="editAccountId" name="account_id">
+                                <option value="">Select Account</option>
+                                {% for account in accounts %}
+                                <option value="{{ account.id }}">{{ account.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="editStatus" class="form-label">Status</label>
+                            <select class="form-select" id="editStatus" name="status">
+                                <option value="">Select Status</option>
+                                <option value="Active">Active</option>
+                                <option value="Inactive">Inactive</option>
+                                <option value="Prospect">Prospect</option>
+                                <option value="Lost">Lost</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="editNextCommunication" class="form-label">Next Communication Date</label>
+                            <input type="date" class="form-control" id="editNextCommunication" name="next_communication">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="editFrequencyDays" class="form-label">Communication Frequency (Days)</label>
+                            <input type="number" class="form-control" id="editFrequencyDays" name="frequency_days" min="1">
+                        </div>
+                        <div class="col-12">
+                            <label for="editDescription" class="form-label">Description</label>
+                            <textarea class="form-control" id="editDescription" name="description" rows="3"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('newContactForm');
@@ -329,6 +413,79 @@ document.addEventListener('DOMContentLoaded', function() {
         duplicateAlert.style.display = 'none';
         // Clear validation states
         form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+    });
+});
+
+function editContact(contactId) {
+    // Fetch contact details and populate edit modal
+    fetch(`/api/contacts/${contactId}`)
+        .then(response => response.json())
+        .then(contact => {
+            if (contact.error) {
+                alert('Error: ' + contact.error);
+                return;
+            }
+            
+            // Populate edit modal fields
+            document.getElementById('editName').value = contact.name || '';
+            document.getElementById('editQuality').value = contact.quality || '';
+            document.getElementById('editEmail').value = contact.email || '';
+            document.getElementById('editPhone').value = contact.phone || '';
+            document.getElementById('editTitle').value = contact.title || '';
+            document.getElementById('editDepartment').value = contact.department || '';
+            document.getElementById('editAccountId').value = contact.account_id || '';
+            document.getElementById('editStatus').value = contact.status || '';
+            document.getElementById('editNextCommunication').value = contact.next_communication || '';
+            document.getElementById('editFrequencyDays').value = contact.frequency_days || '';
+            document.getElementById('editDescription').value = contact.description || '';
+            
+            // Store contact ID for form submission
+            document.getElementById('editContactForm').dataset.contactId = contactId;
+            
+            // Show the modal
+            new bootstrap.Modal(document.getElementById('editContactModal')).show();
+        })
+        .catch(error => {
+            console.error('Error fetching contact:', error);
+            alert('Error loading contact details. Please try again.');
+        });
+}
+
+// Handle edit contact form submission
+document.getElementById('editContactForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const contactId = this.dataset.contactId;
+    const formData = new FormData(this);
+    const data = {};
+    
+    // Convert FormData to JSON, excluding empty values
+    for (let [key, value] of formData.entries()) {
+        if (value !== '') {
+            data[key] = value;
+        }
+    }
+    
+    fetch(`/api/contacts/${contactId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.error) {
+            alert('Error: ' + result.error);
+        } else {
+            alert('Contact updated successfully!');
+            bootstrap.Modal.getInstance(document.getElementById('editContactModal')).hide();
+            location.reload(); // Refresh the page to show updates
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error updating contact. Please try again.');
     });
 });
 </script>

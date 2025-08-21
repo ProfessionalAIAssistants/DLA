@@ -327,8 +327,8 @@ class CRMAutomation:
         metrics['total_opportunities'] = len(opportunities)
         
         # Safely handle potentially missing columns
-        metrics['total_pipeline_value'] = sum(opp.get('amount', 0) or 0 for opp in opportunities if opp['stage'] not in ['Closed Won', 'Closed Lost'])
-        metrics['total_won_value'] = sum(opp.get('amount', 0) or 0 for opp in won_opps)
+        metrics['total_pipeline_value'] = sum((opp['amount'] if opp['amount'] is not None else 0) for opp in opportunities if opp['stage'] not in ['Closed Won', 'Closed Lost'])
+        metrics['total_won_value'] = sum((opp['amount'] if opp['amount'] is not None else 0) for opp in won_opps)
         
         # Task Metrics
         overdue_tasks = crm_data.get_tasks({'overdue': True})

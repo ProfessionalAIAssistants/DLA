@@ -1,0 +1,350 @@
+{% extends "base.html" %}
+
+{% block title %}Processing Report Details - DLA CRM{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1>
+                <i class="fas fa-file-chart me-3"></i>
+                Processing Report Details
+            </h1>
+            <p class="text-muted mb-0">
+                Report from {{ report.processing_start[:19] | replace('T', ' ') }}
+                {% if report.processing_end %}
+                - {{ report.processing_end[:19] | replace('T', ' ') }}
+                {% endif %}
+            </p>
+        </div>
+        <div>
+            <a href="{{ url_for('processing_reports') }}" class="btn btn-outline-secondary me-2">
+                <i class="fas fa-arrow-left me-2"></i>Back to Reports
+            </a>
+            <button onclick="window.print()" class="btn btn-outline-primary">
+                <i class="fas fa-print me-2"></i>Print Report
+            </button>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-primary mb-1">{{ report.processed or 0 }}</h3>
+                    <small class="text-muted">Files Processed</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-success mb-1">{{ report.created or 0 }}</h3>
+                    <small class="text-muted">Records Created</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-info mb-1">{{ report.updated or 0 }}</h3>
+                    <small class="text-muted">Records Updated</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-warning mb-1">{{ report.skipped or 0 }}</h3>
+                    <small class="text-muted">Files Skipped</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-danger mb-1">{{ report.errors|length if report.errors else 0 }}</h3>
+                    <small class="text-muted">Errors</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-secondary mb-1">
+                        {% if report.processing_start and report.processing_end %}
+                        {{ ((report.processing_end | to_datetime) - (report.processing_start | to_datetime)).total_seconds() | round(1) }}s
+                        {% else %}
+                        -
+                        {% endif %}
+                    </h3>
+                    <small class="text-muted">Processing Time</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Database Changes -->
+    {% if report.database_stats_before and report.database_stats_after %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-database me-2"></i>Database Changes
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for table, before_count in report.database_stats_before.items() %}
+                        {% if table != 'error' %}
+                        {% set after_count = report.database_stats_after.get(table, before_count) %}
+                        {% set change = after_count - before_count %}
+                        <div class="col-md-2 mb-3">
+                            <div class="text-center">
+                                <h6 class="text-capitalize">
+                                    {% if table == 'rfqs' %}
+                                        DLA RFQs
+                                    {% else %}
+                                        {{ table }}
+                                    {% endif %}
+                                </h6>
+                                <div class="d-flex justify-content-center align-items-center">
+                                    <span class="me-2">{{ before_count }}</span>
+                                    <i class="fas fa-arrow-right text-muted me-2"></i>
+                                    <span class="me-2">{{ after_count }}</span>
+                                    {% if change > 0 %}
+                                    <span class="badge bg-success">+{{ change }}</span>
+                                    {% elif change < 0 %}
+                                    <span class="badge bg-danger">{{ change }}</span>
+                                    {% else %}
+                                    <span class="text-muted">±0</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Filter Settings Used -->
+    {% if report.filter_settings %}
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-filter me-2"></i>Filter Settings Used
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        <li><strong>Min Delivery Days:</strong> {{ report.filter_settings.min_delivery_days or 'Not set' }}</li>
+                        <li><strong>ISO Required:</strong> {{ report.filter_settings.iso_required or 'ANY' }}</li>
+                        <li><strong>Sampling Required:</strong> {{ report.filter_settings.sampling_required or 'ANY' }}</li>
+                        <li><strong>Inspection Point:</strong> {{ report.filter_settings.inspection_point or 'ANY' }}</li>
+                        <li><strong>Auto Create Opportunities:</strong> {{ 'Yes' if report.filter_settings.auto_create_opportunities else 'No' }}</li>
+                        <li><strong>Move Processed Files:</strong> {{ 'Yes' if report.filter_settings.move_processed_files else 'No' }}</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            {% if report.filter_settings.manufacturer_filter %}
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-industry me-2"></i>Manufacturer Filter
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        {% for mfr in report.filter_settings.manufacturer_filter.split('\n') %}
+                        {% if mfr.strip() %}
+                        <li>{{ mfr.strip() }}</li>
+                        {% endif %}
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Processed Files Details -->
+    {% if report.processed_files %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-check-circle me-2 text-success"></i>
+                Successfully Processed Files ({{ report.processed_files|length }})
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-sm mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Filename</th>
+                            <th>DLA RFQ Number</th>
+                            <th>Manufacturer</th>
+                            <th>Delivery Days</th>
+                            <th>Records Created</th>
+                            <th>Records Updated</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for file in report.processed_files %}
+                        <tr>
+                            <td class="fw-bold">{{ file.filename }}</td>
+                            <td>{{ file.rfq_data.get('rfq_number', 'N/A') }}</td>
+                            <td>{{ file.rfq_data.get('mfr', 'N/A') }}</td>
+                            <td>{{ file.rfq_data.get('delivery_days', 'N/A') }}</td>
+                            <td>
+                                {% if file.created_records > 0 %}
+                                <span class="badge bg-success">{{ file.created_records }}</span>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if file.updated_records > 0 %}
+                                <span class="badge bg-info">{{ file.updated_records }}</span>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Skipped Files Details -->
+    {% if report.skipped_files %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-exclamation-triangle me-2 text-warning"></i>
+                Skipped Files ({{ report.skipped_files|length }})
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-sm mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Filename</th>
+                            <th>DLA RFQ Number</th>
+                            <th>Skip Reason</th>
+                            <th>Delivery Days</th>
+                            <th>ISO</th>
+                            <th>Sampling</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for file in report.skipped_files %}
+                        <tr>
+                            <td class="fw-bold">{{ file.filename }}</td>
+                            <td>{{ file.rfq_data.get('rfq_number', 'N/A') }}</td>
+                            <td>
+                                <small class="text-warning">{{ file.reason | replace('\n', '<br>') | safe }}</small>
+                            </td>
+                            <td>{{ file.rfq_data.get('delivery_days', 'N/A') }}</td>
+                            <td>{{ file.rfq_data.get('iso', 'N/A') }}</td>
+                            <td>{{ file.rfq_data.get('sampling', 'N/A') }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Error Files Details -->
+    {% if report.error_files %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-times-circle me-2 text-danger"></i>
+                Error Files ({{ report.error_files|length }})
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-sm mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Filename</th>
+                            <th>Error</th>
+                            <th>Timestamp</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for file in report.error_files %}
+                        <tr>
+                            <td class="fw-bold">{{ file.filename }}</td>
+                            <td>
+                                <small class="text-danger">{{ file.error }}</small>
+                            </td>
+                            <td>{{ file.timestamp[:19] | replace('T', ' ') }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Created Records Details -->
+    {% if report.created_records %}
+    <div class="row mb-4">
+        {% for record_type, records in report.created_records.items() %}
+        {% if records %}
+        <div class="col-md-6 mb-3">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0 text-capitalize">
+                        <i class="fas fa-plus-circle me-2 text-success"></i>
+                        Created {{ record_type }} ({{ records|length }})
+                    </h6>
+                </div>
+                <div class="card-body p-0" style="max-height: 300px; overflow-y: auto;">
+                    <ul class="list-group list-group-flush">
+                        {% for record in records %}
+                        <li class="list-group-item">
+                            <small>{{ record.get('name', record.get('rfq_number', 'Unknown')) }}</small>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+@media print {
+    .btn, .card-header { print-color-adjust: exact; }
+    .container-fluid { max-width: none; }
+}
+</style>
+{% endblock %}

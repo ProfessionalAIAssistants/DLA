@@ -186,10 +186,10 @@
                     </thead>
                     <tbody>
                         {% for task in tasks %}
-                        <tr class="{{ 'table-danger' if task.past_due else 'table-warning' if task.due_date == date.today().isoformat() else '' }}">
+                        <tr class="{{ 'table-danger' if task.past_due else 'table-warning' if task.due_date == today else '' }}">
                             <td>
                                 <div>
-                                    <strong>{{ task.title }}</strong>
+                                    <strong>{{ task.subject }}</strong>
                                     {% if task.sub_item %}
                                         <br><small class="text-muted">{{ task.sub_item }}</small>
                                     {% endif %}
@@ -221,7 +221,7 @@
                                     {{ task.countdown }}
                                 </span>
                             </td>
-                            <td>{{ task.owner or 'Unassigned' }}</td>
+                            <td>{{ task.assigned_to or 'Unassigned' }}</td>
                             <td>
                                 <div class="d-flex flex-wrap gap-1">
                                     {% if task.account_name %}
@@ -239,9 +239,9 @@
                                             <i class="fas fa-dollar-sign me-1"></i>{{ task.opportunity_name }}
                                         </span>
                                     {% endif %}
-                                    {% if task.parent_item_type and task.parent_item_id %}
+                                    {% if task.related_to_type and task.related_to_id %}
                                         <span class="badge bg-light text-dark">
-                                            <i class="fas fa-link me-1"></i>{{ task.parent_item_type|title }} #{{ task.parent_item_id }}
+                                            <i class="fas fa-link me-1"></i>{{ task.related_to_type|title }} #{{ task.related_to_id }}
                                         </span>
                                     {% endif %}
                                 </div>
@@ -307,15 +307,15 @@
                     <div class="row">
                         <div class="col-md-8">
                             <div class="mb-3">
-                                <label for="title" class="form-label">Task Title *</label>
-                                <input type="text" class="form-control" id="title" name="title" required placeholder="Enter task title">
+                                <label for="subject" class="form-label">Task Subject *</label>
+                                <input type="text" class="form-control" id="subject" name="subject" required placeholder="Enter task subject">
                             </div>
                         </div>
                         <div class="col-md-4">
                             <div class="mb-3">
                                 <label for="task_priority" class="form-label">Priority</label>
                                 <select class="form-select" id="task_priority" name="priority">
-                                    <option value="Medium">Medium</option>
+                                    <option value="Normal">Normal</option>
                                     <option value="High">High</option>
                                     <option value="Low">Low</option>
                                 </select>
@@ -346,8 +346,8 @@
                         </div>
                         <div class="col-md-4">
                             <div class="mb-3">
-                                <label for="owner" class="form-label">Owner/Assignee</label>
-                                <input type="text" class="form-control" id="owner" name="owner" placeholder="Task owner">
+                                <label for="assigned_to" class="form-label">Assigned To</label>
+                                <input type="text" class="form-control" id="assigned_to" name="assigned_to" placeholder="Task assignee">
                             </div>
                         </div>
                     </div>
@@ -355,42 +355,22 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="work_date" class="form-label">Work Date</label>
-                                <input type="date" class="form-control" id="work_date" name="work_date">
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="sub_item" class="form-label">Sub Item</label>
-                                <input type="text" class="form-control" id="sub_item" name="sub_item" placeholder="Sub-task or component">
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="parent_item_type" class="form-label">Parent Item Type</label>
-                                <select class="form-select" id="parent_item_type" name="parent_item_type">
+                                <label for="related_to_type" class="form-label">Related To Type</label>
+                                <select class="form-select" id="related_to_type" name="related_to_type" onchange="loadRelatedItems()">
                                     <option value="">None</option>
-                                    <option value="account">Account</option>
-                                    <option value="contact">Contact</option>
-                                    <option value="opportunity">Opportunity</option>
-                                    <option value="product">Product</option>
-                                    <option value="project">Project</option>
+                                    <option value="Account">Account</option>
+                                    <option value="Contact">Contact</option>
+                                    <option value="Opportunity">Opportunity</option>
+                                    <option value="RFQ">RFQ</option>
                                 </select>
                             </div>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="parent_item_id" class="form-label">Parent Item ID</label>
-                                <input type="number" class="form-control" id="parent_item_id" name="parent_item_id" min="1">
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="time_taken" class="form-label">Time Taken (minutes)</label>
-                                <input type="number" class="form-control" id="time_taken" name="time_taken" min="0">
+                                <label for="related_to_id" class="form-label">Related Item</label>
+                                <select class="form-select" id="related_to_id" name="related_to_id">
+                                    <option value="">Select item first</option>
+                                </select>
                             </div>
                         </div>
                     </div>
@@ -525,6 +505,56 @@ function rescheduleTask(taskId) {
             }
         });
     }
+}
+
+function loadRelatedItems() {
+    const typeSelect = document.getElementById('related_to_type');
+    const itemSelect = document.getElementById('related_to_id');
+    const selectedType = typeSelect.value;
+    
+    // Clear previous options
+    itemSelect.innerHTML = '<option value="">Loading...</option>';
+    
+    if (!selectedType) {
+        itemSelect.innerHTML = '<option value="">Select type first</option>';
+        return;
+    }
+    
+    let apiUrl = '';
+    switch (selectedType) {
+        case 'Contact':
+            apiUrl = '/api/contacts';
+            break;
+        case 'Opportunity':
+            apiUrl = '/api/opportunities';
+            break;
+        case 'Account':
+            apiUrl = '/api/accounts';
+            break;
+        case 'RFQ':
+            // RFQs might not have a dedicated API yet
+            itemSelect.innerHTML = '<option value="">RFQ API not implemented</option>';
+            return;
+        default:
+            itemSelect.innerHTML = '<option value="">Unsupported type</option>';
+            return;
+    }
+    
+    fetch(apiUrl)
+        .then(response => response.json())
+        .then(items => {
+            itemSelect.innerHTML = '<option value="">Select item</option>';
+            items.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item.id;
+                option.textContent = item.name || item.subject || `${item.first_name} ${item.last_name}` || `Item #${item.id}`;
+                itemSelect.appendChild(option);
+            });
+        })
+        .catch(error => {
+            console.error('Error loading items:', error);
+            itemSelect.innerHTML = '<option value="">Error loading items</option>';
+        });
 }
 
 function deleteTask(taskId) {

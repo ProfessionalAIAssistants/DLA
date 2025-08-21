@@ -31,11 +31,11 @@ class PDFProcessor:
     def load_settings(self) -> Dict[str, Any]:
         """Load settings from file or create defaults"""
         default_settings = {
-            'min_delivery_days': 120,
-            'iso_required': 'NO',
+            'min_delivery_days': 100,
+            'iso_required': 'YES',
             'sampling_required': 'NO', 
             'inspection_point': 'DESTINATION',
-            'manufacturer_filter': 'Parker\nMonkey Monkey',
+            'manufacturer_filter': 'Parker',
             'auto_create_opportunities': True,
             'link_related_records': True,
             'move_processed_files': True,
@@ -115,18 +115,128 @@ class PDFProcessor:
                 return False
         
         return True
+    
+    def _get_database_stats(self) -> Dict[str, int]:
+        """Get current database statistics"""
+        from crm_data import crm_data
+        try:
+            return {
+                'accounts': len(crm_data.get_accounts()),
+                'contacts': len(crm_data.get_contacts()),
+                'products': len(crm_data.get_products()),
+                'rfqs': len(crm_data.get_rfqs()),
+                'interactions': len(crm_data.get_interactions()),
+                'opportunities': len(crm_data.get_opportunities())
+            }
+        except Exception as e:
+            return {'error': str(e)}
+    
+    def _get_skip_reason(self, rfq_data: Dict[str, Any]) -> str:
+        """Determine why an RFQ was skipped"""
+        reasons = []
         
-    def process_all_pdfs(self) -> Dict[str, int]:
+        # Check delivery days
+        delivery_days = rfq_data.get('delivery_days')
+        if delivery_days:
+            try:
+                if int(delivery_days) < self.settings['min_delivery_days']:
+                    reasons.append(f"• Delivery too short: {delivery_days} days (minimum: {self.settings['min_delivery_days']})")
+            except (ValueError, TypeError):
+                pass
+        
+        # Check ISO requirement
+        iso_required = self.settings['iso_required']
+        if iso_required != 'ANY':
+            rfq_iso = rfq_data.get('iso', 'NO').upper()
+            if rfq_iso != iso_required:
+                reasons.append(f"• ISO mismatch: requires {iso_required}, RFQ has {rfq_iso}")
+        
+        # Check sampling requirement
+        sampling_required = self.settings['sampling_required']
+        if sampling_required != 'ANY':
+            rfq_sampling = rfq_data.get('sampling', 'NO').upper()
+            if rfq_sampling != sampling_required:
+                reasons.append(f"• Sampling mismatch: requires {sampling_required}, RFQ has {rfq_sampling}")
+        
+        # Check inspection point
+        inspection_point = self.settings['inspection_point']
+        if inspection_point != 'ANY':
+            rfq_inspection = rfq_data.get('inspection_point', '').upper()
+            if rfq_inspection != inspection_point:
+                reasons.append(f"• Inspection point mismatch: requires {inspection_point}, RFQ has {rfq_inspection}")
+        
+        # Check manufacturer filter
+        manufacturer_filter = self.settings.get('manufacturer_filter', '').strip()
+        if manufacturer_filter:
+            manufacturers = [m.strip().lower() for m in manufacturer_filter.split('\n') if m.strip()]
+            rfq_mfr = rfq_data.get('mfr', '').lower()
+            if not any(mfr in rfq_mfr for mfr in manufacturers):
+                mfr_display = rfq_data.get('mfr', 'Unknown')[:50]  # Truncate long manufacturer names
+                if len(rfq_data.get('mfr', '')) > 50:
+                    mfr_display += "..."
+                reasons.append(f"• Manufacturer not in filter: '{mfr_display}'")
+        
+        return "\n".join(reasons) if reasons else "Unknown reason"
+    
+    def _save_processing_report(self, results: Dict[str, Any]):
+        """Save detailed processing report to file"""
+        import json
+        from datetime import datetime
+        
+        try:
+            # Create Output directory if it doesn't exist
+            output_dir = Path("Output")
+            output_dir.mkdir(exist_ok=True)
+            
+            # Generate filename with timestamp
+            timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            report_file = output_dir / f"pdf_processing_report_{timestamp}.json"
+            
+            # Save detailed report
+            with open(report_file, 'w') as f:
+                json.dump(results, f, indent=2, default=str)
+                
+            print(f"Detailed processing report saved to: {report_file}")
+            
+        except Exception as e:
+            print(f"Error saving processing report: {e}")
+
+    def process_all_pdfs(self) -> Dict[str, Any]:
         """Process all PDFs in the To Process folder"""
+        from datetime import datetime
+        
+        # Enhanced results structure for detailed reporting
         results = {
             'processed': 0,
             'created': 0,
             'updated': 0,
             'skipped': 0,
-            'errors': []
+            'errors': [],
+            'processed_files': [],
+            'skipped_files': [],
+            'error_files': [],
+            'created_records': {
+                'rfqs': [],
+                'accounts': [],
+                'contacts': [],
+                'products': []
+            },
+            'updated_records': {
+                'rfqs': [],
+                'accounts': [],
+                'contacts': [],
+                'products': []
+            },
+            'processing_start': datetime.now().isoformat(),
+            'processing_end': None,
+            'filter_settings': self.get_filter_settings(),
+            'database_stats_before': self._get_database_stats(),
+            'database_stats_after': None
         }
         
         if not self.to_process_dir.exists():
+            results['processing_end'] = datetime.now().isoformat()
+            results['database_stats_after'] = self._get_database_stats()
             return results
         
         # Get all PDF files
@@ -134,27 +244,73 @@ class PDFProcessor:
         
         for pdf_path in pdf_files:
             try:
-                result = self.process_single_pdf(pdf_path)
+                # First extract and parse data without creating records
+                text_content = self.extract_pdf_text(pdf_path)
+                parsed_data = self.parse_pdf_content(text_content, pdf_path.name)
+                
                 results['processed'] += 1
                 
-                # Check if RFQ should be processed based on filters
-                if result.get('rfq_data') and not self.should_process_rfq(result['rfq_data']):
+                # Check if RFQ should be processed based on filters BEFORE creating records
+                if parsed_data.get('rfq') and not self.should_process_rfq(parsed_data['rfq']):
                     results['skipped'] += 1
+                    results['skipped_files'].append({
+                        'filename': pdf_path.name,
+                        'reason': self._get_skip_reason(parsed_data['rfq']),
+                        'rfq_data': parsed_data['rfq']
+                    })
                     # Move to reviewed folder but mark as skipped
                     self.move_to_reviewed(pdf_path, skipped=True)
                     continue
                 
+                # Only now process the data and create records
+                result = self.process_parsed_data(parsed_data)
+                result['rfq_data'] = parsed_data['rfq']
+                
+                # Track processed file details
+                file_result = {
+                    'filename': pdf_path.name,
+                    'rfq_data': result.get('rfq_data', {}),
+                    'created_records': result.get('created_records', 0),
+                    'updated_records': result.get('updated_records', 0),
+                    'record_details': result.get('record_details', {})
+                }
+                results['processed_files'].append(file_result)
+                
                 if result['created_records'] > 0:
                     results['created'] += result['created_records']
+                    # Add detailed record information
+                    if 'record_details' in result:
+                        for record_type, records in result['record_details'].get('created', {}).items():
+                            if record_type in results['created_records']:
+                                results['created_records'][record_type].extend(records)
+                            
                 if result['updated_records'] > 0:
                     results['updated'] += result['updated_records']
+                    # Add detailed record information
+                    if 'record_details' in result:
+                        for record_type, records in result['record_details'].get('updated', {}).items():
+                            if record_type in results['updated_records']:
+                                results['updated_records'][record_type].extend(records)
                     
                 # Move processed PDF to Reviewed folder
                 if self.settings['move_processed_files']:
                     self.move_to_reviewed(pdf_path)
                 
             except Exception as e:
+                error_detail = {
+                    'filename': pdf_path.name,
+                    'error': str(e),
+                    'timestamp': datetime.now().isoformat()
+                }
                 results['errors'].append(f"Error processing {pdf_path.name}: {str(e)}")
+                results['error_files'].append(error_detail)
+        
+        # Finalize report
+        results['processing_end'] = datetime.now().isoformat()
+        results['database_stats_after'] = self._get_database_stats()
+        
+        # Save detailed report
+        self._save_processing_report(results)
         
         return results
     
@@ -200,7 +356,7 @@ class PDFProcessor:
         }
         
         # Parse RFQ/Opportunity information
-        self.parse_rfq_info(text, parsed_data)
+        self.parse_rfq_info(text, parsed_data, filename)
         
         # Parse account/company information
         self.parse_account_info(text, parsed_data)
@@ -213,14 +369,14 @@ class PDFProcessor:
         
         return parsed_data
     
-    def parse_rfq_info(self, text: str, parsed_data: Dict[str, Any]):
+    def parse_rfq_info(self, text: str, parsed_data: Dict[str, Any], filename: str = ""):
         """Parse RFQ and opportunity information"""
         # Extract RFQ number patterns
         rfq_patterns = [
-            r'RFQ[:\s#]*([A-Z0-9\-]+)',
-            r'Request\s+(?:for\s+)?(?:Quote|Quotation)[:\s#]*([A-Z0-9\-]+)',
-            r'Solicitation[:\s#]*([A-Z0-9\-]+)',
-            r'SPE[A-Z0-9]+'
+            r'SPE[A-Z0-9]+',  # Put SPE pattern first as it's most specific
+            r'RFQ[:\s#]+([A-Z0-9\-]{3,})',  # Require at least 3 characters after RFQ
+            r'Request\s+(?:for\s+)?(?:Quote|Quotation)[:\s#]+([A-Z0-9\-]{3,})',
+            r'Solicitation[:\s#]+([A-Z0-9\-]{3,})',
         ]
         
         for pattern in rfq_patterns:
@@ -229,6 +385,23 @@ class PDFProcessor:
                 parsed_data['rfq']['request_number'] = match.group(1) if len(match.groups()) > 0 else match.group(0)
                 parsed_data['opportunity']['name'] = f"RFQ {parsed_data['rfq']['request_number']}"
                 break
+        
+        # If no request number found or if we found a short SPE number, 
+        # check if filename has a better SPE pattern
+        if filename:
+            filename_spe_match = re.search(r'SPE[A-Z0-9]{6,}', filename)
+            if filename_spe_match:
+                filename_spe = filename_spe_match.group(0)
+                current_rfq = parsed_data['rfq'].get('request_number', '')
+                # Use filename SPE if no request number found OR if current is short SPE pattern
+                if not current_rfq or (current_rfq.startswith('SPE') and len(current_rfq) < len(filename_spe)):
+                    parsed_data['rfq']['request_number'] = filename_spe
+                    parsed_data['opportunity']['name'] = f"RFQ {filename_spe}"
+            elif not parsed_data['rfq'].get('request_number'):
+                # Fallback to full filename if no SPE pattern in filename
+                base_filename = Path(filename).stem
+                parsed_data['rfq']['request_number'] = base_filename
+                parsed_data['opportunity']['name'] = f"RFQ {base_filename}"
         
         # Extract NSN (National Stock Number)
         nsn_pattern = r'NSN[:\s]*([0-9\-]{13,15})'
@@ -352,7 +525,7 @@ class PDFProcessor:
                 account_name = match.group(1).strip()
                 if len(account_name) > 3:  # Filter out short matches
                     parsed_data['account']['name'] = account_name
-                    parsed_data['account']['type'] = 'Government'
+                    parsed_data['account']['type'] = 'Customer'
                     break
         
         # Extract address information
@@ -416,6 +589,7 @@ class PDFProcessor:
                 description = re.sub(r'\s+', ' ', description)
                 if len(description) > 10:
                     parsed_data['product']['description'] = description
+                    parsed_data['product']['name'] = description  # Use description as name
                     parsed_data['rfq']['product_description'] = description
                 break
         
@@ -531,13 +705,13 @@ class PDFProcessor:
             account_id = existing[0]['id']
             update_data = {k: v for k, v in account_data.items() if v}
             if update_data:
-                self.crm_data.update_account(account_id, update_data)
+                self.crm_data.update_account(account_id, **update_data)
             return account_id
         else:
             # Create new account
             account_data.setdefault('status', 'Active')
             account_data.setdefault('created_date', datetime.now().isoformat())
-            return self.crm_data.create_account(account_data)
+            return self.crm_data.create_account(**account_data)
     
     def process_contact(self, contact_data: Dict[str, Any], account_id: Optional[int] = None) -> Optional[int]:
         """Process contact data - create or update"""
@@ -564,7 +738,7 @@ class PDFProcessor:
             if account_id:
                 update_data['account_id'] = account_id
             if update_data:
-                self.crm_data.update_contact(contact_id, update_data)
+                self.crm_data.update_contact(contact_id, **update_data)
             return contact_id
         else:
             # Create new contact
@@ -572,7 +746,7 @@ class PDFProcessor:
                 contact_data['account_id'] = account_id
             contact_data.setdefault('status', 'Active')
             contact_data.setdefault('created_date', datetime.now().isoformat())
-            return self.crm_data.create_contact(contact_data)
+            return self.crm_data.create_contact(**contact_data)
     
     def process_product(self, product_data: Dict[str, Any]) -> Optional[int]:
         """Process product data - create or update"""
@@ -597,13 +771,13 @@ class PDFProcessor:
             product_id = existing[0]['id']
             update_data = {k: v for k, v in product_data.items() if v}
             if update_data:
-                self.crm_data.update_product(product_id, update_data)
+                self.crm_data.update_product(product_id, **update_data)
             return product_id
         else:
             # Create new product
             product_data.setdefault('status', 'Active')
             product_data.setdefault('created_date', datetime.now().isoformat())
-            return self.crm_data.create_product(product_data)
+            return self.crm_data.create_product(**product_data)
     
     def process_rfq(self, rfq_data: Dict[str, Any], record_ids: Dict[str, int]) -> Optional[int]:
         """Process RFQ data - create or update"""
@@ -629,7 +803,7 @@ class PDFProcessor:
                 update_data['product_id'] = record_ids['product_id']
             
             if update_data:
-                self.crm_data.update_rfq(rfq_id, update_data)
+                self.crm_data.update_rfq(rfq_id, **update_data)
             return rfq_id
         else:
             # Create new RFQ
@@ -642,7 +816,7 @@ class PDFProcessor:
                 rfq_data['product_id'] = record_ids['product_id']
             
             rfq_data.setdefault('created_date', datetime.now().isoformat())
-            return self.crm_data.create_rfq(rfq_data)
+            return self.crm_data.create_rfq(**rfq_data)
     
     def process_opportunity(self, opportunity_data: Dict[str, Any], record_ids: Dict[str, int]) -> Optional[int]:
         """Process opportunity data - create or update"""
@@ -668,7 +842,7 @@ class PDFProcessor:
                 update_data['rfq_id'] = record_ids['rfq_id']
             
             if update_data:
-                self.crm_data.update_opportunity(opportunity_id, update_data)
+                self.crm_data.update_opportunity(opportunity_id, **update_data)
             return opportunity_id
         else:
             # Create new opportunity
@@ -682,7 +856,7 @@ class PDFProcessor:
             
             opportunity_data.setdefault('created_date', datetime.now().isoformat())
             opportunity_data.setdefault('probability', 25)
-            return self.crm_data.create_opportunity(opportunity_data)
+            return self.crm_data.create_opportunity(**opportunity_data)
     
     def is_new_record(self, table: str, record_id: int) -> bool:
         """Check if a record was just created (within last minute)"""

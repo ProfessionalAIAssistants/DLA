@@ -1,0 +1,113 @@
+{
+  "processed": 0,
+  "created": 0,
+  "updated": 0,
+  "skipped": 0,
+  "errors": [
+    "Error processing SPE4A123T3230.PDF: no such column: name",
+    "Error processing SPE4A124T0700.PDF: no such column: name",
+    "Error processing SPE4A124T2840.PDF: no such column: name",
+    "Error processing SPE4A124T3116.PDF: no such column: name",
+    "Error processing SPE4A124T3826.PDF: no such column: name",
+    "Error processing SPE4A123T3230.PDF: no such column: name",
+    "Error processing SPE4A124T0700.PDF: no such column: name",
+    "Error processing SPE4A124T2840.PDF: no such column: name",
+    "Error processing SPE4A124T3116.PDF: no such column: name",
+    "Error processing SPE4A124T3826.PDF: no such column: name"
+  ],
+  "processed_files": [],
+  "skipped_files": [],
+  "error_files": [
+    {
+      "filename": "SPE4A123T3230.PDF",
+      "error": "no such column: name",
+      "timestamp": "2025-08-21T06:52:28.141965"
+    },
+    {
+      "filename": "SPE4A124T0700.PDF",
+      "error": "no such column: name",
+      "timestamp": "2025-08-21T06:52:28.491185"
+    },
+    {
+      "filename": "SPE4A124T2840.PDF",
+      "error": "no such column: name",
+      "timestamp": "2025-08-21T06:52:28.808045"
+    },
+    {
+      "filename": "SPE4A124T3116.PDF",
+      "error": "no such column: name",
+      "timestamp": "2025-08-21T06:52:29.110008"
+    },
+    {
+      "filename": "SPE4A124T3826.PDF",
+      "error": "no such column: name",
+      "timestamp": "2025-08-21T06:52:29.410514"
+    },
+    {
+      "filename": "SPE4A123T3230.PDF",
+      "error": "no such column: name",
+      "timestamp": "2025-08-21T06:52:29.759256"
+    },
+    {
+      "filename": "SPE4A124T0700.PDF",
+      "error": "no such column: name",
+      "timestamp": "2025-08-21T06:52:30.090286"
+    },
+    {
+      "filename": "SPE4A124T2840.PDF",
+      "error": "no such column: name",
+      "timestamp": "2025-08-21T06:52:30.382056"
+    },
+    {
+      "filename": "SPE4A124T3116.PDF",
+      "error": "no such column: name",
+      "timestamp": "2025-08-21T06:52:30.751799"
+    },
+    {
+      "filename": "SPE4A124T3826.PDF",
+      "error": "no such column: name",
+      "timestamp": "2025-08-21T06:52:31.070028"
+    }
+  ],
+  "created_records": {
+    "rfqs": [],
+    "accounts": [],
+    "contacts": [],
+    "products": []
+  },
+  "updated_records": {
+    "rfqs": [],
+    "accounts": [],
+    "contacts": [],
+    "products": []
+  },
+  "processing_start": "2025-08-21T06:52:27.844928",
+  "processing_end": "2025-08-21T06:52:31.070043",
+  "filter_settings": {
+    "min_delivery_days": 100,
+    "iso_required": "YES",
+    "sampling_required": "NO",
+    "inspection_point": "DESTINATION",
+    "manufacturer_filter": "Parker\nMonkey Monkey",
+    "auto_create_opportunities": true,
+    "link_related_records": true,
+    "move_processed_files": true,
+    "skip_duplicates": true
+  },
+  "database_stats_before": {
+    "accounts": 16,
+    "contacts": 116,
+    "products": 977,
+    "rfqs": 0,
+    "interactions": 5,
+    "opportunities": 0
+  },
+  "database_stats_after": {
+    "accounts": 16,
+    "contacts": 116,
+    "products": 977,
+    "rfqs": 0,
+    "interactions": 5,
+    "opportunities": 0
+  }
+}

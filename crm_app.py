@@ -21,6 +21,19 @@ app.secret_key = 'your-secret-key-here'
 app.template_folder = 'templates'
 app.static_folder = 'static'
 
+# Add custom Jinja2 filters
+@app.template_filter('to_datetime')
+def to_datetime_filter(date_string):
+    """Convert ISO date string to datetime object"""
+    try:
+        # Handle ISO format with microseconds: 2025-08-21T07:13:48.728809
+        if '.' in date_string:
+            return datetime.fromisoformat(date_string.replace('Z', '+00:00'))
+        else:
+            return datetime.fromisoformat(date_string)
+    except (ValueError, TypeError):
+        return datetime.now()
+
 # Configure logging
 logging.basicConfig(
     level=logging.DEBUG,
@@ -155,6 +168,29 @@ def contacts():
                          search=search, 
                          account_id=account_id)
 
+@app.route('/contact/<int:contact_id>')
+def contact_detail(contact_id):
+    """Contact detail view"""
+    contact = crm_data.get_contact_by_id(contact_id)
+    if not contact:
+        flash('Contact not found', 'error')
+        return redirect(url_for('contacts'))
+    
+    # Get related records
+    interactions = crm_data.get_interactions({'contact_id': contact_id})
+    opportunities = crm_data.get_opportunities({'contact_id': contact_id})
+    
+    # Get account info if available
+    account = None
+    if contact.get('account_id'):
+        account = crm_data.get_account_by_id(contact['account_id'])
+    
+    return render_template('contact_detail.html', 
+                         contact=contact, 
+                         account=account,
+                         interactions=interactions, 
+                         opportunities=opportunities)
+
 @app.route('/opportunities')
 def opportunities():
     """Opportunities list view with comprehensive filtering and pagination"""
@@ -210,6 +246,28 @@ def opportunities():
                          fob=fob,
                          buyer=buyer,
                          search=search)
+
+@app.route('/opportunity/<int:opportunity_id>')
+def opportunity_detail(opportunity_id):
+    """Opportunity detail view"""
+    opportunity = crm_data.get_opportunity_by_id(opportunity_id)
+    if not opportunity:
+        return render_template('error.html', message='Opportunity not found'), 404
+    
+    # Get related data
+    account = crm_data.get_account_by_id(opportunity['account_id']) if opportunity['account_id'] else None
+    contact = crm_data.get_contact_by_id(opportunity['contact_id']) if opportunity['contact_id'] else None
+    product = crm_data.get_product_by_id(opportunity['product_id']) if opportunity['product_id'] else None
+    
+    # Get related interactions
+    interactions = crm_data.get_interactions({'opportunity_id': opportunity_id})
+    
+    return render_template('opportunity_detail.html', 
+                         opportunity=opportunity,
+                         account=account,
+                         contact=contact,
+                         product=product,
+                         interactions=interactions)
 
 # ==================== OPPORTUNITIES API ROUTES ====================
 
@@ -392,6 +450,8 @@ def rfq_detail(rfq_id):
 @app.route('/tasks')
 def tasks():
     """Tasks list view with pagination"""
+    from datetime import date
+    
     status = request.args.get('status', '')
     assigned_to = request.args.get('assigned_to', '')
     page = int(request.args.get('page', 1))
@@ -410,6 +470,7 @@ def tasks():
                          tasks=pagination['items'], 
                          pagination=pagination,
                          overdue_count=len(overdue_tasks),
+                         today=date.today().isoformat(),
                          status=status, 
                          assigned_to=assigned_to)
 
@@ -578,6 +639,64 @@ def create_task():
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
 
+@app.route('/api/tasks', methods=['POST'])
+def create_task_api():
+    """Create new task via API"""
+    try:
+        # Handle both JSON and form data
+        if request.is_json:
+            task_data = request.get_json()
+        else:
+            task_data = request.form.to_dict()
+        
+        # Convert numeric fields
+        if 'parent_item_id' in task_data and task_data['parent_item_id']:
+            task_data['parent_item_id'] = int(task_data['parent_item_id'])
+        if 'time_taken' in task_data and task_data['time_taken']:
+            task_data['time_taken'] = int(task_data['time_taken'])
+            
+        # Remove empty values
+        task_data = {k: v for k, v in task_data.items() if v}
+        
+        task_id = crm_data.create_task(**task_data)
+        return jsonify({'success': True, 'task_id': task_id, 'message': 'Task created'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/api/tasks/<int:task_id>', methods=['PATCH'])
+def update_task_api(task_id):
+    """Update a task via API"""
+    try:
+        data = request.get_json() if request.is_json else request.form.to_dict()
+        
+        # Convert numeric fields
+        if 'time_taken' in data and data['time_taken']:
+            data['time_taken'] = int(data['time_taken'])
+            
+        result = crm_data.update_task(task_id, **data)
+        
+        if result:
+            return jsonify({'success': True})
+        else:
+            return jsonify({'success': False, 'message': 'Failed to update task'})
+            
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/api/tasks/<int:task_id>/start', methods=['POST'])
+def start_task_api(task_id):
+    """Start a task via API"""
+    try:
+        result = crm_data.update_task(task_id, status='In Progress')
+        
+        if result:
+            return jsonify({'success': True})
+        else:
+            return jsonify({'success': False, 'message': 'Failed to start task'})
+            
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
 @app.route('/api/create_interaction', methods=['POST'])
 def create_interaction():
     """Create new interaction"""
@@ -640,7 +759,12 @@ def api_get_contacts():
     """Get all contacts for dropdowns"""
     try:
         contacts = crm_data.get_contacts()
-        return jsonify(contacts)
+        # Convert sqlite3.Row objects to dictionaries
+        contacts_list = []
+        for contact in contacts:
+            contact_dict = dict(contact)
+            contacts_list.append(contact_dict)
+        return jsonify(contacts_list)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -649,7 +773,54 @@ def api_get_opportunities():
     """Get all opportunities for dropdowns"""
     try:
         opportunities = crm_data.get_opportunities()
-        return jsonify(opportunities)
+        # Convert sqlite3.Row objects to dictionaries
+        opportunities_list = []
+        for opportunity in opportunities:
+            opportunity_dict = dict(opportunity)
+            opportunities_list.append(opportunity_dict)
+        return jsonify(opportunities_list)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/accounts', methods=['GET'])
+def api_get_accounts():
+    """Get all accounts for dropdowns"""
+    try:
+        accounts = crm_data.get_accounts()
+        # Convert sqlite3.Row objects to dictionaries
+        accounts_list = []
+        for account in accounts:
+            account_dict = dict(account)
+            accounts_list.append(account_dict)
+        return jsonify(accounts_list)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/projects', methods=['GET'])
+def api_get_projects():
+    """Get all projects for dropdowns"""
+    try:
+        projects = crm_data.get_projects()
+        # Convert sqlite3.Row objects to dictionaries
+        projects_list = []
+        for project in projects:
+            project_dict = dict(project)
+            projects_list.append(project_dict)
+        return jsonify(projects_list)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/products', methods=['GET'])
+def api_get_products():
+    """Get all products for dropdowns"""
+    try:
+        products = crm_data.get_products()
+        # Convert sqlite3.Row objects to dictionaries
+        products_list = []
+        for product in products:
+            product_dict = dict(product)
+            products_list.append(product_dict)
+        return jsonify(products_list)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -1048,13 +1219,20 @@ def load_pdfs():
             
         # Process the PDFs
         results = pdf_processor.process_all_pdfs()
+        
+        # Generate a comprehensive report ID for viewing
+        from datetime import datetime
+        report_id = datetime.now().strftime("%Y%m%d_%H%M%S")
+        
         return jsonify({
             'success': True,
             'processed': results['processed'],
             'created': results['created'],
             'updated': results['updated'],
             'skipped': results.get('skipped', 0),
-            'errors': results['errors']
+            'errors': results['errors'],
+            'report_id': report_id,
+            'detailed_report_available': True
         })
     except Exception as e:
         app.logger.error(f"Error in load_pdfs: {str(e)}")
@@ -1065,6 +1243,189 @@ def load_pdfs():
             'message': str(e),
             'traceback': traceback.format_exc()
         }), 500
+
+# API endpoints for edit functionality
+@app.route('/api/accounts/<int:account_id>', methods=['GET'])
+def get_account(account_id):
+    """Get account details for editing"""
+    try:
+        account = crm_data.get_account_by_id(account_id)
+        if account:
+            # Convert SQLite Row to dictionary
+            account_dict = dict(account) if hasattr(account, 'keys') else account
+            return jsonify(account_dict)
+        else:
+            return jsonify({'error': 'Account not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/accounts/<int:account_id>', methods=['PUT'])
+def update_account(account_id):
+    """Update account details"""
+    try:
+        data = request.json
+        updated = crm_data.update_account(account_id, **data)
+        if updated:
+            return jsonify({'success': True, 'message': 'Account updated successfully'})
+        else:
+            return jsonify({'error': 'Account not found or no changes made'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/contacts/<int:contact_id>', methods=['GET'])
+def get_contact(contact_id):
+    """Get contact details for editing"""
+    try:
+        contact = crm_data.get_contact_by_id(contact_id)
+        if contact:
+            # Convert SQLite Row to dictionary
+            contact_dict = dict(contact) if hasattr(contact, 'keys') else contact
+            return jsonify(contact_dict)
+        else:
+            return jsonify({'error': 'Contact not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/contacts/<int:contact_id>', methods=['PUT'])
+def update_contact_put(contact_id):
+    """Update contact details (PUT method)"""
+    try:
+        data = request.json
+        updated = crm_data.update_contact(contact_id, **data)
+        if updated:
+            return jsonify({'success': True, 'message': 'Contact updated successfully'})
+        else:
+            return jsonify({'error': 'Contact not found or no changes made'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/projects/<int:project_id>', methods=['GET'])
+def get_project(project_id):
+    """Get project details for editing"""
+    try:
+        project = crm_data.get_project_by_id(project_id)
+        if project:
+            # Convert SQLite Row to dictionary
+            project_dict = dict(project) if hasattr(project, 'keys') else project
+            return jsonify(project_dict)
+        else:
+            return jsonify({'error': 'Project not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/projects/<int:project_id>', methods=['PUT'])
+def update_project(project_id):
+    """Update project details"""
+    try:
+        data = request.json
+        updated = crm_data.update_project(project_id, **data)
+        if updated:
+            return jsonify({'success': True, 'message': 'Project updated successfully'})
+        else:
+            return jsonify({'error': 'Project not found or no changes made'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/interactions/<int:interaction_id>', methods=['GET'])
+def get_interaction(interaction_id):
+    """Get interaction details for editing"""
+    try:
+        interaction = crm_data.get_interaction_by_id(interaction_id)
+        if interaction:
+            # Convert SQLite Row to dictionary
+            interaction_dict = dict(interaction) if hasattr(interaction, 'keys') else interaction
+            return jsonify(interaction_dict)
+        else:
+            return jsonify({'error': 'Interaction not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/interactions/<int:interaction_id>', methods=['PUT'])
+def update_interaction(interaction_id):
+    """Update interaction details"""
+    try:
+        data = request.json
+        updated = crm_data.update_interaction(interaction_id, **data)
+        if updated:
+            return jsonify({'success': True, 'message': 'Interaction updated successfully'})
+        else:
+            return jsonify({'error': 'Interaction not found or no changes made'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/processing-reports')
+def processing_reports():
+    """View processing reports"""
+    import glob
+    import json
+    from pathlib import Path
+    
+    # Get all report files
+    output_dir = Path("Output")
+    report_files = []
+    
+    if output_dir.exists():
+        for report_file in sorted(output_dir.glob("pdf_processing_report_*.json"), reverse=True):
+            try:
+                with open(report_file, 'r') as f:
+                    report_data = json.load(f)
+                
+                # Extract summary info for listing
+                report_files.append({
+                    'filename': report_file.name,
+                    'timestamp': report_data.get('processing_start', ''),
+                    'processed': report_data.get('processed', 0),
+                    'created': report_data.get('created', 0),
+                    'updated': report_data.get('updated', 0),
+                    'skipped': report_data.get('skipped', 0),
+                    'errors': len(report_data.get('errors', []))
+                })
+            except Exception as e:
+                print(f"Error reading report {report_file}: {e}")
+    
+    return render_template('processing_reports.html', reports=report_files)
+
+@app.route('/processing-reports/<filename>')
+def view_processing_report(filename):
+    """View detailed processing report"""
+    import json
+    from pathlib import Path
+    
+    report_file = Path("Output") / filename
+    
+    if not report_file.exists():
+        return "Report not found", 404
+    
+    try:
+        with open(report_file, 'r') as f:
+            report_data = json.load(f)
+        
+        return render_template('processing_report_detail.html', report=report_data, filename=filename)
+    except Exception as e:
+        return f"Error loading report: {e}", 500
+
+@app.route('/api/latest-processing-report')
+def get_latest_processing_report():
+    """Get the latest processing report data"""
+    import json
+    from pathlib import Path
+    
+    output_dir = Path("Output")
+    if not output_dir.exists():
+        return jsonify({'error': 'No reports found'}), 404
+    
+    # Get the most recent report
+    report_files = sorted(output_dir.glob("pdf_processing_report_*.json"), reverse=True)
+    
+    if not report_files:
+        return jsonify({'error': 'No reports found'}), 404
+    
+    try:
+        with open(report_files[0], 'r') as f:
+            report_data = json.load(f)
+        return jsonify(report_data)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     # Create templates and static directories

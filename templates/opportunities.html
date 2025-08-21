@@ -335,7 +335,7 @@
                         <tr class="{{ 'table-danger' if opp.status_indicator == 'Overdue' else 'table-warning' if opp.days_to_close == 'Due Today' else 'table-success' if opp.state == 'Won' else '' }}">
                             <td>
                                 <div>
-                                    <strong>{{ opp.name or 'Unnamed Opportunity' }}</strong>
+                                    <strong><a href="{{ url_for('opportunity_detail', opportunity_id=opp.id) }}" class="text-decoration-none">{{ opp.name or 'Unnamed Opportunity' }}</a></strong>
                                     {% if opp.account_name %}
                                         <br><small class="text-muted"><i class="fas fa-building me-1"></i>{{ opp.account_name }}</small>
                                     {% endif %}
@@ -410,6 +410,9 @@
                                         <i class="fas fa-ellipsis-v"></i>
                                     </button>
                                     <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="{{ url_for('opportunity_detail', opportunity_id=opp.id) }}">
+                                            <i class="fas fa-eye me-2"></i>View Details
+                                        </a></li>
                                         {% if opp.stage != 'Project Started' %}
                                         <li><a class="dropdown-item" href="#" onclick="advanceStage({{ opp.id }})">
                                             <i class="fas fa-arrow-right me-2"></i>Advance Stage

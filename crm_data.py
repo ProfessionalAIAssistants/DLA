@@ -55,16 +55,16 @@ class CRMData:
     
     def update_account(self, account_id, **kwargs):
         """Update an existing account"""
-        fields = ['name', 'website', 'phone', 'industry', 'employees', 'annual_revenue',
-                 'account_type', 'account_source', 'billing_address', 'shipping_address',
-                 'description', 'owner']
+        # Updated to match actual table schema
+        fields = ['name', 'type', 'summary', 'detail', 'website', 'email', 'location', 
+                 'linkedin', 'parent_co', 'cage', 'image', 'video']
         
         valid_fields = {k: v for k, v in kwargs.items() if k in fields and v is not None}
         
         if not valid_fields:
             return 0
         
-        valid_fields['modified_date'] = datetime.now()
+        # Remove modified_date since accounts table doesn't have this column
         set_clause = ', '.join([f"{k} = ?" for k in valid_fields.keys()])
         
         query = f"UPDATE accounts SET {set_clause} WHERE id = ?"
@@ -104,7 +104,17 @@ class CRMData:
     def get_contacts(self, filters=None, limit=None):
         """Get contacts with optional filters"""
         query = """
-            SELECT c.*, a.name as account_name 
+            SELECT c.*, 
+                   CASE 
+                       WHEN c.first_name IS NOT NULL AND c.last_name IS NOT NULL 
+                       THEN c.first_name || ' ' || c.last_name
+                       WHEN c.first_name IS NOT NULL 
+                       THEN c.first_name
+                       WHEN c.last_name IS NOT NULL 
+                       THEN c.last_name
+                       ELSE 'Unknown Contact'
+                   END as name,
+                   a.name as account_name 
             FROM contacts c 
             LEFT JOIN accounts a ON c.account_id = a.id 
             WHERE c.is_active = 1
@@ -113,8 +123,9 @@ class CRMData:
         
         if filters:
             if filters.get('name'):
-                query += " AND c.full_name LIKE ?"
-                params.append(f"%{filters['name']}%")
+                query += " AND (c.first_name LIKE ? OR c.last_name LIKE ? OR (c.first_name || ' ' || c.last_name) LIKE ?)"
+                search_term = f"%{filters['name']}%"
+                params.extend([search_term, search_term, search_term])
             if filters.get('account_id'):
                 query += " AND c.account_id = ?"
                 params.append(filters['account_id'])
@@ -122,7 +133,7 @@ class CRMData:
                 query += " AND c.email LIKE ?"
                 params.append(f"%{filters['email']}%")
         
-        query += " ORDER BY c.full_name"
+        query += " ORDER BY c.first_name, c.last_name"
         if limit:
             query += f" LIMIT {limit}"
         
@@ -131,7 +142,17 @@ class CRMData:
     def get_contact_by_id(self, contact_id):
         """Get specific contact by ID"""
         query = """
-            SELECT c.*, a.name as account_name 
+            SELECT c.*, 
+                   CASE 
+                       WHEN c.first_name IS NOT NULL AND c.last_name IS NOT NULL 
+                       THEN c.first_name || ' ' || c.last_name
+                       WHEN c.first_name IS NOT NULL 
+                       THEN c.first_name
+                       WHEN c.last_name IS NOT NULL 
+                       THEN c.last_name
+                       ELSE 'Unknown Contact'
+                   END as name,
+                   a.name as account_name 
             FROM contacts c 
             LEFT JOIN accounts a ON c.account_id = a.id 
             WHERE c.id = ? AND c.is_active = 1
@@ -141,9 +162,11 @@ class CRMData:
     
     def update_contact(self, contact_id, **kwargs):
         """Update an existing contact"""
-        fields = ['name', 'quality', 'status', 'frequency_days', 'last_communication', 
-                 'next_communication', 'email', 'title', 'phone', 'fax', 'linkedin', 
-                 'business', 'business_owner', 'buyer_code', 'account_id']
+        # Updated to match actual table schema
+        fields = ['first_name', 'last_name', 'name', 'title', 'email', 'phone', 'mobile', 
+                 'account_id', 'department', 'reports_to', 'lead_source', 'address', 
+                 'description', 'owner', 'quality', 'status', 'frequency_days', 
+                 'last_communication', 'next_communication']
         
         valid_fields = {k: v for k, v in kwargs.items() if k in fields and v is not None}
         
@@ -546,8 +569,8 @@ class CRMData:
         valid_fields = {k: v for k, v in kwargs.items() if v is not None}
         
         if valid_fields:
-            # Add last_modified timestamp
-            valid_fields['last_modified'] = datetime.now().isoformat()
+            # Add modified_date timestamp
+            valid_fields['modified_date'] = datetime.now().isoformat()
             
             # Build update query
             set_clause = ', '.join([f"{k} = ?" for k in valid_fields.keys()])
@@ -779,8 +802,12 @@ class CRMData:
     
     def create_rfq(self, **kwargs):
         """Create a new RFQ"""
-        fields = ['quantity', 'quote', 'lead_time', 'effective_date', 'document',
-                 'product_id', 'vendor_id', 'qpl_id']
+        fields = ['request_number', 'pdf_name', 'pdf_path', 'solicitation_url', 'open_date', 'close_date',
+                 'purchase_number', 'nsn', 'fsc', 'delivery_days', 'payment_history', 'unit', 'quantity',
+                 'fob', 'iso', 'inspection_point', 'sampling', 'product_description', 'manufacturer',
+                 'packaging', 'package_type', 'office', 'division', 'buyer_address', 'buyer_name',
+                 'buyer_code', 'buyer_telephone', 'buyer_email', 'buyer_fax', 'buyer_info', 'status',
+                 'opportunity_id', 'account_id', 'contact_id', 'product_id', 'notes']
         
         valid_fields = {k: v for k, v in kwargs.items() if k in fields and v is not None}
         
@@ -1009,16 +1036,17 @@ class CRMData:
         
         # Check for duplicate name (case insensitive)
         name_query = """
-            SELECT id, name, email 
+            SELECT id, first_name, last_name, email 
             FROM contacts 
-            WHERE LOWER(name) = LOWER(?) 
+            WHERE (LOWER(first_name || ' ' || last_name) = LOWER(?) OR 
+                   LOWER(last_name) = LOWER(?)) 
             AND is_active = 1
         """
-        name_params = [name]
+        name_params = [name, name]
         
         if exclude_id:
             name_query += " AND id != ?"
-            name_params.append(exclude_id)
+            name_params.extend([exclude_id])
         
         name_results = db.execute_query(name_query, name_params)
         if name_results:
@@ -1031,7 +1059,7 @@ class CRMData:
         # Check for duplicate email (case insensitive) if email provided
         if email:
             email_query = """
-                SELECT id, name, email 
+                SELECT id, first_name, last_name, email 
                 FROM contacts 
                 WHERE LOWER(email) = LOWER(?) 
                 AND is_active = 1
@@ -1336,26 +1364,24 @@ class CRMData:
     # ==================== INTERACTIONS & APPOINTMENTS ====================
     
     def create_interaction(self, **kwargs):
-        """Create a new interaction or appointment"""
-        required_fields = ['type']
+        """Create a new interaction"""
+        fields = ['subject', 'description', 'type', 'interaction_date', 'duration_minutes',
+                 'location', 'outcome', 'contact_id', 'opportunity_id']
         
-        for field in required_fields:
-            if not kwargs.get(field):
-                raise ValueError(f"{field} is required")
+        valid_fields = {k: v for k, v in kwargs.items() if k in fields and v is not None}
         
-        # Validate enum values
-        valid_directions = ['Received', 'Sent']
-        valid_types = ['Email', 'Text', 'Call', 'LinkedIn', 'In Person', 'Mail']
-        valid_statuses = ['Completed', 'Follow up']
+        if not valid_fields.get('type'):
+            raise ValueError("Interaction type is required")
         
-        direction = kwargs.get('direction', 'Sent')
-        if direction not in valid_directions:
-            raise ValueError(f"Direction must be one of: {', '.join(valid_directions)}")
+        # Set default subject if not provided
+        if not valid_fields.get('subject'):
+            valid_fields['subject'] = f"{valid_fields.get('type', 'Interaction')}"
+            
+        placeholders = ', '.join(['?' for _ in valid_fields])
+        columns = ', '.join(valid_fields.keys())
         
-        if kwargs['type'] not in valid_types:
-            raise ValueError(f"Type must be one of: {', '.join(valid_types)}")
-        
-        status = kwargs.get('status', 'Completed')
+        query = f"INSERT INTO interactions ({columns}) VALUES ({placeholders})"
+        return db.execute_update(query, list(valid_fields.values()))
         if status not in valid_statuses:
             raise ValueError(f"Status must be one of: {', '.join(valid_statuses)}")
         
@@ -1521,21 +1547,19 @@ class CRMData:
     
     def create_task(self, **kwargs):
         """Create a new task"""
-        fields = ['title', 'description', 'status', 'work_date', 'due_date', 'owner',
-                 'start_date', 'completed_date', 'parent_item_type', 'parent_item_id',
-                 'sub_item', 'priority', 'time_taken', 'created_by', 'account_id',
-                 'contact_id', 'opportunity_id', 'project_id']
+        fields = ['subject', 'description', 'status', 'priority', 'type', 'due_date',
+                 'assigned_to', 'related_to_type', 'related_to_id']
         
         valid_fields = {k: v for k, v in kwargs.items() if k in fields and v is not None}
         
-        if not valid_fields.get('title'):
-            raise ValueError("Task title is required")
+        if not valid_fields.get('subject'):
+            raise ValueError("Task subject is required")
         
         # Set defaults
         if 'status' not in valid_fields:
             valid_fields['status'] = 'Not Started'
         if 'priority' not in valid_fields:
-            valid_fields['priority'] = 'Medium'
+            valid_fields['priority'] = 'Normal'
         
         placeholders = ', '.join(['?' for _ in valid_fields])
         columns = ', '.join(valid_fields.keys())

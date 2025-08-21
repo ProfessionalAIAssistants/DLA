@@ -1,9 +1,9 @@
 {
-  "min_delivery_days": 120,
-  "iso_required": "NO",
+  "min_delivery_days": 100,
+  "iso_required": "YES",
   "sampling_required": "NO",
   "inspection_point": "DESTINATION",
-  "manufacturer_filter": "Parker\nMonkey Monkey",
+  "manufacturer_filter": "Parker",
   "auto_create_opportunities": true,
   "link_related_records": true,
   "move_processed_files": true,

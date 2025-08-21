@@ -1,0 +1,113 @@
+{
+  "processed": 0,
+  "created": 0,
+  "updated": 0,
+  "skipped": 0,
+  "errors": [
+    "Error processing SPE4A123T3230.PDF: CRMData.create_account() takes 1 positional argument but 2 were given",
+    "Error processing SPE4A124T0700.PDF: CRMData.create_account() takes 1 positional argument but 2 were given",
+    "Error processing SPE4A124T2840.PDF: CRMData.create_account() takes 1 positional argument but 2 were given",
+    "Error processing SPE4A124T3116.PDF: CRMData.create_account() takes 1 positional argument but 2 were given",
+    "Error processing SPE4A124T3826.PDF: CRMData.create_account() takes 1 positional argument but 2 were given",
+    "Error processing SPE4A123T3230.PDF: CRMData.create_account() takes 1 positional argument but 2 were given",
+    "Error processing SPE4A124T0700.PDF: CRMData.create_account() takes 1 positional argument but 2 were given",
+    "Error processing SPE4A124T2840.PDF: CRMData.create_account() takes 1 positional argument but 2 were given",
+    "Error processing SPE4A124T3116.PDF: CRMData.create_account() takes 1 positional argument but 2 were given",
+    "Error processing SPE4A124T3826.PDF: CRMData.create_account() takes 1 positional argument but 2 were given"
+  ],
+  "processed_files": [],
+  "skipped_files": [],
+  "error_files": [
+    {
+      "filename": "SPE4A123T3230.PDF",
+      "error": "CRMData.create_account() takes 1 positional argument but 2 were given",
+      "timestamp": "2025-08-20T14:23:33.860628"
+    },
+    {
+      "filename": "SPE4A124T0700.PDF",
+      "error": "CRMData.create_account() takes 1 positional argument but 2 were given",
+      "timestamp": "2025-08-20T14:23:34.170423"
+    },
+    {
+      "filename": "SPE4A124T2840.PDF",
+      "error": "CRMData.create_account() takes 1 positional argument but 2 were given",
+      "timestamp": "2025-08-20T14:23:34.526117"
+    },
+    {
+      "filename": "SPE4A124T3116.PDF",
+      "error": "CRMData.create_account() takes 1 positional argument but 2 were given",
+      "timestamp": "2025-08-20T14:23:34.857848"
+    },
+    {
+      "filename": "SPE4A124T3826.PDF",
+      "error": "CRMData.create_account() takes 1 positional argument but 2 were given",
+      "timestamp": "2025-08-20T14:23:35.176896"
+    },
+    {
+      "filename": "SPE4A123T3230.PDF",
+      "error": "CRMData.create_account() takes 1 positional argument but 2 were given",
+      "timestamp": "2025-08-20T14:23:35.510053"
+    },
+    {
+      "filename": "SPE4A124T0700.PDF",
+      "error": "CRMData.create_account() takes 1 positional argument but 2 were given",
+      "timestamp": "2025-08-20T14:23:35.845519"
+    },
+    {
+      "filename": "SPE4A124T2840.PDF",
+      "error": "CRMData.create_account() takes 1 positional argument but 2 were given",
+      "timestamp": "2025-08-20T14:23:36.197037"
+    },
+    {
+      "filename": "SPE4A124T3116.PDF",
+      "error": "CRMData.create_account() takes 1 positional argument but 2 were given",
+      "timestamp": "2025-08-20T14:23:36.498703"
+    },
+    {
+      "filename": "SPE4A124T3826.PDF",
+      "error": "CRMData.create_account() takes 1 positional argument but 2 were given",
+      "timestamp": "2025-08-20T14:23:36.832877"
+    }
+  ],
+  "created_records": {
+    "rfqs": [],
+    "accounts": [],
+    "contacts": [],
+    "products": []
+  },
+  "updated_records": {
+    "rfqs": [],
+    "accounts": [],
+    "contacts": [],
+    "products": []
+  },
+  "processing_start": "2025-08-20T14:23:33.505831",
+  "processing_end": "2025-08-20T14:23:36.832884",
+  "filter_settings": {
+    "min_delivery_days": 100,
+    "iso_required": "YES",
+    "sampling_required": "NO",
+    "inspection_point": "DESTINATION",
+    "manufacturer_filter": "Parker\nMonkey Monkey",
+    "auto_create_opportunities": true,
+    "link_related_records": true,
+    "move_processed_files": true,
+    "skip_duplicates": true
+  },
+  "database_stats_before": {
+    "accounts": 15,
+    "contacts": 116,
+    "products": 977,
+    "rfqs": 0,
+    "interactions": 5,
+    "opportunities": 0
+  },
+  "database_stats_after": {
+    "accounts": 15,
+    "contacts": 116,
+    "products": 977,
+    "rfqs": 0,
+    "interactions": 5,
+    "opportunities": 0
+  }
+}
