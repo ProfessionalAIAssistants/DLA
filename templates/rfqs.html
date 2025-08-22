@@ -531,8 +531,8 @@ function viewRFQ(rfqId) {
 
 function editRFQ(rfqId) {
     console.log('Editing RFQ:', rfqId);
-    // For now, redirect to view page - could add edit modal later
-    window.location.href = `/rfq/${rfqId}`;
+    // Redirect to RFQ detail page with edit parameter to auto-open the edit modal
+    window.location.href = `/rfq/${rfqId}?edit=true`;
 }
 
 function viewDocument(rfqId, documentPath) {

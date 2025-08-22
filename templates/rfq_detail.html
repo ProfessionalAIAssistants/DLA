@@ -70,106 +70,73 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
+                                <label class="form-label fw-bold">RFQ ID:</label>
+                                <p class="mb-0">{{ rfq.id }}</p>
+                            </div>
+                            <div class="mb-3">
                                 <label class="form-label fw-bold">Request Number:</label>
-                                <p class="mb-0">{{ rfq.request_number }}</p>
+                                <p class="mb-0">{{ rfq.request_number or 'Not Set' }}</p>
                             </div>
                             <div class="mb-3">
-                                <label class="form-label fw-bold">NSN:</label>
-                                <p class="mb-0">{{ rfq.nsn or 'N/A' }}</p>
+                                <label class="form-label fw-bold">Status:</label>
+                                <p class="mb-0">
+                                    <span class="badge bg-{{ 'success' if rfq.status == 'Sent' else 'warning' if rfq.status == 'Draft' else 'info' if rfq.status == 'Responded' else 'secondary' }}">
+                                        {{ rfq.status or 'Draft' }}
+                                    </span>
+                                </p>
                             </div>
                             <div class="mb-3">
-                                <label class="form-label fw-bold">FSC:</label>
-                                <p class="mb-0">{{ rfq.fsc or 'N/A' }}</p>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label fw-bold">Purchase Number:</label>
-                                <p class="mb-0">{{ rfq.purchase_number or 'N/A' }}</p>
+                                <label class="form-label fw-bold">Quantity:</label>
+                                <p class="mb-0">{{ rfq.quantity or 'Not specified' }}</p>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label class="form-label fw-bold">Quantity:</label>
-                                <p class="mb-0">{{ rfq.quantity or 'N/A' }}{% if rfq.unit %} {{ rfq.unit }}{% endif %}</p>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label fw-bold">Delivery Days:</label>
+                                <label class="form-label fw-bold">Quote Amount:</label>
                                 <p class="mb-0">
-                                    {% if rfq.delivery_days %}
-                                        <span class="badge bg-{{ 'success' if rfq.delivery_days >= 120 else 'warning' if rfq.delivery_days >= 60 else 'danger' }}">
-                                            {{ rfq.delivery_days }} days
-                                        </span>
+                                    {% if rfq.quote_amount %}
+                                        ${{ "{:,.2f}".format(rfq.quote_amount) }}
                                     {% else %}
-                                        N/A
+                                        Not quoted yet
                                     {% endif %}
                                 </p>
                             </div>
                             <div class="mb-3">
-                                <label class="form-label fw-bold">FOB:</label>
-                                <p class="mb-0">{{ rfq.fob or 'DESTINATION' }}</p>
+                                <label class="form-label fw-bold">Lead Time:</label>
+                                <p class="mb-0">{{ rfq.lead_time or 'Not specified' }}</p>
                             </div>
                             <div class="mb-3">
-                                <label class="form-label fw-bold">ISO Required:</label>
-                                <p class="mb-0">
-                                    <span class="badge bg-{{ 'danger' if rfq.iso == 'YES' else 'success' }}">
-                                        {{ rfq.iso or 'NO' }}
-                                    </span>
-                                </p>
+                                <label class="form-label fw-bold">Effective Date:</label>
+                                <p class="mb-0">{{ rfq.effective_date or 'Not set' }}</p>
                             </div>
                         </div>
                     </div>
                     
+                    <!-- Product Information Only -->
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label class="form-label fw-bold">Open Date:</label>
-                                <p class="mb-0">{{ rfq.open_date or 'N/A' }}</p>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label fw-bold">Close Date:</label>
-                                <p class="mb-0">{{ rfq.close_date or 'N/A' }}</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label fw-bold">Sampling:</label>
+                                <label class="form-label fw-bold">Product:</label>
                                 <p class="mb-0">
-                                    <span class="badge bg-{{ 'danger' if rfq.sampling == 'YES' else 'success' }}">
-                                        {{ rfq.sampling or 'NO' }}
-                                    </span>
+                                    {% if rfq.product_id %}
+                                        Product ID: {{ rfq.product_id }}
+                                        {% if rfq.product_name %}
+                                            <br><span class="text-muted">{{ rfq.product_name }}</span>
+                                        {% endif %}
+                                    {% else %}
+                                        Not specified
+                                    {% endif %}
                                 </p>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label class="form-label fw-bold">Inspection Point:</label>
-                                <p class="mb-0">{{ rfq.inspection_point or 'DESTINATION' }}</p>
+                                <label class="form-label fw-bold">NSN:</label>
+                                <p class="mb-0">{{ rfq.nsn or 'Not specified' }}</p>
                             </div>
                         </div>
                     </div>
                     
-                    <!-- Product Description -->
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Product Description:</label>
-                        <div class="bg-light p-3 rounded">
-                            <p class="mb-0">{{ rfq.product_description or 'N/A' }}</p>
-                        </div>
-                    </div>
-                    
-                    <!-- Manufacturer Information -->
-                    {% if rfq.manufacturer %}
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Manufacturer Information:</label>
-                        <div class="bg-light p-3 rounded">
-                            <pre class="mb-0">{{ rfq.manufacturer }}</pre>
-                        </div>
-                    </div>
-                    {% endif %}
-
                     <!-- Notes -->
                     {% if rfq.notes %}
                     <div class="mb-3">
@@ -179,6 +146,16 @@
                         </div>
                     </div>
                     {% endif %}
+                    
+                    <!-- Documents Section -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Documents:</label>
+                        <div class="bg-light p-3 rounded">
+                            <p class="mb-2"><i class="fas fa-paperclip me-2"></i>Attached Documents:</p>
+                            <!-- TODO: Add document upload/management functionality -->
+                            <small class="text-muted">Document management feature coming soon</small>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -189,44 +166,45 @@
             {% if account %}
             <div class="card mb-3">
                 <div class="card-header">
-                    <h6 class="mb-0"><i class="fas fa-building me-2"></i>Account</h6>
+                    <h6 class="mb-0"><i class="fas fa-building me-2"></i>Vendor Account</h6>
                 </div>
                 <div class="card-body">
                     <h6><a href="{{ url_for('account_detail', account_id=account.id) }}" class="text-decoration-none">{{ account.name }}</a></h6>
-                    <p class="text-muted mb-2">{{ account.type or 'N/A' }}</p>
+                    <p class="text-muted mb-2">{{ account.type or 'Vendor' }}</p>
                     {% if account.email %}
                     <p class="mb-1"><i class="fas fa-envelope me-1"></i> {{ account.email }}</p>
                     {% endif %}
                     {% if account.location %}
                     <p class="mb-1"><i class="fas fa-map-marker-alt me-1"></i> {{ account.location }}</p>
                     {% endif %}
+                    {% if contact %}
+                    <hr class="my-2">
+                    <small class="text-muted fw-bold">Primary Contact:</small>
+                    <p class="mb-1">{{ contact.first_name }} {{ contact.last_name }}</p>
+                    {% if contact.title %}<small class="text-muted">{{ contact.title }}</small><br>{% endif %}
+                    {% if contact.email %}<small><i class="fas fa-envelope me-1"></i> {{ contact.email }}</small><br>{% endif %}
+                    {% if contact.phone %}<small><i class="fas fa-phone me-1"></i> {{ contact.phone }}</small>{% endif %}
+                    {% endif %}
                 </div>
             </div>
-            {% endif %}
-            
-            <!-- Contact Information -->
-            {% if contact %}
+            {% else %}
             <div class="card mb-3">
                 <div class="card-header">
-                    <h6 class="mb-0"><i class="fas fa-user me-2"></i>Contact</h6>
+                    <h6 class="mb-0"><i class="fas fa-building me-2"></i>Vendor Account</h6>
                 </div>
                 <div class="card-body">
-                    <h6>{{ contact.first_name }} {{ contact.last_name }}</h6>
-                    <p class="text-muted mb-1">{{ contact.title or 'N/A' }}</p>
-                    {% if contact.email %}
-                    <p class="mb-1"><i class="fas fa-envelope me-1"></i> {{ contact.email }}</p>
-                    {% endif %}
-                    {% if contact.phone %}
-                    <p class="mb-1"><i class="fas fa-phone me-1"></i> {{ contact.phone }}</p>
-                    {% endif %}
+                    <p class="text-muted mb-2">No vendor assigned</p>
+                    <button class="btn btn-primary btn-sm" onclick="editRFQ({{ rfq.id }})">
+                        <i class="fas fa-plus me-1"></i>Assign Vendor
+                    </button>
                 </div>
             </div>
             {% endif %}
             
-            <!-- Buyer Information -->
+            <!-- Government Buyer Information -->
             <div class="card mb-3">
                 <div class="card-header">
-                    <h6 class="mb-0"><i class="fas fa-user-tie me-2"></i>Buyer Information</h6>
+                    <h6 class="mb-0"><i class="fas fa-user-tie me-2"></i>Government Buyer</h6>
                 </div>
                 <div class="card-body">
                     <div class="row">
@@ -240,34 +218,30 @@
                         </div>
                     </div>
                     <div class="row">
-                        <div class="col-6">
+                        <div class="col-12">
                             <small class="text-muted">Buyer:</small>
                             <p class="mb-1">{{ rfq.buyer_name or 'THE BUYER' }}</p>
                         </div>
-                        <div class="col-6">
-                            <small class="text-muted">Buyer Code:</small>
-                            <p class="mb-1">{{ rfq.buyer_code or 'N/A' }}</p>
-                        </div>
                     </div>
+                    {% if rfq.buyer_email or rfq.buyer_telephone %}
+                    <hr class="my-2">
                     {% if rfq.buyer_email %}
                     <p class="mb-1"><i class="fas fa-envelope me-1"></i> {{ rfq.buyer_email }}</p>
                     {% endif %}
                     {% if rfq.buyer_telephone %}
                     <p class="mb-1"><i class="fas fa-phone me-1"></i> {{ rfq.buyer_telephone }}</p>
                     {% endif %}
-                    {% if rfq.buyer_fax %}
-                    <p class="mb-1"><i class="fas fa-fax me-1"></i> {{ rfq.buyer_fax }}</p>
                     {% endif %}
                     
                     {% if rfq.buyer_address %}
-                    <hr>
+                    <hr class="my-2">
                     <small class="text-muted">Address:</small>
-                    <p class="mb-0">{{ rfq.buyer_address }}</p>
+                    <p class="mb-0 small">{{ rfq.buyer_address }}</p>
                     {% endif %}
                 </div>
             </div>
             
-            <!-- Opportunity Link -->
+            <!-- Linked Opportunity -->
             {% if opportunity %}
             <div class="card mb-3">
                 <div class="card-header">
@@ -287,10 +261,10 @@
             {% else %}
             <div class="card mb-3">
                 <div class="card-header">
-                    <h6 class="mb-0"><i class="fas fa-bullseye me-2"></i>Create Opportunity</h6>
+                    <h6 class="mb-0"><i class="fas fa-bullseye me-2"></i>Link Opportunity</h6>
                 </div>
                 <div class="card-body">
-                    <p class="text-muted mb-2">This RFQ is not linked to an opportunity.</p>
+                    <p class="text-muted mb-2">No opportunity linked to this RFQ.</p>
                     <button class="btn btn-primary btn-sm" onclick="createOpportunityFromRFQ({{ rfq.id }})">
                         <i class="fas fa-plus me-1"></i>Create Opportunity
                     </button>
@@ -298,26 +272,35 @@
             </div>
             {% endif %}
             
-            <!-- File Information -->
+            <!-- Source File Information -->
             <div class="card">
                 <div class="card-header">
-                    <h6 class="mb-0"><i class="fas fa-file-pdf me-2"></i>File Information</h6>
+                    <h6 class="mb-0"><i class="fas fa-file-pdf me-2"></i>Source Information</h6>
                 </div>
                 <div class="card-body">
                     {% if rfq.pdf_name %}
-                    <p class="mb-2"><strong>PDF Name:</strong><br>{{ rfq.pdf_name }}</p>
+                    <div class="mb-2">
+                        <small class="text-muted fw-bold">PDF Source:</small>
+                        <p class="mb-0 small">{{ rfq.pdf_name }}</p>
+                    </div>
                     {% endif %}
                     {% if rfq.solicitation_url %}
-                    <p class="mb-2">
+                    <div class="mb-2">
                         <a href="{{ rfq.solicitation_url }}" target="_blank" class="btn btn-outline-primary btn-sm">
-                            <i class="fas fa-external-link-alt me-1"></i>View Solicitation
+                            <i class="fas fa-external-link-alt me-1"></i>View Original Solicitation
                         </a>
-                    </p>
+                    </div>
                     {% endif %}
-                    <small class="text-muted">
-                        <strong>Created:</strong> {{ rfq.created_date or 'N/A' }}<br>
-                        <strong>Modified:</strong> {{ rfq.modified_date or 'N/A' }}
-                    </small>
+                    <div class="row">
+                        <div class="col-6">
+                            <small class="text-muted">Created:</small>
+                            <p class="mb-0 small">{{ rfq.created_date or 'N/A' }}</p>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted">Modified:</small>
+                            <p class="mb-0 small">{{ rfq.modified_date or 'N/A' }}</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -352,42 +335,52 @@
                                     <div class="mb-3">
                                         <label for="editStatus" class="form-label">Status</label>
                                         <select class="form-select" id="editStatus" name="status" required>
-                                            <option value="New" {{ 'selected' if rfq.status == 'New' }}>New</option>
-                                            <option value="Reviewed" {{ 'selected' if rfq.status == 'Reviewed' }}>Reviewed</option>
-                                            <option value="Qualified" {{ 'selected' if rfq.status == 'Qualified' }}>Qualified</option>
-                                            <option value="Quoted" {{ 'selected' if rfq.status == 'Quoted' }}>Quoted</option>
-                                            <option value="Won" {{ 'selected' if rfq.status == 'Won' }}>Won</option>
-                                            <option value="Lost" {{ 'selected' if rfq.status == 'Lost' }}>Lost</option>
+                                            <option value="Draft" {{ 'selected' if rfq.status == 'Draft' }}>Draft</option>
+                                            <option value="Sent" {{ 'selected' if rfq.status == 'Sent' }}>Sent</option>
+                                            <option value="Responded" {{ 'selected' if rfq.status == 'Responded' }}>Responded</option>
+                                            <option value="Accepted" {{ 'selected' if rfq.status == 'Accepted' }}>Accepted</option>
+                                            <option value="Declined" {{ 'selected' if rfq.status == 'Declined' }}>Declined</option>
                                         </select>
                                     </div>
                                 </div>
                             </div>
 
                             <div class="row">
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="editProduct" class="form-label">Product</label>
-                                        <select class="form-select" id="editProduct" name="product_id">
-                                            <option value="">Select Product</option>
-                                            <!-- Products will be loaded dynamically -->
-                                        </select>
-                                        <small class="text-muted">Current: {{ rfq.product_name or 'None' }}</small>
-                                    </div>
-                                </div>
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="editQuantity" class="form-label">Quantity</label>
                                         <input type="number" class="form-control" id="editQuantity" name="quantity" value="{{ rfq.quantity }}" min="1" required>
                                     </div>
                                 </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="editQuoteAmount" class="form-label">Quote Amount ($)</label>
+                                        <input type="number" step="0.01" class="form-control" id="editQuoteAmount" name="quote_amount" value="{{ rfq.quote_amount }}" placeholder="0.00">
+                                    </div>
+                                </div>
                             </div>
 
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="mb-3">
-                                        <label for="editAccount" class="form-label">Account (Vendor)</label>
+                                        <label for="editLeadTime" class="form-label">Lead Time</label>
+                                        <input type="text" class="form-control" id="editLeadTime" name="lead_time" value="{{ rfq.lead_time }}" placeholder="e.g., 30 days, 2 weeks">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="editEffectiveDate" class="form-label">Effective Date</label>
+                                        <input type="date" class="form-control" id="editEffectiveDate" name="effective_date" value="{{ rfq.effective_date }}">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="editAccount" class="form-label">Vendor (Account)</label>
                                         <select class="form-select" id="editAccount" name="account_id">
-                                            <option value="">Select Account</option>
+                                            <option value="">Select Vendor</option>
                                             <!-- Accounts will be loaded dynamically -->
                                         </select>
                                         <small class="text-muted">Current: {{ account.name if account else 'None' }}</small>
@@ -408,8 +401,12 @@
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="mb-3">
-                                        <label for="editDeliveryDays" class="form-label">Delivery Days</label>
-                                        <input type="number" class="form-control" id="editDeliveryDays" name="delivery_days" value="{{ rfq.delivery_days }}" min="0">
+                                        <label for="editProduct" class="form-label">Product</label>
+                                        <select class="form-select" id="editProduct" name="product_id">
+                                            <option value="">Select Product</option>
+                                            <!-- Products will be loaded dynamically -->
+                                        </select>
+                                        <small class="text-muted">Current: {{ rfq.product_name or 'None' }}</small>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
@@ -426,7 +423,20 @@
 
                             <div class="mb-3">
                                 <label for="editNotes" class="form-label">Notes</label>
-                                <textarea class="form-control" id="editNotes" name="notes" rows="3">{{ rfq.notes }}</textarea>
+                                <textarea class="form-control" id="editNotes" name="notes" rows="3" placeholder="Add RFQ notes, specifications, or requirements...">{{ rfq.notes }}</textarea>
+                            </div>
+                            
+                            <!-- Document Upload Section -->
+                            <div class="mb-3">
+                                <label class="form-label">Upload Documents</label>
+                                <input type="file" class="form-control" id="rfqDocuments" name="documents[]" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.txt">
+                                <small class="text-muted">Upload RFQ documents, specifications, drawings, etc. (PDF, Word, Excel, Text)</small>
+                                <div id="existingDocuments" class="mt-2">
+                                    <small class="text-info">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        Document management feature in development
+                                    </small>
+                                </div>
                             </div>
                         </div>
 
@@ -560,6 +570,15 @@
 </div>
 
 <script>
+// Check URL parameters and auto-open edit modal if requested
+document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('edit') === 'true') {
+        // Auto-open the edit modal
+        editRFQ({{ rfq.id }});
+    }
+});
+
 // Load data for dropdowns when edit modal opens
 document.getElementById('editRFQModal').addEventListener('show.bs.modal', function () {
     loadProductsForEdit();

@@ -2862,3 +2862,100 @@
 2025-08-21 16:58:23,817 - werkzeug - INFO - 127.0.0.1 - - [21/Aug/2025 16:58:23] "GET /api/contacts?account_id=32 HTTP/1.1" 200 -
 2025-08-21 16:58:43,174 - werkzeug - INFO - 127.0.0.1 - - [21/Aug/2025 16:58:43] "POST /api/rfqs HTTP/1.1" 200 -
 2025-08-21 16:58:43,187 - werkzeug - INFO - 127.0.0.1 - - [21/Aug/2025 16:58:43] "GET /rfqs HTTP/1.1" 200 -
+2025-08-22 06:15:42,572 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.86.55:5000
+2025-08-22 06:15:42,572 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-08-22 06:15:42,574 - werkzeug - INFO -  * Restarting with stat
+2025-08-22 06:15:42,911 - werkzeug - WARNING -  * Debugger is active!
+2025-08-22 06:15:42,916 - werkzeug - INFO -  * Debugger PIN: 671-868-448
+2025-08-22 06:15:45,302 - werkzeug - INFO - 127.0.0.1 - - [22/Aug/2025 06:15:45] "GET / HTTP/1.1" 200 -
+2025-08-22 06:15:46,093 - werkzeug - INFO - 127.0.0.1 - - [22/Aug/2025 06:15:46] "GET /api/pdf-count HTTP/1.1" 200 -
+2025-08-22 06:15:46,702 - werkzeug - INFO - 127.0.0.1 - - [22/Aug/2025 06:15:46] "[35m[1mGET /favicon.ico HTTP/1.1[0m" 500 -
+2025-08-22 06:15:52,076 - werkzeug - INFO - 127.0.0.1 - - [22/Aug/2025 06:15:52] "[35m[1mGET /favicon.ico HTTP/1.1[0m" 500 -
+2025-08-22 06:15:55,644 - werkzeug - INFO - 127.0.0.1 - - [22/Aug/2025 06:15:55] "[35m[1mGET /favicon.ico HTTP/1.1[0m" 500 -
+2025-08-22 06:15:56,427 - werkzeug - INFO - 127.0.0.1 - - [22/Aug/2025 06:15:56] "[35m[1mGET /favicon.ico HTTP/1.1[0m" 500 -
+2025-08-22 06:20:46,388 - werkzeug - INFO - 127.0.0.1 - - [22/Aug/2025 06:20:46] "GET / HTTP/1.1" 200 -
+2025-08-22 06:20:46,715 - werkzeug - INFO - 127.0.0.1 - - [22/Aug/2025 06:20:46] "GET /api/pdf-count HTTP/1.1" 200 -
+2025-08-22 06:20:46,863 - werkzeug - INFO - 127.0.0.1 - - [22/Aug/2025 06:20:46] "[35m[1mGET /favicon.ico HTTP/1.1[0m" 500 -
+2025-08-22 06:23:06,134 - werkzeug - INFO - 127.0.0.1 - - [22/Aug/2025 06:23:06] "GET /rfqs HTTP/1.1" 200 -
+2025-08-22 06:23:06,630 - werkzeug - INFO - 127.0.0.1 - - [22/Aug/2025 06:23:06] "[35m[1mGET /favicon.ico HTTP/1.1[0m" 500 -
+2025-08-22 06:23:08,824 - werkzeug - INFO - 127.0.0.1 - - [22/Aug/2025 06:23:08] "GET /rfq/6 HTTP/1.1" 200 -
+2025-08-22 06:23:09,200 - werkzeug - INFO - 127.0.0.1 - - [22/Aug/2025 06:23:09] "[35m[1mGET /favicon.ico HTTP/1.1[0m" 500 -
+2025-08-22 06:23:14,316 - werkzeug - INFO - 127.0.0.1 - - [22/Aug/2025 06:23:14] "[35m[1mGET /favicon.ico HTTP/1.1[0m" 500 -
+2025-08-22 06:23:16,523 - werkzeug - INFO - 127.0.0.1 - - [22/Aug/2025 06:23:16] "GET /rfq/6 HTTP/1.1" 200 -
+2025-08-22 06:23:16,882 - werkzeug - INFO - 127.0.0.1 - - [22/Aug/2025 06:23:16] "[35m[1mGET /favicon.ico HTTP/1.1[0m" 500 -
+2025-08-22 06:23:24,461 - werkzeug - INFO - 127.0.0.1 - - [22/Aug/2025 06:23:24] "[35m[1mGET /favicon.ico HTTP/1.1[0m" 500 -
+2025-08-22 06:23:29,790 - werkzeug - INFO - 127.0.0.1 - - [22/Aug/2025 06:23:29] "GET /rfq/6 HTTP/1.1" 200 -
+2025-08-22 06:23:30,171 - werkzeug - INFO - 127.0.0.1 - - [22/Aug/2025 06:23:30] "[35m[1mGET /favicon.ico HTTP/1.1[0m" 500 -
+2025-08-22 06:25:19,413 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.86.55:5000
+2025-08-22 06:25:19,414 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-08-22 06:25:19,415 - werkzeug - INFO -  * Restarting with stat
+2025-08-22 06:25:19,747 - werkzeug - WARNING -  * Debugger is active!
+2025-08-22 06:25:19,750 - werkzeug - INFO -  * Debugger PIN: 671-868-448
+2025-08-22 06:25:22,605 - werkzeug - INFO - 127.0.0.1 - - [22/Aug/2025 06:25:22] "GET / HTTP/1.1" 200 -
+2025-08-22 06:25:23,164 - werkzeug - INFO - 127.0.0.1 - - [22/Aug/2025 06:25:23] "GET /api/pdf-count HTTP/1.1" 200 -
+2025-08-22 06:25:23,661 - werkzeug - INFO - 127.0.0.1 - - [22/Aug/2025 06:25:23] "[35m[1mGET /favicon.ico HTTP/1.1[0m" 500 -
+2025-08-22 06:25:25,563 - werkzeug - INFO - 127.0.0.1 - - [22/Aug/2025 06:25:25] "GET /rfqs HTTP/1.1" 200 -
+2025-08-22 06:25:26,001 - werkzeug - INFO - 127.0.0.1 - - [22/Aug/2025 06:25:26] "[35m[1mGET /favicon.ico HTTP/1.1[0m" 500 -
+2025-08-22 06:25:30,608 - werkzeug - INFO - 127.0.0.1 - - [22/Aug/2025 06:25:30] "GET /rfq/6 HTTP/1.1" 200 -
+2025-08-22 06:25:30,972 - werkzeug - INFO - 127.0.0.1 - - [22/Aug/2025 06:25:30] "[35m[1mGET /favicon.ico HTTP/1.1[0m" 500 -
+2025-08-22 06:26:01,312 - werkzeug - INFO - 127.0.0.1 - - [22/Aug/2025 06:26:01] "GET /api/opportunities HTTP/1.1" 200 -
+2025-08-22 06:26:01,313 - werkzeug - INFO - 127.0.0.1 - - [22/Aug/2025 06:26:01] "GET /api/contacts?account_id=32 HTTP/1.1" 200 -
+2025-08-22 06:26:01,313 - werkzeug - INFO - 127.0.0.1 - - [22/Aug/2025 06:26:01] "GET /api/accounts HTTP/1.1" 200 -
+2025-08-22 06:26:01,331 - werkzeug - INFO - 127.0.0.1 - - [22/Aug/2025 06:26:01] "GET /api/products HTTP/1.1" 200 -
+2025-08-22 06:30:14,196 - werkzeug - INFO -  * Detected change in 'C:\\Users\\Kebron\\Documents\\GitHub\\DLA\\add_rfq_business_fields.py', reloading
+2025-08-22 06:30:14,266 - werkzeug - INFO -  * Restarting with stat
+2025-08-22 06:30:14,713 - werkzeug - WARNING -  * Debugger is active!
+2025-08-22 06:30:14,716 - werkzeug - INFO -  * Debugger PIN: 671-868-448
+2025-08-22 06:34:16,898 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.86.55:5000
+2025-08-22 06:34:16,899 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-08-22 06:34:16,900 - werkzeug - INFO -  * Restarting with stat
+2025-08-22 06:34:17,256 - werkzeug - WARNING -  * Debugger is active!
+2025-08-22 06:34:17,259 - werkzeug - INFO -  * Debugger PIN: 671-868-448
+2025-08-22 06:34:28,964 - werkzeug - INFO - 127.0.0.1 - - [22/Aug/2025 06:34:28] "GET /?id=41469fe7-dc07-48d5-84d3-f22af18c2cdc&vscodeBrowserReqId=1755866068916 HTTP/1.1" 200 -
+2025-08-22 06:34:29,087 - werkzeug - INFO - 127.0.0.1 - - [22/Aug/2025 06:34:29] "GET /api/pdf-count HTTP/1.1" 200 -
+2025-08-22 06:36:54,696 - werkzeug - INFO - 127.0.0.1 - - [22/Aug/2025 06:36:54] "GET /rfqs HTTP/1.1" 200 -
+2025-08-22 06:36:58,386 - werkzeug - INFO - 127.0.0.1 - - [22/Aug/2025 06:36:58] "GET /rfq/6 HTTP/1.1" 200 -
+2025-08-22 06:40:42,743 - werkzeug - INFO -  * Detected change in 'C:\\Users\\Kebron\\Documents\\GitHub\\DLA\\add_rfq_business_fields.py', reloading
+2025-08-22 06:40:42,787 - werkzeug - INFO -  * Restarting with stat
+2025-08-22 06:40:42,835 - werkzeug - INFO -  * Detected change in 'C:\\Users\\Kebron\\Documents\\GitHub\\DLA\\add_rfq_business_fields.py', reloading
+2025-08-22 06:40:42,882 - werkzeug - INFO -  * Restarting with stat
+2025-08-22 06:40:43,258 - werkzeug - WARNING -  * Debugger is active!
+2025-08-22 06:40:43,264 - werkzeug - INFO -  * Debugger PIN: 671-868-448
+2025-08-22 06:40:43,376 - werkzeug - WARNING -  * Debugger is active!
+2025-08-22 06:40:43,379 - werkzeug - INFO -  * Debugger PIN: 671-868-448
+2025-08-22 06:40:53,182 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.86.55:5000
+2025-08-22 06:40:53,183 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-08-22 06:40:53,184 - werkzeug - INFO -  * Restarting with stat
+2025-08-22 06:40:53,520 - werkzeug - WARNING -  * Debugger is active!
+2025-08-22 06:40:53,523 - werkzeug - INFO -  * Debugger PIN: 671-868-448
+2025-08-22 06:40:56,401 - werkzeug - INFO - 127.0.0.1 - - [22/Aug/2025 06:40:56] "GET / HTTP/1.1" 200 -
+2025-08-22 06:40:57,202 - werkzeug - INFO - 127.0.0.1 - - [22/Aug/2025 06:40:57] "GET /api/pdf-count HTTP/1.1" 200 -
+2025-08-22 06:40:57,676 - werkzeug - INFO - 127.0.0.1 - - [22/Aug/2025 06:40:57] "[35m[1mGET /favicon.ico HTTP/1.1[0m" 500 -
+2025-08-22 06:41:01,304 - werkzeug - INFO - 127.0.0.1 - - [22/Aug/2025 06:41:01] "GET /rfqs HTTP/1.1" 200 -
+2025-08-22 06:41:01,736 - werkzeug - INFO - 127.0.0.1 - - [22/Aug/2025 06:41:01] "[35m[1mGET /favicon.ico HTTP/1.1[0m" 500 -
+2025-08-22 06:41:07,443 - werkzeug - INFO - 127.0.0.1 - - [22/Aug/2025 06:41:07] "GET /rfq/6 HTTP/1.1" 200 -
+2025-08-22 06:41:07,775 - werkzeug - INFO - 127.0.0.1 - - [22/Aug/2025 06:41:07] "[35m[1mGET /favicon.ico HTTP/1.1[0m" 500 -
+2025-08-22 06:41:34,331 - werkzeug - INFO - 127.0.0.1 - - [22/Aug/2025 06:41:34] "GET /api/accounts HTTP/1.1" 200 -
+2025-08-22 06:41:34,332 - werkzeug - INFO - 127.0.0.1 - - [22/Aug/2025 06:41:34] "GET /api/opportunities HTTP/1.1" 200 -
+2025-08-22 06:41:34,334 - werkzeug - INFO - 127.0.0.1 - - [22/Aug/2025 06:41:34] "GET /api/contacts?account_id=32 HTTP/1.1" 200 -
+2025-08-22 06:41:34,350 - werkzeug - INFO - 127.0.0.1 - - [22/Aug/2025 06:41:34] "GET /api/products HTTP/1.1" 200 -
+2025-08-22 06:45:46,055 - werkzeug - INFO - 127.0.0.1 - - [22/Aug/2025 06:45:46] "GET /rfqs HTTP/1.1" 200 -
+2025-08-22 06:45:46,878 - werkzeug - INFO - 127.0.0.1 - - [22/Aug/2025 06:45:46] "[35m[1mGET /favicon.ico HTTP/1.1[0m" 500 -
+2025-08-22 06:46:42,404 - werkzeug - INFO - 127.0.0.1 - - [22/Aug/2025 06:46:42] "GET /rfqs?id=41469fe7-dc07-48d5-84d3-f22af18c2cdc&vscodeBrowserReqId=1755866802348 HTTP/1.1" 200 -
+2025-08-22 06:48:14,324 - werkzeug - INFO - 127.0.0.1 - - [22/Aug/2025 06:48:14] "GET /rfq/6?edit=true HTTP/1.1" 200 -
+2025-08-22 06:48:14,345 - werkzeug - INFO - 127.0.0.1 - - [22/Aug/2025 06:48:14] "GET /api/opportunities HTTP/1.1" 200 -
+2025-08-22 06:48:14,345 - werkzeug - INFO - 127.0.0.1 - - [22/Aug/2025 06:48:14] "GET /api/accounts HTTP/1.1" 200 -
+2025-08-22 06:48:14,346 - werkzeug - INFO - 127.0.0.1 - - [22/Aug/2025 06:48:14] "GET /api/contacts?account_id=32 HTTP/1.1" 200 -
+2025-08-22 06:48:14,358 - werkzeug - INFO - 127.0.0.1 - - [22/Aug/2025 06:48:14] "GET /api/products HTTP/1.1" 200 -
