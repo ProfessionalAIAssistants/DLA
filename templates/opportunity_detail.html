@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{ opportunity.name }} - ModernCRM{% endblock %}
+{% block title %}{{ opportunity.name }} - CDE Prosperity{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
@@ -14,7 +14,7 @@
             <div class="row">
                 <div class="col-12">
                     <div class="progress-stacked" style="height: 30px;">
-                        {% set stages = ['Prospecting', 'RFQ Requested', 'RFQ Received', 'Submit Bid', 'Project Started'] %}
+                        {% set stages = ['Prospecting', 'Quote Requested', 'Quote Received', 'Submit Bid', 'Project Started'] %}
                         {% set current_stage = opportunity.stage or 'Prospecting' %}
                         {% set current_index = stages.index(current_stage) if current_stage in stages else 0 %}
                         
@@ -40,10 +40,10 @@
                             <i class="fas fa-search me-1"></i>Prospecting
                         </button>
                         <button type="button" class="btn btn-outline-primary btn-sm" onclick="changeStage('RFQ Requested')">
-                            <i class="fas fa-paper-plane me-1"></i>RFQ Requested
+                            <i class="fas fa-paper-plane me-1"></i>Quote Requested
                         </button>
                         <button type="button" class="btn btn-outline-primary btn-sm" onclick="changeStage('RFQ Received')">
-                            <i class="fas fa-inbox me-1"></i>RFQ Received
+                            <i class="fas fa-inbox me-1"></i>Quote Received
                         </button>
                         <button type="button" class="btn btn-outline-primary btn-sm" onclick="changeStage('Submit Bid')">
                             <i class="fas fa-file-contract me-1"></i>Submit Bid
@@ -85,7 +85,7 @@
                         <i class="fas fa-arrow-right me-2"></i>Advance Stage
                     </a></li>
                     <li><a class="dropdown-item" href="#" onclick="requestRFQ({{ opportunity.id }})">
-                        <i class="fas fa-paper-plane me-2"></i>Request RFQ from Vendors
+                        <i class="fas fa-paper-plane me-2"></i>Request Quote from Vendors
                     </a></li>
                     <li><a class="dropdown-item" href="#" onclick="markWon({{ opportunity.id }})">
                         <i class="fas fa-trophy me-2"></i>Mark as Won
@@ -333,6 +333,39 @@
                 </div>
             </div>
             {% endif %}
+
+            <!-- Vendor Email Automation -->
+            <div class="card mt-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-paper-plane me-2"></i>Vendor Quote Requests
+                    </h5>
+                    <button type="button" class="btn btn-sm btn-success" onclick="generateVendorEmails({{ opportunity.id }})">
+                        <i class="fas fa-plus me-1"></i>Generate RFQ Emails
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div id="vendorEmailsList">
+                        <div class="text-center py-3">
+                            <i class="fas fa-envelope fa-2x text-muted mb-2"></i>
+                            <p class="text-muted mb-3">No vendor emails generated yet</p>
+                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="generateVendorEmails({{ opportunity.id }})">
+                                <i class="fas fa-paper-plane me-1"></i>Start RFQ Process
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Email Templates Selector -->
+                    <div class="mt-3 border-top pt-3">
+                        <label class="form-label fw-bold small">Email Template:</label>
+                        <select id="emailTemplate" class="form-select form-select-sm">
+                            <option value="Standard RFQ Request">Standard RFQ Request</option>
+                            <option value="Urgent RFQ Request">Urgent RFQ Request</option>
+                        </select>
+                        <small class="text-muted">Choose template for auto-generated vendor emails</small>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Sidebar -->
@@ -423,8 +456,8 @@
                                 <label for="editStage" class="form-label">Stage</label>
                                 <select class="form-select" id="editStage">
                                     <option value="Prospecting" {{ 'selected' if opportunity.stage == 'Prospecting' }}>Prospecting</option>
-                                    <option value="RFQ Requested" {{ 'selected' if opportunity.stage == 'RFQ Requested' }}>RFQ Requested</option>
-                                    <option value="RFQ Received" {{ 'selected' if opportunity.stage == 'RFQ Received' }}>RFQ Received</option>
+                                    <option value="RFQ Requested" {{ 'selected' if opportunity.stage == 'RFQ Requested' }}>Quote Requested</option>
+                                    <option value="RFQ Received" {{ 'selected' if opportunity.stage == 'RFQ Received' }}>Quote Received</option>
                                     <option value="Submit Bid" {{ 'selected' if opportunity.stage == 'Submit Bid' }}>Submit Bid</option>
                                     <option value="Project Started" {{ 'selected' if opportunity.stage == 'Project Started' }}>Project Started</option>
                                 </select>
@@ -709,7 +742,7 @@ function advanceStage(opportunityId) {
     console.log('advanceStage called');
     // Get current stage and advance to next
     const currentStage = '{{ opportunity.stage }}';
-    const stages = ['Prospecting', 'RFQ Requested', 'RFQ Received', 'Submit Bid', 'Project Started'];
+    const stages = ['Prospecting', 'Quote Requested', 'Quote Received', 'Submit Bid', 'Project Started'];
     const currentIndex = stages.indexOf(currentStage);
     if (currentIndex < stages.length - 1) {
         changeStage(stages[currentIndex + 1]);
@@ -719,7 +752,7 @@ function advanceStage(opportunityId) {
 }
 
 function requestRFQ(opportunityId) {
-    console.log('requestRFQ called');
+    console.log('requestQuote called');
     changeStage('RFQ Requested');
 }
 
@@ -767,7 +800,27 @@ function markNoBid(opportunityId) {
 
 function createProject(opportunityId) {
     console.log('createProject called');
-    alert('Create Project functionality to be implemented');
+    if (confirm('Create a new project from this opportunity?')) {
+        fetch(`/api/opportunities/${opportunityId}/create-project`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(`Project created successfully! Project ID: ${data.project_id}`);
+                location.reload();
+            } else {
+                alert('Error creating project: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error creating project. Please try again.');
+        });
+    }
 }
 
 function deleteOpportunity(opportunityId) {
@@ -787,5 +840,369 @@ function deleteOpportunity(opportunityId) {
         });
     }
 }
+
+// ==================== VENDOR EMAIL AUTOMATION ====================
+
+function generateVendorEmails(opportunityId) {
+    console.log('generateVendorEmails called for opportunity:', opportunityId);
+    
+    // Show vendor selection modal
+    showVendorSelectionModal(opportunityId);
+}
+
+function showVendorSelectionModal(opportunityId) {
+    // Create modal for vendor selection
+    const modalHtml = `
+        <div class="modal fade" id="vendorSelectionModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="fas fa-users me-2"></i>Select Vendors for RFQ
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Email Template:</label>
+                            <select id="modalEmailTemplate" class="form-select">
+                                <option value="Standard RFQ Request">Standard RFQ Request</option>
+                                <option value="Urgent RFQ Request">Urgent RFQ Request</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Select Vendors:</label>
+                            <div id="vendorCheckboxes" class="border rounded p-3" style="max-height: 300px; overflow-y: auto;">
+                                <div class="text-center py-3">
+                                    <i class="fas fa-spinner fa-spin"></i> Loading vendors...
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info small">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Selected vendors will receive auto-generated RFQ emails with product details, quantities, and manufacturer information.
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-success" onclick="processVendorEmails(${opportunityId})">
+                            <i class="fas fa-paper-plane me-1"></i>Generate & Send RFQ Emails
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Add modal to page if not exists
+    if (!document.getElementById('vendorSelectionModal')) {
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+    }
+    
+    // Load vendors
+    loadVendorsForModal();
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('vendorSelectionModal'));
+    modal.show();
+}
+
+function loadVendorsForModal() {
+    fetch('/api/accounts?type=vendor')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayVendorCheckboxes(data.accounts);
+            } else {
+                document.getElementById('vendorCheckboxes').innerHTML = 
+                    '<div class="text-danger">Error loading vendors: ' + data.message + '</div>';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading vendors:', error);
+            document.getElementById('vendorCheckboxes').innerHTML = 
+                '<div class="text-danger">Error loading vendors. Please try again.</div>';
+        });
+}
+
+function displayVendorCheckboxes(vendors) {
+    const container = document.getElementById('vendorCheckboxes');
+    
+    if (!vendors || vendors.length === 0) {
+        container.innerHTML = '<div class="text-muted">No vendors found. Add vendors in the Accounts section first.</div>';
+        return;
+    }
+    
+    let html = '';
+    vendors.forEach(vendor => {
+        html += `
+            <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" value="${vendor.id}" id="vendor_${vendor.id}">
+                <label class="form-check-label" for="vendor_${vendor.id}">
+                    <strong>${vendor.name}</strong>
+                    ${vendor.city ? '<br><small class="text-muted">' + vendor.city + ', ' + (vendor.state || '') + '</small>' : ''}
+                </label>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+function processVendorEmails(opportunityId) {
+    const selectedVendors = [];
+    const checkboxes = document.querySelectorAll('#vendorCheckboxes input[type="checkbox"]:checked');
+    
+    checkboxes.forEach(cb => {
+        selectedVendors.push({
+            account_id: parseInt(cb.value),
+            contact_id: null // Will use primary contact
+        });
+    });
+    
+    if (selectedVendors.length === 0) {
+        alert('Please select at least one vendor.');
+        return;
+    }
+    
+    const template = document.getElementById('modalEmailTemplate').value;
+    
+    // Show loading state
+    const button = event.target;
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Generating emails...';
+    button.disabled = true;
+    
+    fetch(`/api/opportunities/${opportunityId}/generate-vendor-emails`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            vendors: selectedVendors,
+            template: template
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        button.innerHTML = originalText;
+        button.disabled = false;
+        
+        if (data.success) {
+            alert(`Successfully generated ${data.summary.success} RFQ emails!`);
+            bootstrap.Modal.getInstance(document.getElementById('vendorSelectionModal')).hide();
+            loadVendorEmailsList(opportunityId);
+        } else {
+            alert('Error generating emails: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        button.innerHTML = originalText;
+        button.disabled = false;
+        alert('Error generating emails. Please try again.');
+    });
+}
+
+function loadVendorEmailsList(opportunityId) {
+    fetch(`/api/opportunities/${opportunityId}/vendor-emails`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayVendorEmails(data.emails);
+            } else {
+                console.error('Error loading vendor emails:', data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error loading vendor emails:', error);
+        });
+}
+
+function displayVendorEmails(emails) {
+    const container = document.getElementById('vendorEmailsList');
+    
+    if (!emails || emails.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-3">
+                <i class="fas fa-envelope fa-2x text-muted mb-2"></i>
+                <p class="text-muted mb-3">No vendor emails generated yet</p>
+                <button type="button" class="btn btn-outline-primary btn-sm" onclick="generateVendorEmails(${opportunityId})">
+                    <i class="fas fa-paper-plane me-1"></i>Start RFQ Process
+                </button>
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '';
+    emails.forEach(email => {
+        const statusColor = {
+            'Draft': 'secondary',
+            'Sent': 'primary', 
+            'Responded': 'success',
+            'Error': 'danger'
+        }[email.status] || 'secondary';
+        
+        html += `
+            <div class="border rounded p-3 mb-2">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="flex-grow-1">
+                        <h6 class="mb-1">${email.vendor_name}</h6>
+                        <p class="text-muted mb-1 small">${email.subject}</p>
+                        <small class="text-muted">
+                            <i class="fas fa-clock me-1"></i>${new Date(email.created_date).toLocaleString()}
+                        </small>
+                    </div>
+                    <div class="text-end">
+                        <span class="badge bg-${statusColor} mb-2">${email.status}</span><br>
+                        <div class="btn-group btn-group-sm">
+                            <button class="btn btn-outline-primary" onclick="previewEmail('${email.rfq_email_id}')" title="Preview">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="btn btn-outline-success" onclick="markEmailSent(${email.id})" title="Mark as Sent">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+function previewEmail(rfqEmailId) {
+    // This would show a modal with the email content
+    alert('Email preview functionality - showing RFQ ID: ' + rfqEmailId);
+}
+
+function markEmailSent(emailId) {
+    if (confirm('Mark this email as sent?')) {
+        fetch(`/api/vendor-emails/${emailId}/mark-sent`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                tracking_id: `TRACK-${emailId}-${Date.now()}`
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Email marked as sent and interaction created!');
+                loadVendorEmailsList({{ opportunity.id }});
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error updating email status.');
+        });
+    }
+}
+
+function viewEmailTracking(emailId) {
+    fetch(`/api/vendor-emails/${emailId}/tracking`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showEmailTrackingModal(data.tracking);
+            } else {
+                alert('Error loading tracking data: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error loading tracking data.');
+        });
+}
+
+function showEmailTrackingModal(trackingData) {
+    const modalHtml = `
+        <div class="modal fade" id="emailTrackingModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="fas fa-chart-line me-2"></i>Email Tracking Details
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <strong>Email Status:</strong><br>
+                                <span class="badge bg-${trackingData.email_data.delivery_status === 'Sent' ? 'success' : 'warning'}">
+                                    ${trackingData.email_data.delivery_status || 'Pending'}
+                                </span>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Response Received:</strong><br>
+                                <span class="badge bg-${trackingData.email_data.response_received ? 'success' : 'secondary'}">
+                                    ${trackingData.email_data.response_received ? 'Yes' : 'No'}
+                                </span>
+                            </div>
+                        </div>
+                        
+                        ${trackingData.email_data.sent_date ? `
+                            <div class="mb-3">
+                                <strong>Sent Date:</strong> ${new Date(trackingData.email_data.sent_date).toLocaleString()}
+                            </div>
+                        ` : ''}
+                        
+                        ${trackingData.email_data.response_date ? `
+                            <div class="mb-3">
+                                <strong>Response Date:</strong> ${new Date(trackingData.email_data.response_date).toLocaleString()}
+                            </div>
+                        ` : ''}
+                        
+                        <h6>Tracking Events:</h6>
+                        <div class="list-group">
+                            ${trackingData.tracking_events.map(event => `
+                                <div class="list-group-item">
+                                    <div class="d-flex justify-content-between">
+                                        <strong>${event.event_type}</strong>
+                                        <small>${new Date(event.timestamp).toLocaleString()}</small>
+                                    </div>
+                                    <p class="mb-1">${event.details}</p>
+                                    <span class="badge bg-${event.success ? 'success' : 'danger'}">
+                                        ${event.success ? 'Success' : 'Failed'}
+                                    </span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remove existing modal if present
+    const existingModal = document.getElementById('emailTrackingModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Add modal to page
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('emailTrackingModal'));
+    modal.show();
+}
+
+// Load vendor emails when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    loadVendorEmailsList({{ opportunity.id }});
+});
 </script>
 {% endblock %}

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Settings - ModernCRM{% endblock %}
+{% block title %}Settings - CDE Prosperity{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
@@ -11,23 +11,46 @@
                 <i class="fas fa-cog me-3" style="background: var(--gradient-primary); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;"></i>
                 Settings
             </h1>
-            <p class="text-muted mb-0 fs-5">Configure PDF processing filters and automation rules</p>
+            <p class="text-muted mb-0 fs-5">Configure system settings, filters, automation, and email integration</p>
         </div>
     </div>
 
-    <!-- PDF Processing Filters -->
-    <div class="row">
-        <div class="col-lg-8">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-filter me-2"></i>PDF Processing Filters
-                    </h5>
-                    <small class="text-muted">Configure which PDFs should be automatically processed vs. moved to review</small>
-                </div>
-                <div class="card-body">
-                    <form id="settingsForm">
-                        <div class="row">
+    <!-- Tabbed Interface -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-0 pb-0">
+            <ul class="nav nav-tabs nav-tabs-line" id="settingsTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active fw-semibold" id="filters-tab" data-bs-toggle="tab" data-bs-target="#filters" type="button" role="tab" aria-controls="filters" aria-selected="true">
+                        <i class="fas fa-filter me-2"></i>PDF Filters
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-semibold" id="automation-tab" data-bs-toggle="tab" data-bs-target="#automation" type="button" role="tab" aria-controls="automation" aria-selected="false">
+                        <i class="fas fa-robot me-2"></i>Automation
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-semibold" id="email-tab" data-bs-toggle="tab" data-bs-target="#email" type="button" role="tab" aria-controls="email" aria-selected="false">
+                        <i class="fas fa-envelope me-2"></i>Email Settings
+                    </button>
+                </li>
+            </ul>
+        </div>
+        
+        <div class="card-body">
+            <div class="tab-content" id="settingsTabContent">
+                
+                <!-- Filters Tab -->
+                <div class="tab-pane fade show active" id="filters" role="tabpanel" aria-labelledby="filters-tab">
+                    <div class="row">
+                        <div class="col-lg-8">
+                            <h5 class="mb-4">
+                                <i class="fas fa-filter me-2 text-primary"></i>PDF Processing Filters
+                            </h5>
+                            <p class="text-muted mb-4">Configure which PDFs should be automatically processed vs. moved to review</p>
+                            
+                            <form id="settingsForm">
+                                <div class="row">
                             <!-- Delivery Days Filter -->
                             <div class="col-md-6 mb-4">
                                 <label for="minDeliveryDays" class="form-label fw-bold">
@@ -138,46 +161,137 @@
                                 <div class="form-text">Only process RFQs with these packaging types (leave empty to accept all)</div>
                             </div>
 
-                            <!-- Additional Filters -->
-                            <div class="col-12 mb-4">
-                                <h6 class="fw-bold mb-3">
-                                    <i class="fas fa-sliders-h me-2"></i>Additional Filters
+                        </div>
+
+                        <div class="d-flex gap-3">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Save Filter Settings
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="resetToDefaults()">
+                                <i class="fas fa-undo me-2"></i>Reset to Defaults
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                
+                <!-- Filter Preview Panel -->
+                <div class="col-lg-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-light">
+                            <h6 class="card-title mb-0">
+                                <i class="fas fa-eye me-2 text-primary"></i>Filter Preview
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-info">
+                                <h6 class="alert-heading">Current Filter Criteria:</h6>
+                                <ul class="mb-0" id="filterPreview">
+                                    <li>Delivery Days: >= <span id="previewDeliveryDays">{{ settings.min_delivery_days }}</span></li>
+                                    <li>ISO Required: <span id="previewISO">{{ settings.iso_required }}</span></li>
+                                    <li>Sampling Required: <span id="previewSampling">{{ settings.sampling_required }}</span></li>
+                                    <li>Inspection Point: <span id="previewInspection">{{ settings.inspection_point }}</span></li>
+                                    <li>Manufacturers: <span id="previewManufacturers">
+                                        {% if settings.manufacturer_filter %}
+                                            {{ settings.manufacturer_filter.split('\n')|length }} configured
+                                        {% else %}
+                                            All accepted
+                                        {% endif %}
+                                    </span></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Automation Tab -->
+        <div class="tab-pane fade" id="automation" role="tabpanel" aria-labelledby="automation-tab">
+            <div class="row">
+                <div class="col-lg-8">
+                    <h5 class="mb-4">
+                        <i class="fas fa-robot me-2 text-primary"></i>Automation Settings
+                    </h5>
+                    <p class="text-muted mb-4">Configure automated workflows and business rules</p>
+                    
+                    <form id="automationForm">
+                        <!-- Auto-Processing Rules -->
+                        <div class="card border-0 shadow-sm mb-4">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-cogs me-2"></i>Auto-Processing Rules
                                 </h6>
-                                
+                            </div>
+                            <div class="card-body">
                                 <div class="row">
                                     <div class="col-md-6">
-                                        <div class="form-check">
+                                        <div class="form-check mb-3">
                                             <input class="form-check-input" type="checkbox" id="autoCreateOpportunities" 
                                                    {% if settings.auto_create_opportunities %}checked{% endif %}>
                                             <label class="form-check-label" for="autoCreateOpportunities">
-                                                Auto-create opportunities for qualified RFQs
+                                                <strong>Auto-create opportunities</strong>
+                                                <br><small class="text-muted">Automatically create opportunities from processed PDFs</small>
                                             </label>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
-                                        <div class="form-check">
+                                        <div class="form-check mb-3">
                                             <input class="form-check-input" type="checkbox" id="linkRelatedRecords" 
                                                    {% if settings.link_related_records %}checked{% endif %}>
                                             <label class="form-check-label" for="linkRelatedRecords">
-                                                Auto-link related accounts, contacts, and products
+                                                <strong>Auto-link related records</strong>
+                                                <br><small class="text-muted">Link accounts, contacts, and products automatically</small>
                                             </label>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
-                                        <div class="form-check">
+                                        <div class="form-check mb-3">
                                             <input class="form-check-input" type="checkbox" id="moveProcessedFiles" 
                                                    {% if settings.move_processed_files %}checked{% endif %}>
                                             <label class="form-check-label" for="moveProcessedFiles">
-                                                Move processed PDFs to Reviewed folder
+                                                <strong>Move processed files</strong>
+                                                <br><small class="text-muted">Move processed PDFs to Reviewed folder</small>
                                             </label>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
-                                        <div class="form-check">
+                                        <div class="form-check mb-3">
                                             <input class="form-check-input" type="checkbox" id="skipDuplicates" 
                                                    {% if settings.skip_duplicates %}checked{% endif %}>
                                             <label class="form-check-label" for="skipDuplicates">
-                                                Skip duplicate opportunities (same RFQ number)
+                                                <strong>Skip duplicates</strong>
+                                                <br><small class="text-muted">Skip duplicate opportunities (same quote number)</small>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Task Automation -->
+                        <div class="card border-0 shadow-sm mb-4">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-tasks me-2"></i>Task Automation
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="checkbox" id="autoCreateTasks">
+                                            <label class="form-check-label" for="autoCreateTasks">
+                                                <strong>Auto-create follow-up tasks</strong>
+                                                <br><small class="text-muted">Create tasks for opportunities requiring follow-up</small>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="checkbox" id="autoAssignTasks">
+                                            <label class="form-check-label" for="autoAssignTasks">
+                                                <strong>Auto-assign tasks</strong>
+                                                <br><small class="text-muted">Automatically assign tasks based on rules</small>
                                             </label>
                                         </div>
                                     </div>
@@ -187,61 +301,406 @@
 
                         <div class="d-flex gap-3">
                             <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save me-2"></i>Save Settings
+                                <i class="fas fa-save me-2"></i>Save Automation Settings
                             </button>
-                            <button type="button" class="btn btn-outline-secondary" onclick="resetToDefaults()">
-                                <i class="fas fa-undo me-2"></i>Reset to Defaults
+                            <button type="button" class="btn btn-outline-secondary">
+                                <i class="fas fa-test-tube me-2"></i>Test Automation
                             </button>
                         </div>
                     </form>
                 </div>
+                
+                <div class="col-lg-4">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">
+                                <i class="fas fa-chart-line me-2 text-primary"></i>Automation Stats
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="text-center mb-4">
+                                <h3 class="text-success mb-1">247</h3>
+                                <small class="text-muted">Tasks automated this month</small>
+                            </div>
+                            <div class="text-center mb-4">
+                                <h3 class="text-info mb-1">38</h3>
+                                <small class="text-muted">Hours saved</small>
+                            </div>
+                            <div class="text-center">
+                                <h3 class="text-primary mb-1">96%</h3>
+                                <small class="text-muted">Success rate</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- Settings Preview -->
-        <div class="col-lg-4">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-eye me-2"></i>Filter Preview
+        <!-- Email Settings Tab -->
+        <div class="tab-pane fade" id="email" role="tabpanel" aria-labelledby="email-tab">
+            <div class="row">
+                <div class="col-lg-8">
+                    <h5 class="mb-4">
+                        <i class="fas fa-envelope me-2 text-primary"></i>Email Integration & Automation
                     </h5>
-                </div>
-                <div class="card-body">
-                    <div class="alert alert-info">
-                        <h6 class="alert-heading">Current Filter Criteria:</h6>
-                        <ul class="mb-0" id="filterPreview">
-                            <li>Delivery Days: >= <span id="previewDeliveryDays">{{ settings.min_delivery_days }}</span></li>
-                            <li>ISO Required: <span id="previewISO">{{ settings.iso_required }}</span></li>
-                            <li>Sampling Required: <span id="previewSampling">{{ settings.sampling_required }}</span></li>
-                            <li>Inspection Point: <span id="previewInspection">{{ settings.inspection_point }}</span></li>
-                            <li>Manufacturers: <span id="previewManufacturers">
-                                {% if settings.manufacturer_filter %}
-                                    {{ settings.manufacturer_filter.split('\n')|length }} configured
-                                {% else %}
-                                    All accepted
-                                {% endif %}
-                            </span></li>
-                        </ul>
-                    </div>
-
-                    <div class="mt-4">
-                        <h6 class="fw-bold">Processing Statistics</h6>
-                        <div class="row text-center">
-                            <div class="col-6">
-                                <div class="card card-metric h-100">
-                                    <div class="card-body">
-                                        <h4 class="text-success mb-1">{{ stats.processed or 0 }}</h4>
-                                        <small class="text-muted">Processed</small>
+                    <p class="text-muted mb-4">Configure email server, RFQ automation, and workflow settings</p>
+                    
+                    <form id="emailForm">
+                        <!-- SMTP Configuration -->
+                        <div class="card border-0 shadow-sm mb-4">
+                            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-server me-2"></i>SMTP Server Configuration
+                                </h6>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="smtpEnabled">
+                                    <label class="form-check-label" for="smtpEnabled">Enable Email</label>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="smtpHost" class="form-label fw-semibold">SMTP Host</label>
+                                            <input type="text" class="form-control" id="smtpHost" placeholder="smtp.gmail.com">
+                                            <div class="form-text">Your email provider's SMTP server</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="smtpPort" class="form-label fw-semibold">SMTP Port</label>
+                                            <select class="form-select" id="smtpPort">
+                                                <option value="587">587 (TLS - Recommended)</option>
+                                                <option value="465">465 (SSL)</option>
+                                                <option value="25">25 (Unsecured)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="smtpUsername" class="form-label fw-semibold">Email Address</label>
+                                            <input type="email" class="form-control" id="smtpUsername" placeholder="rfq@yourcompany.com">
+                                            <div class="form-text">Your email address for sending RFQs</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="smtpPassword" class="form-label fw-semibold">Password/App Password</label>
+                                            <input type="password" class="form-control" id="smtpPassword" placeholder="••••••••">
+                                            <div class="form-text">Use app password for Gmail/Outlook</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="fromName" class="form-label fw-semibold">Sender Name</label>
+                                            <input type="text" class="form-control" id="fromName" placeholder="CDE Prosperity DLA Team">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="replyToEmail" class="form-label fw-semibold">Reply-To Email</label>
+                                            <input type="email" class="form-control" id="replyToEmail" placeholder="responses@yourcompany.com">
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-6">
-                                <div class="card card-metric h-100">
-                                    <div class="card-body">
-                                        <h4 class="text-warning mb-1">{{ stats.skipped or 0 }}</h4>
-                                        <small class="text-muted">Skipped</small>
+                        </div>
+
+                        <!-- RFQ Automation Settings -->
+                        <div class="card border-0 shadow-sm mb-4">
+                            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-paper-plane me-2"></i>RFQ Automation Settings
+                                </h6>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="rfqAutomationEnabled">
+                                    <label class="form-check-label" for="rfqAutomationEnabled">Enable RFQ Automation</label>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <!-- Manual Review Section -->
+                                <div class="alert alert-warning mb-4">
+                                    <h6 class="alert-heading d-flex align-items-center">
+                                        <i class="fas fa-shield-alt me-2"></i>Review & Approval Controls
+                                    </h6>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input" type="checkbox" id="requireManualReview" checked>
+                                                <label class="form-check-label fw-semibold" for="requireManualReview">
+                                                    Require manual review before sending RFQs
+                                                </label>
+                                            </div>
+                                            <small class="text-muted">✅ Recommended for quality control</small>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input" type="checkbox" id="autoSendApproved">
+                                                <label class="form-check-label fw-semibold" for="autoSendApproved">
+                                                    Auto-send approved RFQs
+                                                </label>
+                                            </div>
+                                            <small class="text-muted">Send immediately after approval</small>
+                                        </div>
                                     </div>
                                 </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="defaultPriority" class="form-label fw-semibold">Default RFQ Priority</label>
+                                            <select class="form-select" id="defaultPriority">
+                                                <option value="Low">Low Priority</option>
+                                                <option value="Normal" selected>Normal Priority</option>
+                                                <option value="High">High Priority</option>
+                                                <option value="Urgent">Urgent</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="quoteDeadlineDays" class="form-label fw-semibold">Quote Deadline (Days)</label>
+                                            <input type="number" class="form-control" id="quoteDeadlineDays" value="10" min="1" max="90">
+                                            <div class="form-text">Default deadline for vendor responses</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="maxDailySends" class="form-label fw-semibold">Max Daily Sends</label>
+                                            <input type="number" class="form-control" id="maxDailySends" value="50" min="1" max="1000">
+                                            <div class="form-text">Limit to prevent spam flags</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="followUpDelayDays" class="form-label fw-semibold">Follow-up Delay (Days)</label>
+                                            <input type="number" class="form-control" id="followUpDelayDays" value="3" min="1" max="30">
+                                            <div class="form-text">Days before sending follow-up</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Business Hours -->
+                                <div class="border rounded p-3 mb-3" style="background-color: #f8f9fa;">
+                                    <h6 class="mb-3">
+                                        <i class="fas fa-clock me-2"></i>Business Hours & Restrictions
+                                    </h6>
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input" type="checkbox" id="businessHoursOnly" checked>
+                                                <label class="form-check-label" for="businessHoursOnly">
+                                                    Send only during business hours
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input" type="checkbox" id="weekendSending">
+                                                <label class="form-check-label" for="weekendSending">
+                                                    Allow weekend sending
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label for="businessStartHour" class="form-label small">Start Hour</label>
+                                            <input type="number" class="form-control form-control-sm" id="businessStartHour" value="8" min="0" max="23">
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label for="businessEndHour" class="form-label small">End Hour</label>
+                                            <input type="number" class="form-control form-control-sm" id="businessEndHour" value="17" min="0" max="23">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Response Processing -->
+                        <div class="card border-0 shadow-sm mb-4">
+                            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-inbox me-2"></i>Response Processing & Tracking
+                                </h6>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="responseProcessingEnabled" checked>
+                                    <label class="form-check-label" for="responseProcessingEnabled">Enable Response Processing</label>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="checkbox" id="autoParseResponses" checked>
+                                            <label class="form-check-label" for="autoParseResponses">
+                                                <strong>Auto-parse email responses</strong>
+                                                <br><small class="text-muted">Extract quotes from vendor emails automatically</small>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="checkbox" id="requireQuoteReview" checked>
+                                            <label class="form-check-label" for="requireQuoteReview">
+                                                <strong>Require quote review</strong>
+                                                <br><small class="text-muted">Manual review before accepting quotes</small>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="checkbox" id="parsePdfAttachments" checked>
+                                            <label class="form-check-label" for="parsePdfAttachments">
+                                                <strong>Parse PDF attachments</strong>
+                                                <br><small class="text-muted">Extract data from PDF quotes</small>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="checkbox" id="createFollowUpTasks" checked>
+                                            <label class="form-check-label" for="createFollowUpTasks">
+                                                <strong>Create follow-up tasks</strong>
+                                                <br><small class="text-muted">Auto-create tasks for quote review</small>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Notifications -->
+                        <div class="card border-0 shadow-sm mb-4">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-bell me-2"></i>Notifications & Alerts
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="notificationEmail" class="form-label fw-semibold">Notification Email</label>
+                                            <input type="email" class="form-control" id="notificationEmail" placeholder="manager@yourcompany.com">
+                                            <div class="form-text">Email for system notifications</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="dailySummaryTime" class="form-label fw-semibold">Daily Summary Time</label>
+                                            <input type="time" class="form-control" id="dailySummaryTime" value="17:00">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="checkbox" id="notifyOnRfqSent" checked>
+                                            <label class="form-check-label" for="notifyOnRfqSent">
+                                                Notify when RFQ is sent
+                                            </label>
+                                        </div>
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="checkbox" id="notifyOnResponseReceived" checked>
+                                            <label class="form-check-label" for="notifyOnResponseReceived">
+                                                Notify when response received
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="checkbox" id="alertOnUrgentQuotes" checked>
+                                            <label class="form-check-label" for="alertOnUrgentQuotes">
+                                                Alert on urgent quotes
+                                            </label>
+                                        </div>
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="checkbox" id="sendDailyDigest">
+                                            <label class="form-check-label" for="sendDailyDigest">
+                                                Send daily activity digest
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-3">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Save Email Settings
+                            </button>
+                            <button type="button" class="btn btn-outline-primary" id="testConnection">
+                                <i class="fas fa-paper-plane me-2"></i>Test Connection
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" id="loadDefaults">
+                                <i class="fas fa-undo me-2"></i>Load Defaults
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                
+                <div class="col-lg-4">
+                    <!-- Email Status Card -->
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">
+                                <i class="fas fa-info-circle me-2 text-primary"></i>Email System Status
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="flex-shrink-0">
+                                    <div class="status-indicator bg-warning rounded-circle" id="connectionStatus"></div>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h6 class="mb-1">Connection Status</h6>
+                                    <small class="text-muted" id="connectionStatusText">Not configured</small>
+                                </div>
+                            </div>
+                            
+                            <div class="row text-center mb-4">
+                                <div class="col-6">
+                                    <h3 class="text-primary mb-1" id="emailsSentToday">0</h3>
+                                    <small class="text-muted">Sent Today</small>
+                                </div>
+                                <div class="col-6">
+                                    <h3 class="text-success mb-1" id="responsesReceived">0</h3>
+                                    <small class="text-muted">Responses</small>
+                                </div>
+                            </div>
+                            
+                            <div class="alert alert-info">
+                                <h6 class="alert-heading">Configuration Tips:</h6>
+                                <ul class="mb-0 small">
+                                    <li>Use app passwords for Gmail/Outlook</li>
+                                    <li>Enable manual review for quality control</li>
+                                    <li>Test connection before going live</li>
+                                    <li>Set reasonable daily send limits</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions Card -->
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">
+                                <i class="fas fa-bolt me-2 text-primary"></i>Quick Actions
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-sm btn-outline-primary" id="viewPendingRfqs">
+                                    <i class="fas fa-eye me-2"></i>View Pending RFQs
+                                </button>
+                                <button class="btn btn-sm btn-outline-success" id="viewResponses">
+                                    <i class="fas fa-inbox me-2"></i>View Responses
+                                </button>
+                                <button class="btn btn-sm btn-outline-info" id="emailLogs">
+                                    <i class="fas fa-history me-2"></i>Email Logs
+                                </button>
+                                <button class="btn btn-sm btn-outline-warning" id="emailTemplates">
+                                    <i class="fas fa-edit me-2"></i>Edit Templates
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -250,133 +709,553 @@
         </div>
     </div>
 </div>
+
+</div>
+</div>
 {% endblock %}
 
 {% block scripts %}
+<style>
+    .card-metric {
+        border: 1px solid #dee2e6;
+        transition: all 0.3s ease;
+    }
+    
+    .card-metric:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    .status-indicator {
+        width: 12px;
+        height: 12px;
+    }
+    
+    .tab-content {
+        margin-top: 2rem;
+    }
+    
+    .nav-tabs .nav-link {
+        border-radius: 0;
+        border: none;
+        border-bottom: 2px solid transparent;
+        padding: 1rem 1.5rem;
+        color: #6c757d;
+        font-weight: 500;
+    }
+    
+    .nav-tabs .nav-link:hover {
+        border-bottom-color: #007bff;
+        color: #007bff;
+    }
+    
+    .nav-tabs .nav-link.active {
+        background: none;
+        border-bottom-color: #007bff;
+        color: #007bff;
+        font-weight: 600;
+    }
+</style>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const form = document.getElementById('settingsForm');
-    
-    // Update preview when inputs change
-    form.addEventListener('input', updatePreview);
-    form.addEventListener('change', updatePreview);
-    
-    // Handle form submission
-    form.addEventListener('submit', function(e) {
-        e.preventDefault();
-        saveSettings();
+    // Initialize Bootstrap tabs
+    const triggerTabList = document.querySelectorAll('#settingsTabs button');
+    triggerTabList.forEach(triggerEl => {
+        const tabTrigger = new bootstrap.Tab(triggerEl);
+        
+        triggerEl.addEventListener('click', event => {
+            event.preventDefault();
+            tabTrigger.show();
+        });
     });
+
+    // Filter Settings Form
+    const settingsForm = document.getElementById('settingsForm');
+    if (settingsForm) {
+        settingsForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Show loading state
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
+            submitBtn.disabled = true;
+            
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData);
+            
+            fetch('/api/settings', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert('✅ Filter settings saved successfully!', 'success');
+                    updateFilterPreview();
+                } else {
+                    showAlert('❌ Error saving settings: ' + data.message, 'danger');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showAlert('❌ Network error occurred while saving settings', 'danger');
+            })
+            .finally(() => {
+                // Restore button state
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            });
+        });
+    }
+
+    // Automation Settings Form
+    const automationForm = document.getElementById('automationForm');
+    if (automationForm) {
+        automationForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Show loading state
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
+            submitBtn.disabled = true;
+            
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData);
+            
+            fetch('/api/settings/automation', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert('✅ Automation settings saved successfully!', 'success');
+                } else {
+                    showAlert('❌ Error saving automation settings: ' + data.message, 'danger');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showAlert('❌ Network error occurred while saving automation settings', 'danger');
+            })
+            .finally(() => {
+                // Restore button state
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            });
+        });
+    }
+
+    // Email Settings Form
+    const emailForm = document.getElementById('emailForm');
+    if (emailForm) {
+        // Load current email settings
+        loadEmailSettings();
+        
+        emailForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Show loading state
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
+            submitBtn.disabled = true;
+            
+            const formData = collectEmailFormData();
+            
+            fetch('/api/settings/email', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert('✅ Email settings saved successfully!', 'success');
+                    updateEmailStatus();
+                } else {
+                    showAlert('❌ Error saving email settings: ' + data.message, 'danger');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showAlert('❌ Network error occurred while saving email settings', 'danger');
+            })
+            .finally(() => {
+                // Restore button state
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            });
+        });
+    }
+
+    // Test Connection Button
+    const testConnectionBtn = document.getElementById('testConnection');
+    if (testConnectionBtn) {
+        testConnectionBtn.addEventListener('click', function() {
+            const originalText = this.innerHTML;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Testing...';
+            this.disabled = true;
+            
+            const formData = collectEmailFormData();
+            
+            fetch('/api/settings/email/test', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert('✅ Email connection test successful!', 'success');
+                    updateConnectionStatus('success', 'Connected');
+                } else {
+                    showAlert('❌ Connection test failed: ' + data.message, 'danger');
+                    updateConnectionStatus('danger', 'Connection failed');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showAlert('❌ Network error during connection test', 'danger');
+                updateConnectionStatus('danger', 'Test failed');
+            })
+            .finally(() => {
+                this.innerHTML = originalText;
+                this.disabled = false;
+            });
+        });
+    }
+
+    // Load Defaults Button
+    const loadDefaultsBtn = document.getElementById('loadDefaults');
+    if (loadDefaultsBtn) {
+        loadDefaultsBtn.addEventListener('click', function() {
+            if (confirm('Are you sure you want to load default email settings? This will overwrite your current configuration.')) {
+                loadDefaultEmailSettings();
+            }
+        });
+    }
+
+    // Quick Action Buttons
+    const quickActionButtons = {
+        'viewPendingRfqs': '/rfqs?status=pending',
+        'viewResponses': '/vendor-responses',
+        'emailLogs': '/email-logs',
+        'emailTemplates': '/email-templates'
+    };
+
+    Object.entries(quickActionButtons).forEach(([buttonId, url]) => {
+        const button = document.getElementById(buttonId);
+        if (button) {
+            button.addEventListener('click', () => {
+                window.location.href = url;
+            });
+        }
+    });
+
+    function collectEmailFormData() {
+        return {
+            smtp_configuration: {
+                enabled: document.getElementById('smtpEnabled').checked,
+                host: document.getElementById('smtpHost').value,
+                port: parseInt(document.getElementById('smtpPort').value),
+                username: document.getElementById('smtpUsername').value,
+                password: document.getElementById('smtpPassword').value,
+                use_tls: true, // Always use TLS for security
+                from_name: document.getElementById('fromName').value,
+                from_email: document.getElementById('smtpUsername').value,
+                reply_to_email: document.getElementById('replyToEmail').value
+            },
+            rfq_automation: {
+                enabled: document.getElementById('rfqAutomationEnabled').checked,
+                require_manual_review: document.getElementById('requireManualReview').checked,
+                auto_send_approved: document.getElementById('autoSendApproved').checked,
+                default_priority: document.getElementById('defaultPriority').value,
+                quote_deadline_days: parseInt(document.getElementById('quoteDeadlineDays').value),
+                max_daily_sends: parseInt(document.getElementById('maxDailySends').value),
+                follow_up_delay_days: parseInt(document.getElementById('followUpDelayDays').value),
+                business_hours_only: document.getElementById('businessHoursOnly').checked,
+                weekend_sending: document.getElementById('weekendSending').checked,
+                business_start_hour: parseInt(document.getElementById('businessStartHour').value),
+                business_end_hour: parseInt(document.getElementById('businessEndHour').value)
+            },
+            response_processing: {
+                enabled: document.getElementById('responseProcessingEnabled').checked,
+                auto_parse_responses: document.getElementById('autoParseResponses').checked,
+                require_quote_review: document.getElementById('requireQuoteReview').checked,
+                parse_pdf_attachments: document.getElementById('parsePdfAttachments').checked,
+                create_follow_up_tasks: document.getElementById('createFollowUpTasks').checked
+            },
+            notification_settings: {
+                notification_email: document.getElementById('notificationEmail').value,
+                daily_summary_time: document.getElementById('dailySummaryTime').value,
+                notify_on_rfq_sent: document.getElementById('notifyOnRfqSent').checked,
+                notify_on_response_received: document.getElementById('notifyOnResponseReceived').checked,
+                alert_on_urgent_quotes: document.getElementById('alertOnUrgentQuotes').checked,
+                send_daily_digest: document.getElementById('sendDailyDigest').checked
+            }
+        };
+    }
+
+    function loadEmailSettings() {
+        fetch('/api/settings/email')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.settings) {
+                    populateEmailForm(data.settings);
+                    updateEmailStatus();
+                }
+            })
+            .catch(error => {
+                console.error('Error loading email settings:', error);
+            });
+    }
+
+    function populateEmailForm(settings) {
+        const smtp = settings.smtp_configuration || {};
+        const rfq = settings.rfq_automation || {};
+        const response = settings.response_processing || {};
+        const notifications = settings.notification_settings || {};
+
+        // SMTP Configuration
+        safeSetValue('smtpEnabled', smtp.enabled);
+        safeSetValue('smtpHost', smtp.host);
+        safeSetValue('smtpPort', smtp.port);
+        safeSetValue('smtpUsername', smtp.username);
+        safeSetValue('fromName', smtp.from_name);
+        safeSetValue('replyToEmail', smtp.reply_to_email);
+
+        // RFQ Automation
+        safeSetValue('rfqAutomationEnabled', rfq.enabled);
+        safeSetValue('requireManualReview', rfq.require_manual_review);
+        safeSetValue('autoSendApproved', rfq.auto_send_approved);
+        safeSetValue('defaultPriority', rfq.default_priority);
+        safeSetValue('quoteDeadlineDays', rfq.quote_deadline_days);
+        safeSetValue('maxDailySends', rfq.max_daily_sends);
+        safeSetValue('followUpDelayDays', rfq.follow_up_delay_days);
+        safeSetValue('businessHoursOnly', rfq.business_hours_only);
+        safeSetValue('weekendSending', rfq.weekend_sending);
+        safeSetValue('businessStartHour', rfq.business_start_hour);
+        safeSetValue('businessEndHour', rfq.business_end_hour);
+
+        // Response Processing
+        safeSetValue('responseProcessingEnabled', response.enabled);
+        safeSetValue('autoParseResponses', response.auto_parse_responses);
+        safeSetValue('requireQuoteReview', response.require_quote_review);
+        safeSetValue('parsePdfAttachments', response.parse_pdf_attachments);
+        safeSetValue('createFollowUpTasks', response.create_follow_up_tasks);
+
+        // Notifications
+        safeSetValue('notificationEmail', notifications.notification_email);
+        safeSetValue('dailySummaryTime', notifications.daily_summary_time);
+        safeSetValue('notifyOnRfqSent', notifications.notify_on_rfq_sent);
+        safeSetValue('notifyOnResponseReceived', notifications.notify_on_response_received);
+        safeSetValue('alertOnUrgentQuotes', notifications.alert_on_urgent_quotes);
+        safeSetValue('sendDailyDigest', notifications.send_daily_digest);
+    }
+
+    function safeSetValue(id, value) {
+        const element = document.getElementById(id);
+        if (element) {
+            if (element.type === 'checkbox') {
+                element.checked = Boolean(value);
+            } else {
+                element.value = value || '';
+            }
+        }
+    }
+
+    function loadDefaultEmailSettings() {
+        const defaults = {
+            smtp_configuration: {
+                enabled: false,
+                host: 'smtp.gmail.com',
+                port: 587,
+                username: '',
+                password: '',
+                use_tls: true,
+                from_name: 'CDE Prosperity DLA Team',
+                from_email: '',
+                reply_to_email: ''
+            },
+            rfq_automation: {
+                enabled: false,
+                require_manual_review: true,
+                auto_send_approved: false,
+                default_priority: 'Normal',
+                quote_deadline_days: 10,
+                max_daily_sends: 50,
+                follow_up_delay_days: 3,
+                business_hours_only: true,
+                weekend_sending: false,
+                business_start_hour: 8,
+                business_end_hour: 17
+            },
+            response_processing: {
+                enabled: true,
+                auto_parse_responses: true,
+                require_quote_review: true,
+                parse_pdf_attachments: true,
+                create_follow_up_tasks: true
+            },
+            notification_settings: {
+                notification_email: '',
+                daily_summary_time: '17:00',
+                notify_on_rfq_sent: true,
+                notify_on_response_received: true,
+                alert_on_urgent_quotes: true,
+                send_daily_digest: false
+            }
+        };
+
+        populateEmailForm(defaults);
+        showAlert('📋 Default email settings loaded', 'info');
+    }
+
+    function updateConnectionStatus(type, text) {
+        const statusIndicator = document.getElementById('connectionStatus');
+        const statusText = document.getElementById('connectionStatusText');
+        
+        if (statusIndicator && statusText) {
+            statusIndicator.className = `status-indicator rounded-circle bg-${type === 'success' ? 'success' : type === 'danger' ? 'danger' : 'warning'}`;
+            statusText.textContent = text;
+        }
+    }
+
+    function updateEmailStatus() {
+        fetch('/api/settings/email/status')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const status = data.status;
+                    document.getElementById('emailsSentToday').textContent = status.emails_sent_today || 0;
+                    document.getElementById('responsesReceived').textContent = status.responses_received || 0;
+                    
+                    if (status.connection_status === 'connected') {
+                        updateConnectionStatus('success', 'Connected');
+                    } else if (status.connection_status === 'configured') {
+                        updateConnectionStatus('warning', 'Configured (Not tested)');
+                    } else {
+                        updateConnectionStatus('warning', 'Not configured');
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error updating email status:', error);
+            });
+    }
+
+    // Update email status periodically
+    setInterval(updateEmailStatus, 30000); // Every 30 seconds
+
+    // Live preview updates for filters
+    const filterInputs = document.querySelectorAll('#filterForm input, #filterForm select, #filterForm textarea');
+    filterInputs.forEach(input => {
+        input.addEventListener('input', updateFilterPreview);
+        input.addEventListener('change', updateFilterPreview); // For radio buttons
+    });
+
+    function updateFilterPreview() {
+        const deliveryDays = document.getElementById('minDeliveryDays').value;
+        const isoRequired = document.querySelector('input[name="isoRequired"]:checked')?.value || 'ANY';
+        const samplingRequired = document.querySelector('input[name="samplingRequired"]:checked')?.value || 'NO';
+        const inspectionPoint = document.getElementById('inspectionPoint').value;
+        const manufacturerFilter = document.getElementById('manufacturerFilter').value;
+
+        document.getElementById('previewDeliveryDays').textContent = deliveryDays;
+        document.getElementById('previewISO').textContent = isoRequired;
+        document.getElementById('previewSampling').textContent = samplingRequired;
+        document.getElementById('previewInspection').textContent = inspectionPoint;
+        
+        if (manufacturerFilter.trim()) {
+            const count = manufacturerFilter.split('\n').filter(line => line.trim()).length;
+            document.getElementById('previewManufacturers').textContent = count + ' configured';
+        } else {
+            document.getElementById('previewManufacturers').textContent = 'All accepted';
+        }
+    }
+
+    function showAlert(message, type) {
+        // Remove any existing alerts first
+        const existingAlerts = document.querySelectorAll('.alert');
+        existingAlerts.forEach(alert => alert.remove());
+        
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+        alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px; box-shadow: 0 4px 8px rgba(0,0,0,0.2);';
+        
+        alertDiv.innerHTML = `
+            <div class="d-flex align-items-center">
+                <div class="me-2">
+                    ${type === 'success' ? '<i class="fas fa-check-circle"></i>' : '<i class="fas fa-exclamation-triangle"></i>'}
+                </div>
+                <div class="flex-grow-1">${message}</div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        `;
+        
+        document.body.appendChild(alertDiv);
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.remove();
+            }
+        }, 5000);
+        
+        // Add sound notification for success
+        if (type === 'success') {
+            // Create a subtle success sound using Web Audio API
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.value = 800;
+                gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.3);
+            } catch (e) {
+                // Ignore audio errors
+            }
+        }
+    }
+
+    // Make showAlert globally available
+    window.showAlert = showAlert;
 });
 
-function updatePreview() {
-    // Update delivery days preview
-    const deliveryDays = document.getElementById('minDeliveryDays').value;
-    document.getElementById('previewDeliveryDays').textContent = deliveryDays;
-    
-    // Update ISO preview
-    const isoRequired = document.querySelector('input[name="isoRequired"]:checked').value;
-    document.getElementById('previewISO').textContent = isoRequired;
-    
-    // Update sampling preview
-    const samplingRequired = document.querySelector('input[name="samplingRequired"]:checked').value;
-    document.getElementById('previewSampling').textContent = samplingRequired;
-    
-    // Update inspection preview
-    const inspectionPoint = document.getElementById('inspectionPoint').value;
-    document.getElementById('previewInspection').textContent = inspectionPoint;
-    
-    // Update manufacturers preview
-    const manufacturerFilter = document.getElementById('manufacturerFilter').value.trim();
-    const manufacturerCount = manufacturerFilter ? manufacturerFilter.split('\n').filter(m => m.trim()).length : 0;
-    document.getElementById('previewManufacturers').textContent = manufacturerCount > 0 ? 
-        `${manufacturerCount} configured` : 'All accepted';
-}
-
-function saveSettings() {
-    const btn = form.querySelector('button[type="submit"]');
-    const originalText = btn.innerHTML;
-    
-    // Show loading state
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
-    btn.disabled = true;
-    
-    const formData = {
-        min_delivery_days: parseInt(document.getElementById('minDeliveryDays').value),
-        iso_required: document.querySelector('input[name="isoRequired"]:checked').value,
-        sampling_required: document.querySelector('input[name="samplingRequired"]:checked').value,
-        inspection_point: document.getElementById('inspectionPoint').value,
-        manufacturer_filter: document.getElementById('manufacturerFilter').value,
-        fsc_filter: document.getElementById('fscFilter').value,
-        packaging_filter: document.getElementById('packagingFilter').value,
-        auto_create_opportunities: document.getElementById('autoCreateOpportunities').checked,
-        link_related_records: document.getElementById('linkRelatedRecords').checked,
-        move_processed_files: document.getElementById('moveProcessedFiles').checked,
-        skip_duplicates: document.getElementById('skipDuplicates').checked
-    };
-    
-    fetch('/api/settings', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData)
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showAlert('success', 'Settings saved successfully!');
-        } else {
-            showAlert('error', 'Error saving settings: ' + data.message);
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showAlert('error', 'Network error while saving settings');
-    })
-    .finally(() => {
-        // Restore button
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-    });
-}
-
 function resetToDefaults() {
-    if (confirm('Reset all settings to default values? This cannot be undone.')) {
-        document.getElementById('minDeliveryDays').value = 120;
-        document.querySelector('input[value="NO"][name="isoRequired"]').checked = true;
-        document.querySelector('input[value="NO"][name="samplingRequired"]').checked = true;
-        document.getElementById('inspectionPoint').value = 'DESTINATION';
+    if (confirm('Are you sure you want to reset all filter settings to defaults?')) {
+        document.getElementById('minDeliveryDays').value = '30';
+        document.getElementById('isoRequired').value = 'No Preference';
+        document.getElementById('samplingRequired').value = 'No Preference';
+        document.getElementById('inspectionPoint').value = 'No Preference';
         document.getElementById('manufacturerFilter').value = '';
-        document.getElementById('fscFilter').value = '';
-        document.getElementById('packagingFilter').value = '';
-        document.getElementById('autoCreateOpportunities').checked = true;
-        document.getElementById('linkRelatedRecords').checked = true;
-        document.getElementById('moveProcessedFiles').checked = true;
-        document.getElementById('skipDuplicates').checked = true;
-        
-        updatePreview();
-        showAlert('info', 'Settings reset to defaults. Click "Save Settings" to apply.');
+        updateFilterPreview();
     }
-}
-
-function showAlert(type, message) {
-    const alertDiv = document.createElement('div');
-    alertDiv.className = `alert alert-${type === 'success' ? 'success' : type === 'error' ? 'danger' : 'info'} alert-dismissible fade show position-fixed`;
-    alertDiv.style.top = '20px';
-    alertDiv.style.right = '20px';
-    alertDiv.style.zIndex = '9999';
-    alertDiv.innerHTML = `
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    `;
-    document.body.appendChild(alertDiv);
-    
-    // Auto-dismiss after 5 seconds
-    setTimeout(() => {
-        if (alertDiv.parentNode) {
-            alertDiv.remove();
-        }
-    }, 5000);
 }
 </script>
 {% endblock %}

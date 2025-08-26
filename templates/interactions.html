@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Interactions - ModernCRM{% endblock %}
+{% block title %}Interactions - CDE Prosperity{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
@@ -207,7 +207,7 @@
                                     <td>
                                         <div class="fw-bold">{{ interaction.subject or 'No Subject' }}</div>
                                         {% if interaction.message %}
-                                            <small class="text-muted">{{ interaction.message[:100] }}{% if interaction.message|length > 100 %}...{% endif %}</small>
+                                            <small class="text-muted">{{ (interaction.message or 'No message')[:100] }}{% if (interaction.message or '')|length > 100 %}...{% endif %}</small>
                                         {% endif %}
                                     </td>
                                     <td>
@@ -706,6 +706,19 @@ function deleteInteraction(interactionId) {
         });
     }
 }
+
+// Auto-open interaction modal if interaction_id is in URL
+document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const interactionId = urlParams.get('interaction_id');
+    
+    if (interactionId) {
+        // Small delay to ensure page is fully loaded
+        setTimeout(() => {
+            viewInteraction(parseInt(interactionId));
+        }, 500);
+    }
+});
 </script>
 
 {% endblock %}

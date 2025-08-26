@@ -1,0 +1,638 @@
+{% extends "base.html" %}
+
+{% block title %}Task Details - CDE Prosperity{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2>Task Details</h2>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="/tasks">Tasks</a></li>
+                            <li class="breadcrumb-item active">{{ task.title[:50] if task.title else 'Untitled Task' }}...</li>
+                        </ol>
+                    </nav>
+                </div>
+                <div class="btn-group">
+                    <a href="/tasks" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Tasks
+                    </a>
+                    {% if edit_mode %}
+                    <button class="btn btn-success" onclick="saveTask()">
+                        <i class="fas fa-save me-2"></i>Save Changes
+                    </button>
+                    <a href="/tasks/{{ task.id }}" class="btn btn-secondary">
+                        <i class="fas fa-times me-2"></i>Cancel
+                    </a>
+                    {% else %}
+                    <a href="/tasks/{{ task.id }}?edit=true" class="btn btn-primary">
+                        <i class="fas fa-edit me-2"></i>Edit Task
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Main Content Row -->
+            <div class="row">
+                <!-- Right Panel -->
+                <div class="col-lg-4 order-lg-2 mb-4">
+                    <!-- Quick Actions -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">Quick Actions</h6>
+                        </div>
+                        <div class="card-body">
+                            <!-- Status Change Actions -->
+                            <div class="mb-3">
+                                <small class="text-muted d-block mb-2">Task Control</small>
+                                {% if task.status == 'Not Started' %}
+                                <button class="btn btn-success btn-sm w-100 mb-2" onclick="startTask()">
+                                    <i class="fas fa-play me-2"></i>Start Task
+                                </button>
+                                {% elif task.status == 'In Progress' %}
+                                <button class="btn btn-primary btn-sm w-100 mb-2" onclick="endTask()">
+                                    <i class="fas fa-check me-2"></i>Complete Task
+                                </button>
+                                <button class="btn btn-warning btn-sm me-1 mb-1" onclick="updateTaskStatus('Waiting')">
+                                    <i class="fas fa-pause me-1"></i>Pause
+                                </button>
+                                <button class="btn btn-secondary btn-sm me-1 mb-1" onclick="updateTaskStatus('Deferred')">
+                                    <i class="fas fa-clock me-1"></i>Defer
+                                </button>
+                                {% else %}
+                                <button class="btn btn-success btn-sm me-1 mb-1" onclick="updateTaskStatus('In Progress')">
+                                    <i class="fas fa-play me-1"></i>Resume
+                                </button>
+                                <button class="btn btn-primary btn-sm me-1 mb-1" onclick="endTask()">
+                                    <i class="fas fa-check me-1"></i>Complete
+                                </button>
+                                <button class="btn btn-outline-secondary btn-sm me-1 mb-1" onclick="updateTaskStatus('Not Started')">
+                                    <i class="fas fa-undo me-1"></i>Reset
+                                </button>
+                                {% endif %}
+                            </div>
+
+                            <!-- Priority Change Actions -->
+                            <div class="mb-3">
+                                <small class="text-muted d-block mb-2">Change Priority</small>
+                                {% if task.priority != 'High' %}
+                                <button class="btn btn-danger btn-sm me-1 mb-1" onclick="updateTaskPriority('High')">
+                                    <i class="fas fa-exclamation me-1"></i>High
+                                </button>
+                                {% endif %}
+                                {% if task.priority != 'Medium' %}
+                                <button class="btn btn-warning btn-sm me-1 mb-1" onclick="updateTaskPriority('Medium')">
+                                    <i class="fas fa-minus me-1"></i>Medium
+                                </button>
+                                {% endif %}
+                                {% if task.priority != 'Low' %}
+                                <button class="btn btn-info btn-sm me-1 mb-1" onclick="updateTaskPriority('Low')">
+                                    <i class="fas fa-arrow-down me-1"></i>Low
+                                </button>
+                                {% endif %}
+                            </div>
+
+                            <!-- Quick Tasks Actions -->
+                            <div class="mb-3">
+                                <small class="text-muted d-block mb-2">Quick Tasks</small>
+                                <button class="btn btn-outline-primary btn-sm w-100 mb-2" onclick="rescheduleTask()">
+                                    <i class="fas fa-calendar me-2"></i>Reschedule
+                                </button>
+                                <button class="btn btn-outline-secondary btn-sm w-100 mb-2" onclick="duplicateTask()">
+                                    <i class="fas fa-copy me-2"></i>Duplicate Task
+                                </button>
+                            </div>
+
+                            <!-- Danger Zone -->
+                            <div class="mb-0">
+                                <small class="text-muted d-block mb-2">Danger Zone</small>
+                                <button class="btn btn-outline-danger btn-sm w-100" onclick="deleteTask()">
+                                    <i class="fas fa-trash me-2"></i>Delete Task
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Task Details -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">Task Details</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <small class="text-muted">ID</small>
+                                <p class="mb-0"><strong>#{{ task.id }}</strong></p>
+                            </div>
+                            <div class="mb-3">
+                                <small class="text-muted">Start Date</small>
+                                <p class="mb-0">{{ task.start_date or 'Not set' }}</p>
+                            </div>
+                            <div class="mb-3">
+                                <small class="text-muted">Completed Date</small>
+                                <p class="mb-0">{{ task.completed_date or 'Not set' }}</p>
+                            </div>
+                            <div class="mb-3">
+                                <small class="text-muted">Time Taken</small>
+                                <p class="mb-0">{{ task.time_taken + ' minutes' if task.time_taken else 'Not tracked' }}</p>
+                            </div>
+                            <div class="mb-3">
+                                <small class="text-muted">Owner</small>
+                                <p class="mb-0">{{ task.owner or 'Unassigned' }}</p>
+                            </div>
+                            <div class="mb-3">
+                                <small class="text-muted">Created</small>
+                                <p class="mb-0">{{ task.created_date or 'Unknown' }}</p>
+                            </div>
+                            {% if task.related_opportunity_id %}
+                            <div class="mb-3">
+                                <small class="text-muted">Related Opportunity</small>
+                                <p class="mb-0">
+                                    <a href="/opportunity/{{ task.related_opportunity_id }}">
+                                        View Opportunity
+                                    </a>
+                                </p>
+                            </div>
+                            {% endif %}
+                            {% if task.related_account_id %}
+                            <div class="mb-3">
+                                <small class="text-muted">Related Account</small>
+                                <p class="mb-0">
+                                    <a href="/account/{{ task.related_account_id }}">
+                                        View Account
+                                    </a>
+                                </p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Left Panel (Main Content) -->
+                <div class="col-lg-8 order-lg-1">
+            
+            <!-- Task Information -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Task Information</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if edit_mode %}
+                            <form id="taskForm">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="title" class="form-label">Title</label>
+                                        <input type="text" class="form-control" id="title" name="title" value="{{ task.title }}" required>
+                                    </div>
+                                    <div class="col-md-3 mb-3">
+                                        <label for="status" class="form-label">Status</label>
+                                        <select class="form-select" id="status" name="status">
+                                            <option value="Not Started" {{ 'selected' if task.status == 'Not Started' }}>Not Started</option>
+                                            <option value="In Progress" {{ 'selected' if task.status == 'In Progress' }}>In Progress</option>
+                                            <option value="Waiting" {{ 'selected' if task.status == 'Waiting' }}>Waiting</option>
+                                            <option value="Deferred" {{ 'selected' if task.status == 'Deferred' }}>Deferred</option>
+                                            <option value="Completed" {{ 'selected' if task.status == 'Completed' }}>Completed</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3 mb-3">
+                                        <label for="priority" class="form-label">Priority</label>
+                                        <select class="form-select" id="priority" name="priority">
+                                            <option value="Low" {{ 'selected' if task.priority == 'Low' }}>Low</option>
+                                            <option value="Medium" {{ 'selected' if task.priority == 'Medium' }}>Medium</option>
+                                            <option value="High" {{ 'selected' if task.priority == 'High' }}>High</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <label for="work_date" class="form-label">Work Date</label>
+                                        <input type="date" class="form-control" id="work_date" name="work_date" value="{{ task.work_date }}">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label for="due_date" class="form-label">Due Date</label>
+                                        <input type="date" class="form-control" id="due_date" name="due_date" value="{{ task.due_date }}">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label for="owner" class="form-label">Owner</label>
+                                        <input type="text" class="form-control" id="owner" name="owner" value="{{ task.owner }}">
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <label for="start_date" class="form-label">Start Date</label>
+                                        <input type="date" class="form-control" id="start_date" name="start_date" value="{{ task.start_date }}">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label for="completed_date" class="form-label">Completed Date</label>
+                                        <input type="date" class="form-control" id="completed_date" name="completed_date" value="{{ task.completed_date }}">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label for="time_taken" class="form-label">Time Taken (minutes)</label>
+                                        <input type="number" class="form-control" id="time_taken" name="time_taken" value="{{ task.time_taken }}">
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="parent_item_type" class="form-label">Parent Item Type</label>
+                                        <select class="form-select" id="parent_item_type" name="parent_item_type">
+                                            <option value="">None</option>
+                                            <option value="Account" {{ 'selected' if task.parent_item_type == 'Account' }}>Account</option>
+                                            <option value="Contact" {{ 'selected' if task.parent_item_type == 'Contact' }}>Contact</option>
+                                            <option value="Opportunity" {{ 'selected' if task.parent_item_type == 'Opportunity' }}>Opportunity</option>
+                                            <option value="Product" {{ 'selected' if task.parent_item_type == 'Product' }}>Product</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="parent_item_id" class="form-label">Parent Item ID</label>
+                                        <input type="number" class="form-control" id="parent_item_id" name="parent_item_id" value="{{ task.parent_item_id }}">
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="description" class="form-label">Description</label>
+                                    <textarea class="form-control" id="description" name="description" rows="4">{{ task.description }}</textarea>
+                                </div>
+                            </form>
+                            {% else %}
+                            <!-- View Mode -->
+                            <div class="row">
+                                <div class="col-md-8 mb-3">
+                                    <h6 class="text-muted">Title</h6>
+                                    <p class="mb-0">{{ task.title }}</p>
+                                </div>
+                                <div class="col-md-2 mb-3">
+                                    <h6 class="text-muted">Status</h6>
+                                    <span class="badge bg-{{ 'secondary' if task.status == 'Not Started' else 'primary' if task.status == 'In Progress' else 'warning' if task.status == 'Waiting' else 'info' if task.status == 'Deferred' else 'success' }}">
+                                        {{ task.status }}
+                                    </span>
+                                </div>
+                                <div class="col-md-2 mb-3">
+                                    <h6 class="text-muted">Priority</h6>
+                                    <span class="badge bg-{{ 'danger' if task.priority == 'High' else 'warning' if task.priority == 'Medium' else 'secondary' }}">
+                                        {{ task.priority or 'Medium' }}
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <h6 class="text-muted">Work Date</h6>
+                                    <p class="mb-0">{{ task.work_date or 'Not set' }}</p>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <h6 class="text-muted">Due Date</h6>
+                                    <p class="mb-0">{{ task.due_date or 'Not set' }}</p>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <h6 class="text-muted">Days Till Due</h6>
+                                    {% if task.days_till_due is not none %}
+                                        <span class="badge bg-{{ 'danger' if task.days_till_due < 0 else 'warning' if task.days_till_due == 0 else 'success' }}">
+                                            {{ task.days_till_due }}
+                                        </span>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <h6 class="text-muted">Past Due</h6>
+                                    {% if task.past_due %}
+                                        <span class="badge bg-danger">Yes</span>
+                                    {% else %}
+                                        <span class="badge bg-success">No</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <h6 class="text-muted">Scheduled</h6>
+                                    <span class="badge bg-{{ 'success' if task.scheduled == 'Scheduled' else 'warning' }}">
+                                        {{ task.scheduled }}
+                                    </span>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <h6 class="text-muted">Countdown</h6>
+                                    <span class="badge bg-{{ 'success' if 'Completed' in task.countdown else 'danger' if 'overdue' in task.countdown else 'warning' if 'Due Today' in task.countdown else 'primary' }}">
+                                        {{ task.countdown }}
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            {% if task.parent_item_type %}
+                            <div class="row">
+                                <div class="col-md-12 mb-3">
+                                    <h6 class="text-muted">Parent Item</h6>
+                                    <div class="d-flex flex-wrap gap-1">
+                                        {% if task.parent_item_type == 'Account' and task.account_name %}
+                                            <span class="badge bg-light text-dark">
+                                                <i class="fas fa-building me-1"></i>{{ task.account_name }}
+                                            </span>
+                                        {% elif task.parent_item_type == 'Contact' and task.contact_name %}
+                                            <span class="badge bg-light text-dark">
+                                                <i class="fas fa-user me-1"></i>{{ task.contact_name }}
+                                            </span>
+                                        {% elif task.parent_item_type == 'Opportunity' and task.opportunity_name %}
+                                            <span class="badge bg-light text-dark">
+                                                <i class="fas fa-handshake me-1"></i>{{ task.opportunity_name }}
+                                            </span>
+                                        {% elif task.parent_item_type == 'Product' and task.product_name %}
+                                            <span class="badge bg-light text-dark">
+                                                <i class="fas fa-box me-1"></i>{{ task.product_name }}
+                                            </span>
+                                        {% else %}
+                                            <span class="text-muted">{{ task.parent_item_type }} #{{ task.parent_item_id }}</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            {% if task.description %}
+                            <div class="mb-3">
+                                <h6 class="text-muted">Description</h6>
+                                <div class="border rounded p-3 bg-light">
+                                    {{ task.description | replace('\n', '<br>') | safe }}
+                                </div>
+                            </div>
+                            {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Related Opportunities (for processing tasks) -->
+                    {% if opportunities %}
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-handshake me-2 text-primary"></i>Related Opportunities
+                            </h5>
+                            <small class="text-muted">Opportunities created during this processing session</small>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Solicitation #</th>
+                                            <th>Title</th>
+                                            <th>Account</th>
+                                            <th>Stage</th>
+                                            <th class="text-center">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for opp in opportunities %}
+                                        <tr>
+                                            <td><code class="small">{{ opp.solicitation_number }}</code></td>
+                                            <td>
+                                                <div class="text-truncate" style="max-width: 200px;" title="{{ opp.title }}">
+                                                    {{ opp.title }}
+                                                </div>
+                                            </td>
+                                            <td>{{ opp.account_name or 'Unknown' }}</td>
+                                            <td>
+                                                <span class="badge bg-primary">{{ opp.stage }}</span>
+                                            </td>
+                                            <td class="text-center">
+                                                <a href="/opportunity/{{ opp.id }}" class="btn btn-sm btn-outline-primary" title="View Opportunity">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="mt-3">
+                                <div class="row text-center">
+                                    <div class="col-4">
+                                        <h6 class="text-primary mb-1">{{ opportunities|length }}</h6>
+                                        <small class="text-muted">Total Created</small>
+                                    </div>
+                                    <div class="col-4">
+                                        <h6 class="text-success mb-1">{{ opportunities|selectattr('stage', 'equalto', 'Qualification')|list|length }}</h6>
+                                        <small class="text-muted">In Qualification</small>
+                                    </div>
+                                    <div class="col-4">
+                                        <h6 class="text-info mb-1">{{ opportunities|selectattr('stage', 'equalto', 'Proposal')|list|length }}</h6>
+                                        <small class="text-muted">In Proposal</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Processing Report (for processing tasks) -->
+                    {% if processing_report %}
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-file-alt me-2 text-info"></i>Processing Report
+                            </h5>
+                            <small class="text-muted">Detailed report from PDF processing operation</small>
+                        </div>
+                        <div class="card-body">
+                            <div class="bg-light p-3 rounded">
+                                <pre class="mb-0 small">{{ processing_report }}</pre>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function saveTask() {
+    const form = document.getElementById('taskForm');
+    const formData = new FormData(form);
+    
+    fetch('/tasks/{{ task.id }}', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => {
+        if (response.ok) {
+            window.location.href = '/tasks/{{ task.id }}';
+        } else {
+            alert('Failed to save task');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to save task');
+    });
+}
+
+function updateTaskStatus(status) {
+    fetch('/tasks/{{ task.id }}/status', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: status })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Failed to update task: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to update task');
+    });
+}
+
+function rescheduleTask() {
+    const newDate = prompt('Enter new due date (YYYY-MM-DD):');
+    if (newDate) {
+        fetch('/tasks/{{ task.id }}/reschedule', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ due_date: newDate })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Failed to reschedule task: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to reschedule task');
+        });
+    }
+}
+
+function deleteTask() {
+    if (confirm('Are you sure you want to delete this task?')) {
+        fetch('/tasks/{{ task.id }}', {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.href = '/tasks';
+            } else {
+                alert('Failed to delete task: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to delete task');
+        });
+    }
+}
+
+function duplicateTask() {
+    if (confirm('Create a duplicate of this task?')) {
+        fetch('/tasks/{{ task.id }}/duplicate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.href = '/tasks/' + data.task_id;
+            } else {
+                alert('Failed to duplicate task: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to duplicate task');
+        });
+    }
+}
+
+function updateTaskPriority(priority) {
+    fetch('/tasks/{{ task.id }}/priority', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ priority: priority })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Failed to update priority: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to update priority');
+    });
+}
+
+function startTask() {
+    if (confirm('Start this task? This will set the status to "In Progress" and record the start date.')) {
+        fetch('/tasks/{{ task.id }}/start', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Failed to start task: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to start task');
+        });
+    }
+}
+
+function endTask() {
+    if (confirm('Complete this task? This will set the status to "Completed" and record the completion date.')) {
+        fetch('/tasks/{{ task.id }}/end', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Failed to complete task: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to complete task');
+        });
+    }
+}
+</script>
+{% endblock %}

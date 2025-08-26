@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}QPL - DLA Codebase CRM{% endblock %}
+{% block title %}QPL - CDE Prosperity{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
@@ -137,7 +137,7 @@
                             <td>
                                 <strong>{{ qpl.name }}</strong>
                                 {% if qpl.description %}
-                                <br><small class="text-muted">{{ qpl.description[:50] }}{% if qpl.description|length > 50 %}...{% endif %}</small>
+                                <br><small class="text-muted">{{ (qpl.description or 'No description')[:50] }}{% if (qpl.description or '')|length > 50 %}...{% endif %}</small>
                                 {% endif %}
                             </td>
                             <td>

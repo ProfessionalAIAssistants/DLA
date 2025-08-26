@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Dashboard - ModernCRM{% endblock %}
+{% block title %}Dashboard - CDE Prosperity{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
@@ -98,6 +98,46 @@
         </div>
     </div>
 
+    <!-- Calendar and Upcoming Events -->
+    <div class="row mb-5">
+        <!-- Interactive Calendar -->
+        <div class="col-lg-8">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-calendar-alt me-2"></i>Vital Dates Calendar
+                    </h5>
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button type="button" class="btn btn-outline-primary" onclick="calendarView('month')">Month</button>
+                        <button type="button" class="btn btn-outline-primary" onclick="calendarView('week')">Week</button>
+                        <button type="button" class="btn btn-outline-primary" onclick="calendarView('list')">List</button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <!-- Calendar container -->
+                    <div id="dashboard-calendar" style="height: 400px;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upcoming Events Sidebar -->
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-clock me-2"></i>Upcoming Events
+                    </h5>
+                    <span class="badge bg-primary" id="upcomingCount">0</span>
+                </div>
+                <div class="card-body p-0" style="max-height: 400px; overflow-y: auto;">
+                    <div id="upcoming-events-list">
+                        <!-- Events will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Recent Opportunities Section -->
     <div class="row mb-5">
         <div class="col-12">
@@ -112,38 +152,51 @@
                 </div>
                 <div class="card-body">
                     {% if data.recent_opportunities %}
-                        <div class="row">
-                            {% for opp in data.recent_opportunities[:6] %}
-                            <div class="col-md-6 mb-3">
-                                <div class="card card-metric h-100" style="border: 1px solid rgba(155,123,216,0.2);">
-                                    <div class="card-body">
-                                        <div class="d-flex justify-content-between align-items-start mb-2">
-                                            <h6 class="card-title mb-1 text-dark fw-bold">{{ opp.name }}</h6>
-                                            <span class="badge bg-{{ 'success' if opp.stage == 'Closed Won' else 'warning' if opp.stage == 'Negotiation' else 'info' if opp.stage == 'Proposal' else 'primary' }}">
-                                                {{ opp.stage }}
-                                            </span>
-                                        </div>
-                                        <div class="mb-2">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Opportunity</th>
+                                        <th>Account</th>
+                                        <th>Stage</th>
+                                        <th>Bid Price</th>
+                                        <th>Close Date</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for opp in data.recent_opportunities[:10] %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ opp.name }}</strong>
+                                        </td>
+                                        <td>
                                             <small class="text-muted">
                                                 <i class="fas fa-building me-1"></i>{{ opp.account_name or 'No Account' }}
                                             </small>
-                                        </div>
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <div>
-                                                <strong class="text-success">{{ opp.bid_price | currency if opp.bid_price else 'TBD' }}</strong>
-                                                <br>
-                                                <small class="text-muted">
-                                                    <i class="fas fa-calendar me-1"></i>{{ opp.close_date | date if opp.close_date else 'No close date' }}
-                                                </small>
-                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-{{ 'success' if opp.stage == 'Closed Won' else 'warning' if opp.stage == 'Negotiation' else 'info' if opp.stage == 'Proposal' else 'primary' }}">
+                                                {{ opp.stage }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <strong class="text-success">{{ opp.bid_price | currency if opp.bid_price else 'TBD' }}</strong>
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">
+                                                <i class="fas fa-calendar me-1"></i>{{ opp.close_date | date if opp.close_date else 'No close date' }}
+                                            </small>
+                                        </td>
+                                        <td>
                                             <a href="{{ url_for('opportunity_detail', opportunity_id=opp.id) }}" class="btn btn-sm btn-outline-primary">
                                                 <i class="fas fa-eye"></i>
                                             </a>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            {% endfor %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
                         </div>
                     {% else %}
                         <div class="text-center py-4">
@@ -288,11 +341,11 @@
 </div>
 
 <div class="row mt-4">
-    <!-- New RFQs -->
+    <!-- New Quotes -->
     <div class="col-md-6">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="card-title mb-0">Recent RFQs</h5>
+                <h5 class="card-title mb-0">Recent Quotes</h5>
                 <a href="{{ url_for('rfqs') }}" class="btn btn-sm btn-outline-primary">View All</a>
             </div>
             <div class="card-body">
@@ -303,13 +356,13 @@
                             <div>
                                 <h6 class="mb-1">
                                     <a href="{{ url_for('rfq_detail', rfq_id=rfq.id) }}" class="text-decoration-none">
-                                        RFQ {{ rfq.request_number }}
+                                        Quote {{ rfq.request_number }}
                                     </a>
                                 </h6>
                                 <small class="text-muted">
-                                    {{ rfq.product_description[:50] }}...
+                                    {{ (rfq.product_description or 'No description')[:50] }}...
                                     <br>
-                                    NSN: {{ rfq.nsn }} | Close: {{ rfq.close_date | date }}
+                                    NSN: {{ rfq.nsn or 'N/A' }} | Close: {{ rfq.close_date | date }}
                                 </small>
                             </div>
                             <span class="badge bg-{{ 'success' if rfq.status == 'Qualified' else 'primary' if rfq.status == 'New' else 'secondary' }}">
@@ -319,7 +372,7 @@
                     </div>
                     {% endfor %}
                 {% else %}
-                    <p class="text-muted">No recent RFQs.</p>
+                    <p class="text-muted">No recent quotes.</p>
                 {% endif %}
             </div>
         </div>
@@ -391,7 +444,15 @@
 {% endblock %}
 
 {% block scripts %}
+<!-- FullCalendar CSS -->
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css" rel="stylesheet">
+<!-- FullCalendar JS -->
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+
 <script>
+    let calendar;
+    let currentView = 'dayGridMonth';
+    
     // Display current date
     document.addEventListener('DOMContentLoaded', function() {
         const dateElement = document.getElementById('currentDate');
@@ -401,9 +462,221 @@
             dateElement.textContent = today.toLocaleDateString('en-US', options);
         }
         
+        // Initialize calendar
+        initializeCalendar();
+        
+        // Load upcoming events
+        loadUpcomingEvents();
+        
         // Load PDF count on page load
         loadPDFCount();
     });
+    
+    // Initialize FullCalendar
+    function initializeCalendar() {
+        const calendarEl = document.getElementById('dashboard-calendar');
+        
+        calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek,listWeek'
+            },
+            height: 400,
+            events: function(fetchInfo, successCallback, failureCallback) {
+                fetch('/api/calendar-events', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        start: fetchInfo.startStr,
+                        end: fetchInfo.endStr
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    const events = data.events.map(event => ({
+                        id: event.id,
+                        title: event.title,
+                        start: event.date,
+                        color: event.color,
+                        textColor: 'white',
+                        extendedProps: {
+                            description: event.description,
+                            type: event.type,
+                            priority: event.priority,
+                            url: event.url,
+                            overdue: event.overdue || false
+                        }
+                    }));
+                    successCallback(events);
+                })
+                .catch(error => {
+                    console.error('Error loading calendar events:', error);
+                    failureCallback(error);
+                });
+            },
+            eventClick: function(info) {
+                showEventModal(info.event);
+            },
+            eventMouseEnter: function(info) {
+                // Show tooltip
+                const tooltip = document.createElement('div');
+                tooltip.className = 'calendar-tooltip';
+                tooltip.innerHTML = `
+                    <strong>${info.event.title}</strong><br>
+                    ${info.event.extendedProps.description || ''}
+                    ${info.event.extendedProps.overdue ? '<br><span class="text-danger">⚠️ Overdue</span>' : ''}
+                `;
+                tooltip.style.cssText = `
+                    position: absolute;
+                    background: rgba(0,0,0,0.9);
+                    color: white;
+                    padding: 8px 12px;
+                    border-radius: 4px;
+                    font-size: 12px;
+                    z-index: 1000;
+                    max-width: 250px;
+                    pointer-events: none;
+                `;
+                document.body.appendChild(tooltip);
+                
+                // Position tooltip
+                const rect = info.el.getBoundingClientRect();
+                tooltip.style.left = rect.left + 'px';
+                tooltip.style.top = (rect.bottom + 5) + 'px';
+                
+                info.el.addEventListener('mouseleave', () => {
+                    tooltip.remove();
+                });
+            }
+        });
+        
+        calendar.render();
+    }
+    
+    // Show event details modal
+    function showEventModal(event) {
+        const modal = document.createElement('div');
+        modal.className = 'modal fade';
+        modal.innerHTML = `
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">${event.title}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p><strong>Date:</strong> ${event.startStr}</p>
+                        <p><strong>Type:</strong> ${event.extendedProps.type || 'Event'}</p>
+                        <p><strong>Priority:</strong> 
+                            <span class="badge bg-${event.extendedProps.priority === 'high' ? 'danger' : event.extendedProps.priority === 'medium' ? 'warning' : 'secondary'}">
+                                ${event.extendedProps.priority || 'medium'}
+                            </span>
+                        </p>
+                        ${event.extendedProps.overdue ? '<p class="text-danger"><i class="fas fa-exclamation-triangle"></i> This item is overdue</p>' : ''}
+                        <p>${event.extendedProps.description || 'No description available'}</p>
+                    </div>
+                    <div class="modal-footer">
+                        ${event.extendedProps.url ? `<a href="${event.extendedProps.url}" class="btn btn-primary">View Details</a>` : ''}
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        const modalInstance = new bootstrap.Modal(modal);
+        modalInstance.show();
+        
+        modal.addEventListener('hidden.bs.modal', () => {
+            modal.remove();
+        });
+    }
+    
+    // Calendar view switching
+    function calendarView(view) {
+        if (view === 'month') {
+            calendar.changeView('dayGridMonth');
+        } else if (view === 'week') {
+            calendar.changeView('timeGridWeek');
+        } else if (view === 'list') {
+            calendar.changeView('listWeek');
+        }
+        
+        // Update active button
+        document.querySelectorAll('.btn-group .btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        event.target.classList.add('active');
+    }
+    
+    // Load upcoming events for sidebar
+    function loadUpcomingEvents() {
+        fetch('/api/upcoming-events')
+            .then(response => response.json())
+            .then(data => {
+                const container = document.getElementById('upcoming-events-list');
+                const countBadge = document.getElementById('upcomingCount');
+                
+                if (data.events && data.events.length > 0) {
+                    countBadge.textContent = data.events.length;
+                    
+                    container.innerHTML = data.events.map(event => {
+                        const eventDate = new Date(event.date);
+                        const isToday = eventDate.toDateString() === new Date().toDateString();
+                        const isTomorrow = eventDate.toDateString() === new Date(Date.now() + 86400000).toDateString();
+                        
+                        let dateDisplay;
+                        if (isToday) {
+                            dateDisplay = 'Today';
+                        } else if (isTomorrow) {
+                            dateDisplay = 'Tomorrow';
+                        } else {
+                            dateDisplay = eventDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                        }
+                        
+                        return `
+                            <div class="border-bottom px-3 py-2 ${event.overdue ? 'bg-light-danger' : ''}">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1 fw-bold ${event.overdue ? 'text-danger' : ''}">${event.title}</h6>
+                                        <small class="text-muted d-block">${event.description}</small>
+                                        <div class="mt-1">
+                                            <span class="badge bg-${event.priority === 'high' ? 'danger' : event.priority === 'medium' ? 'warning' : 'secondary'} me-1">
+                                                ${event.priority}
+                                            </span>
+                                            <small class="text-muted">${dateDisplay}</small>
+                                            ${event.overdue ? '<span class="badge bg-danger ms-1">Overdue</span>' : ''}
+                                        </div>
+                                    </div>
+                                    ${event.url ? `<a href="${event.url}" class="btn btn-sm btn-outline-primary ms-2"><i class="fas fa-eye"></i></a>` : ''}
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                } else {
+                    countBadge.textContent = '0';
+                    container.innerHTML = `
+                        <div class="text-center py-4">
+                            <i class="fas fa-calendar-check fa-2x text-muted mb-2"></i>
+                            <p class="text-muted mb-0">No upcoming events</p>
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('Error loading upcoming events:', error);
+                document.getElementById('upcoming-events-list').innerHTML = `
+                    <div class="text-center py-4">
+                        <i class="fas fa-exclamation-triangle fa-2x text-warning mb-2"></i>
+                        <p class="text-muted mb-0">Error loading events</p>
+                    </div>
+                `;
+            });
+    }
     
     // Load PDF count from server
     function loadPDFCount() {
@@ -441,8 +714,16 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
+                // Build success message
+                let message = `Successfully processed ${data.processed} PDFs. ${data.created} new records created, ${data.updated} records updated.`;
+                
+                // Add task creation notification
+                if (data.review_task_created) {
+                    message += ` A review task has been created and is due today.`;
+                }
+                
                 // Show success message
-                showAlert('success', `Successfully processed ${data.processed} PDFs. ${data.created} new records created, ${data.updated} records updated.`);
+                showAlert('success', message);
                 
                 // Refresh PDF count
                 loadPDFCount();
@@ -504,6 +785,33 @@
             'next_week': 'Next Week'
         };
         document.getElementById('currentTaskRange').textContent = rangeNames[range];
+    }
+    
+    // Complete task function
+    function completeTask(taskId) {
+        fetch(`/api/tasks/${taskId}/complete`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert('success', 'Task marked as complete');
+                // Refresh calendar and events
+                calendar.refetchEvents();
+                loadUpcomingEvents();
+                // Refresh page after short delay
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showAlert('error', 'Error completing task: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('error', 'Network error while completing task');
+        });
     }
     
     // Auto-refresh dashboard every 5 minutes

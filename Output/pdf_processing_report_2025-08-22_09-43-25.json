@@ -1,0 +1,113 @@
+{
+  "processed": 0,
+  "created": 0,
+  "updated": 0,
+  "skipped": 1,
+  "errors": [
+    "Error processing SPE4A123T3230.PDF: CHECK constraint failed: stage IN ('Prospecting', 'RFQ Requested', 'RFQ Received', 'Submit Bid', 'Project Started')",
+    "Error processing SPE4A124T2840.PDF: CHECK constraint failed: stage IN ('Prospecting', 'RFQ Requested', 'RFQ Received', 'Submit Bid', 'Project Started')",
+    "Error processing SPE7M424T236A - Good.PDF: CHECK constraint failed: stage IN ('Prospecting', 'RFQ Requested', 'RFQ Received', 'Submit Bid', 'Project Started')",
+    "Error processing SPE4A123T3230.PDF: Duplicate contact found: Contact with name 'THE BUYER' already exists",
+    "Error processing SPE4A124T0700.PDF: CHECK constraint failed: stage IN ('Prospecting', 'RFQ Requested', 'RFQ Received', 'Submit Bid', 'Project Started')",
+    "Error processing SPE4A124T2840.PDF: Duplicate contact found: Contact with name 'THE BUYER' already exists",
+    "Error processing SPE7M424T236A - Good.PDF: Duplicate contact found: Contact with name 'THE BUYER' already exists"
+  ],
+  "processed_files": [],
+  "skipped_files": [
+    {
+      "filename": "SPE4A124T0700.PDF",
+      "reason": "\u2022 Delivery too short: 20 days (minimum: 50)\n\u2022 Inspection point mismatch: requires DESTINATION, RFQ has ORIGIN",
+      "rfq_data": {
+        "request_number": "SPE4A124T0700",
+        "quantity": 50088,
+        "delivery_days": 20,
+        "iso": "NO",
+        "sampling": "NO",
+        "inspection_point": "ORIGIN",
+        "status": "New",
+        "product_description": "ION Previous edition not useable STANDARD FORM 18",
+        "mfr": "S INSPECTION SYSTEM AT A MINIMUM MUST COMPLY WITH ISO"
+      }
+    }
+  ],
+  "error_files": [
+    {
+      "filename": "SPE4A123T3230.PDF",
+      "error": "CHECK constraint failed: stage IN ('Prospecting', 'RFQ Requested', 'RFQ Received', 'Submit Bid', 'Project Started')",
+      "timestamp": "2025-08-22T09:43:23.770227"
+    },
+    {
+      "filename": "SPE4A124T2840.PDF",
+      "error": "CHECK constraint failed: stage IN ('Prospecting', 'RFQ Requested', 'RFQ Received', 'Submit Bid', 'Project Started')",
+      "timestamp": "2025-08-22T09:43:24.407147"
+    },
+    {
+      "filename": "SPE7M424T236A - Good.PDF",
+      "error": "CHECK constraint failed: stage IN ('Prospecting', 'RFQ Requested', 'RFQ Received', 'Submit Bid', 'Project Started')",
+      "timestamp": "2025-08-22T09:43:24.764923"
+    },
+    {
+      "filename": "SPE4A123T3230.PDF",
+      "error": "Duplicate contact found: Contact with name 'THE BUYER' already exists",
+      "timestamp": "2025-08-22T09:43:25.044264"
+    },
+    {
+      "filename": "SPE4A124T0700.PDF",
+      "error": "CHECK constraint failed: stage IN ('Prospecting', 'RFQ Requested', 'RFQ Received', 'Submit Bid', 'Project Started')",
+      "timestamp": "2025-08-22T09:43:25.050784"
+    },
+    {
+      "filename": "SPE4A124T2840.PDF",
+      "error": "Duplicate contact found: Contact with name 'THE BUYER' already exists",
+      "timestamp": "2025-08-22T09:43:25.356540"
+    },
+    {
+      "filename": "SPE7M424T236A - Good.PDF",
+      "error": "Duplicate contact found: Contact with name 'THE BUYER' already exists",
+      "timestamp": "2025-08-22T09:43:25.652290"
+    }
+  ],
+  "created_records": {
+    "rfqs": [],
+    "accounts": [],
+    "contacts": [],
+    "products": []
+  },
+  "updated_records": {
+    "rfqs": [],
+    "accounts": [],
+    "contacts": [],
+    "products": []
+  },
+  "processing_start": "2025-08-22T09:43:23.422460",
+  "processing_end": "2025-08-22T09:43:25.652302",
+  "filter_settings": {
+    "min_delivery_days": 50,
+    "iso_required": "ANY",
+    "sampling_required": "NO",
+    "inspection_point": "DESTINATION",
+    "manufacturer_filter": "",
+    "fsc_filter": "",
+    "packaging_filter": "",
+    "auto_create_opportunities": true,
+    "link_related_records": true,
+    "move_processed_files": true,
+    "skip_duplicates": true
+  },
+  "database_stats_before": {
+    "accounts": 16,
+    "contacts": 116,
+    "products": 978,
+    "rfqs": 0,
+    "interactions": 7,
+    "opportunities": 0
+  },
+  "database_stats_after": {
+    "accounts": 16,
+    "contacts": 116,
+    "products": 978,
+    "rfqs": 4,
+    "interactions": 7,
+    "opportunities": 0
+  }
+}

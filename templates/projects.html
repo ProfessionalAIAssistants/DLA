@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Projects - DLA Codebase CRM{% endblock %}
+{% block title %}Projects - CDE Prosperity{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
@@ -190,7 +190,7 @@
                                 <div>
                                     <strong>{{ project.name }}</strong>
                                     {% if project.summary %}
-                                        <br><small class="text-muted">{{ project.summary[:80] }}{{ '...' if project.summary|length > 80 else '' }}</small>
+                                        <br><small class="text-muted">{{ (project.summary or 'No summary')[:80] }}{{ '...' if (project.summary or '')|length > 80 else '' }}</small>
                                     {% endif %}
                                     {% if project.vendor_name %}
                                         <br><small class="text-muted"><i class="fas fa-building me-1"></i>{{ project.vendor_name }}</small>
@@ -212,7 +212,7 @@
                             </td>
                             <td>
                                 <div class="progress mb-1" style="height: 20px;">
-                                    <div class="progress-bar bg-{{ 'success' if project.progress_percentage == 100 else 'info' if project.progress_percentage >= 50 else 'warning' if project.progress_percentage >= 25 else 'danger' }}" 
+                                    <div class="progress-bar bg-{{ 'success' if (project.progress_percentage or 0) == 100 else 'info' if (project.progress_percentage or 0) >= 50 else 'warning' if (project.progress_percentage or 0) >= 25 else 'danger' }}" 
                                          role="progressbar" 
                                          style="width: {{ project.progress_percentage or 0 }}%">
                                         {{ project.progress_percentage or 0 }}%
@@ -246,35 +246,29 @@
                             </td>
                             <td>{{ project.project_manager or 'Unassigned' }}</td>
                             <td>
-                                <div class="dropdown">
-                                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown">
-                                        <i class="fas fa-ellipsis-v"></i>
+                                <div class="btn-group" role="group">
+                                    {% if project.status == 'Not Started' %}
+                                    <button type="button" class="btn btn-sm btn-success" onclick="startProject({{ project.id }})" title="Start Project">
+                                        <i class="fas fa-play"></i>
                                     </button>
-                                    <ul class="dropdown-menu">
-                                        {% if project.status == 'Not Started' %}
-                                        <li><a class="dropdown-item" href="#" onclick="startProject({{ project.id }})">
-                                            <i class="fas fa-play me-2"></i>Start Project
-                                        </a></li>
-                                        {% endif %}
-                                        {% if project.status != 'Done' %}
-                                        <li><a class="dropdown-item" href="#" onclick="updateProgress({{ project.id }})">
-                                            <i class="fas fa-chart-line me-2"></i>Update Progress
-                                        </a></li>
-                                        <li><a class="dropdown-item text-success" href="#" onclick="completeProject({{ project.id }})">
-                                            <i class="fas fa-check me-2"></i>Mark Complete
-                                        </a></li>
-                                        {% endif %}
-                                        <li><a class="dropdown-item" href="#" onclick="editProject({{ project.id }})">
-                                            <i class="fas fa-edit me-2"></i>Edit
-                                        </a></li>
-                                        <li><a class="dropdown-item" href="#" onclick="viewDetails({{ project.id }})">
-                                            <i class="fas fa-eye me-2"></i>View Details
-                                        </a></li>
-                                        <li><hr class="dropdown-divider"></li>
-                                        <li><a class="dropdown-item text-danger" href="#" onclick="deleteProject({{ project.id }})">
-                                            <i class="fas fa-trash me-2"></i>Delete
-                                        </a></li>
-                                    </ul>
+                                    {% endif %}
+                                    {% if project.status != 'Done' %}
+                                    <button type="button" class="btn btn-sm btn-info" onclick="updateProgress({{ project.id }})" title="Update Progress">
+                                        <i class="fas fa-chart-line"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-success" onclick="completeProject({{ project.id }})" title="Mark Complete">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                    {% endif %}
+                                    <button type="button" class="btn btn-sm btn-primary" onclick="editProject({{ project.id }})" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="viewDetails({{ project.id }})" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-danger" onclick="deleteProject({{ project.id }})" title="Delete">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
                                 </div>
                             </td>
                         </tr>
@@ -298,7 +292,7 @@
 
 <!-- Add Project Modal -->
 <div class="modal fade" id="addProjectModal" tabindex="-1">
-    <div class="modal-dialog modal-xl">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Add New Project</h5>
@@ -306,11 +300,25 @@
             </div>
             <div class="modal-body">
                 <form id="addProjectForm">
+                    <!-- Basic Info -->
                     <div class="row">
-                        <div class="col-md-8">
+                        <div class="col-md-12">
                             <div class="mb-3">
                                 <label for="name" class="form-label">Project Name *</label>
                                 <input type="text" class="form-control" id="name" name="name" required placeholder="Enter project name">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="proj_status" class="form-label">Status</label>
+                                <select class="form-select" id="proj_status" name="status">
+                                    <option value="Not Started">Not Started</option>
+                                    <option value="In Progress">In Progress</option>
+                                    <option value="Done">Done</option>
+                                </select>
                             </div>
                         </div>
                         <div class="col-md-4">
@@ -323,43 +331,7 @@
                                 </select>
                             </div>
                         </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="summary" class="form-label">Summary</label>
-                        <input type="text" class="form-control" id="summary" name="summary" placeholder="Brief project summary">
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="description" class="form-label">Description</label>
-                        <textarea class="form-control" id="description" name="description" rows="3" placeholder="Detailed project description"></textarea>
-                    </div>
-                    
-                    <!-- Dates and Status -->
-                    <div class="row">
-                        <div class="col-md-3">
-                            <div class="mb-3">
-                                <label for="proj_status" class="form-label">Status</label>
-                                <select class="form-select" id="proj_status" name="status">
-                                    <option value="Not Started">Not Started</option>
-                                    <option value="In Progress">In Progress</option>
-                                    <option value="Done">Done</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="mb-3">
-                                <label for="start_date" class="form-label">Start Date</label>
-                                <input type="date" class="form-control" id="start_date" name="start_date">
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="mb-3">
-                                <label for="due_date" class="form-label">Due Date</label>
-                                <input type="date" class="form-control" id="due_date" name="due_date">
-                            </div>
-                        </div>
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <div class="mb-3">
                                 <label for="progress_percentage" class="form-label">Progress (%)</label>
                                 <input type="number" class="form-control" id="progress_percentage" name="progress_percentage" min="0" max="100" value="0">
@@ -367,29 +339,35 @@
                         </div>
                     </div>
                     
-                    <!-- Budget and Management -->
+                    <!-- Dates -->
                     <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="start_date" class="form-label">Start Date</label>
+                                <input type="date" class="form-control" id="start_date" name="start_date">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="due_date" class="form-label">Due Date</label>
+                                <input type="date" class="form-control" id="due_date" name="due_date">
+                            </div>
+                        </div>
                         <div class="col-md-4">
                             <div class="mb-3">
                                 <label for="budget" class="form-label">Budget</label>
                                 <input type="number" class="form-control" id="budget" name="budget" step="0.01" min="0" placeholder="Project budget">
                             </div>
                         </div>
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="project_manager" class="form-label">Project Manager</label>
-                                <input type="text" class="form-control" id="project_manager" name="project_manager" placeholder="Manager name">
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="team_members" class="form-label">Team Members</label>
-                                <input type="text" class="form-control" id="team_members" name="team_members" placeholder="Comma-separated names">
-                            </div>
-                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="summary" class="form-label">Summary</label>
+                        <textarea class="form-control" id="summary" name="summary" rows="2" placeholder="Brief project summary"></textarea>
                     </div>
                     
                     <!-- Relationships -->
+                    <h6 class="mb-3">Relationships</h6>
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
@@ -416,8 +394,8 @@
                     </div>
                     
                     <div class="mb-3">
-                        <label for="proj_notes" class="form-label">Notes</label>
-                        <textarea class="form-control" id="proj_notes" name="notes" rows="2" placeholder="Additional project notes"></textarea>
+                        <label class="form-label">Additional Relationships</label>
+                        <p class="text-muted small">Related products, tasks, contacts, and opportunities can be linked after creating the project.</p>
                     </div>
                 </form>
             </div>
@@ -431,7 +409,7 @@
 
 <!-- Edit Project Modal -->
 <div class="modal fade" id="editProjectModal" tabindex="-1">
-    <div class="modal-dialog modal-xl">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Edit Project</h5>
@@ -439,11 +417,25 @@
             </div>
             <div class="modal-body">
                 <form id="editProjectForm">
+                    <!-- Basic Info -->
                     <div class="row">
-                        <div class="col-md-8">
+                        <div class="col-md-12">
                             <div class="mb-3">
                                 <label for="editName" class="form-label">Project Name *</label>
                                 <input type="text" class="form-control" id="editName" name="name" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="editStatus" class="form-label">Status</label>
+                                <select class="form-select" id="editStatus" name="status">
+                                    <option value="Not Started">Not Started</option>
+                                    <option value="In Progress">In Progress</option>
+                                    <option value="Done">Done</option>
+                                </select>
                             </div>
                         </div>
                         <div class="col-md-4">
@@ -456,43 +448,7 @@
                                 </select>
                             </div>
                         </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="editSummary" class="form-label">Summary</label>
-                        <input type="text" class="form-control" id="editSummary" name="summary">
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="editDescription" class="form-label">Description</label>
-                        <textarea class="form-control" id="editDescription" name="description" rows="3"></textarea>
-                    </div>
-                    
-                    <!-- Dates and Status -->
-                    <div class="row">
-                        <div class="col-md-3">
-                            <div class="mb-3">
-                                <label for="editStatus" class="form-label">Status</label>
-                                <select class="form-select" id="editStatus" name="status">
-                                    <option value="Not Started">Not Started</option>
-                                    <option value="In Progress">In Progress</option>
-                                    <option value="Done">Done</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="mb-3">
-                                <label for="editStart" class="form-label">Start Date</label>
-                                <input type="date" class="form-control" id="editStart" name="start_date">
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="mb-3">
-                                <label for="editEnd" class="form-label">End Date</label>
-                                <input type="date" class="form-control" id="editEnd" name="end_date">
-                            </div>
-                        </div>
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <div class="mb-3">
                                 <label for="editProgress" class="form-label">Progress %</label>
                                 <input type="number" class="form-control" id="editProgress" name="progress_percentage" min="0" max="100">
@@ -500,47 +456,39 @@
                         </div>
                     </div>
                     
-                    <!-- Budget Information -->
+                    <!-- Dates -->
                     <div class="row">
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <div class="mb-3">
-                                <label for="editBudget" class="form-label">Planned Budget</label>
-                                <input type="number" step="0.01" class="form-control" id="editBudget" name="planned_budget">
+                                <label for="editStart" class="form-label">Start Date</label>
+                                <input type="date" class="form-control" id="editStart" name="start_date">
                             </div>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <div class="mb-3">
-                                <label for="editActualCost" class="form-label">Actual Cost</label>
-                                <input type="number" step="0.01" class="form-control" id="editActualCost" name="actual_cost">
+                                <label for="editEnd" class="form-label">Due Date</label>
+                                <input type="date" class="form-control" id="editEnd" name="due_date">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="editBudget" class="form-label">Budget</label>
+                                <input type="number" step="0.01" class="form-control" id="editBudget" name="budget">
                             </div>
                         </div>
                     </div>
                     
-                    <!-- Additional Fields -->
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="editOwner" class="form-label">Owner</label>
-                                <input type="text" class="form-control" id="editOwner" name="owner">
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="editAccountId" class="form-label">Associated Account</label>
-                                <select class="form-select" id="editAccountId" name="account_id">
-                                    <option value="">Select Account</option>
-                                    {% for account in accounts %}
-                                    <option value="{{ account.id }}">{{ account.name }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                        </div>
+                    <div class="mb-3">
+                        <label for="editSummary" class="form-label">Summary</label>
+                        <textarea class="form-control" id="editSummary" name="summary" rows="2"></textarea>
                     </div>
                     
+                    <!-- Relationships -->
+                    <h6 class="mb-3">Relationships</h6>
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="editVendorId" class="form-label">Primary Vendor</label>
+                                <label for="editVendorId" class="form-label">Vendor</label>
                                 <select class="form-select" id="editVendorId" name="vendor_id">
                                     <option value="">Select Vendor</option>
                                     {% for vendor in vendors %}
@@ -563,8 +511,8 @@
                     </div>
                     
                     <div class="mb-3">
-                        <label for="editNotes" class="form-label">Notes</label>
-                        <textarea class="form-control" id="editNotes" name="notes" rows="2"></textarea>
+                        <label class="form-label">Additional Relationships</label>
+                        <p class="text-muted small">Related products, tasks, contacts, and opportunities can be managed after saving changes.</p>
                     </div>
                 </form>
             </div>
@@ -588,6 +536,7 @@ function saveProject() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
+            bootstrap.Modal.getInstance(document.getElementById('addProjectModal')).hide();
             location.reload();
         } else {
             alert('Error: ' + data.message);
@@ -662,20 +611,15 @@ function editProject(projectId) {
             
             // Populate edit modal fields
             document.getElementById('editName').value = project.name || '';
-            document.getElementById('editPriority').value = project.priority || 'Medium';
-            document.getElementById('editSummary').value = project.summary || '';
-            document.getElementById('editDescription').value = project.description || '';
             document.getElementById('editStatus').value = project.status || 'Not Started';
-            document.getElementById('editStart').value = project.start_date || '';
-            document.getElementById('editEnd').value = project.end_date || '';
+            document.getElementById('editPriority').value = project.priority || 'Medium';
             document.getElementById('editProgress').value = project.progress_percentage || '';
-            document.getElementById('editBudget').value = project.planned_budget || '';
-            document.getElementById('editActualCost').value = project.actual_cost || '';
-            document.getElementById('editOwner').value = project.owner || '';
-            document.getElementById('editAccountId').value = project.account_id || '';
+            document.getElementById('editStart').value = project.start_date || '';
+            document.getElementById('editEnd').value = project.due_date || '';
+            document.getElementById('editBudget').value = project.budget || '';
+            document.getElementById('editSummary').value = project.summary || '';
             document.getElementById('editVendorId').value = project.vendor_id || '';
             document.getElementById('editParentProjectId').value = project.parent_project_id || '';
-            document.getElementById('editNotes').value = project.notes || '';
             
             // Store project ID for form submission
             document.getElementById('editProjectForm').dataset.projectId = projectId;

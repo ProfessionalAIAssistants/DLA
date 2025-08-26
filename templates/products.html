@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Products - ModernCRM{% endblock %}
+{% block title %}Products - CDE Prosperity{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
@@ -75,7 +75,7 @@
                         <td>
                             <strong>{{ product.nsn or 'N/A' }}</strong>
                             {% if product.description %}
-                            <br><small class="text-muted">{{ product.description[:80] }}{% if product.description|length > 80 %}...{% endif %}</small>
+                            <br><small class="text-muted">{{ (product.description or 'No description')[:80] }}{% if (product.description or '')|length > 80 %}...{% endif %}</small>
                             {% endif %}
                         </td>
                         <td>{{ product.fsc or 'N/A' }}</td>
@@ -262,7 +262,7 @@
                 <h6>Related Information</h6>
                 <div class="row g-3">
                     <div class="col-12">
-                        <label class="form-label"><strong>Related RFQs</strong></label>
+                        <label class="form-label"><strong>Related Quotes</strong></label>
                         <div id="viewRFQs" class="border rounded p-2 bg-light">
                             <em>Loading...</em>
                         </div>
@@ -335,6 +335,39 @@
                         <div class="col-md-4">
                             <label for="editListPrice" class="form-label">List Price</label>
                             <input type="number" step="0.01" class="form-control" id="editListPrice" name="list_price">
+                        </div>
+                    </div>
+                    
+                    <!-- Relationships Section -->
+                    <hr class="my-4">
+                    <h6>Relationships</h6>
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label"><strong>Related Quotes</strong></label>
+                            <div id="editRFQs" class="border rounded p-2 bg-light mb-2">
+                                <em>Loading...</em>
+                            </div>
+                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="addQuoteRelationship()">
+                                <i class="fas fa-plus me-1"></i>Link Quote
+                            </button>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label"><strong>Related Opportunities</strong></label>
+                            <div id="editOpportunities" class="border rounded p-2 bg-light mb-2">
+                                <em>Loading...</em>
+                            </div>
+                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="addOpportunityRelationship()">
+                                <i class="fas fa-plus me-1"></i>Link Opportunity
+                            </button>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label"><strong>Vendors</strong></label>
+                            <div id="editVendors" class="border rounded p-2 bg-light mb-2">
+                                <em>Loading...</em>
+                            </div>
+                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="addVendorRelationship()">
+                                <i class="fas fa-plus me-1"></i>Add Vendor
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -472,10 +505,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Store NSN for edit functionality
                 window.currentProductNSN = nsn;
                 
-                // Load related information (placeholder for now)
-                document.getElementById('viewRFQs').innerHTML = '<em>No related RFQs found</em>';
-                document.getElementById('viewOpportunities').innerHTML = '<em>No related opportunities found</em>';
-                document.getElementById('viewVendors').innerHTML = '<em>No vendor information available</em>';
+                // Load related information
+                loadProductRelationships(nsn, 'view');
                 
                 // Show the modal
                 new bootstrap.Modal(document.getElementById('viewProductModal')).show();
@@ -506,6 +537,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('editUnitPrice').value = product.unit_price || '';
                 document.getElementById('editCostPrice').value = product.cost_price || '';
                 document.getElementById('editListPrice').value = product.list_price || '';
+                
+                // Load relationships for editing
+                loadProductRelationships(nsn, 'edit');
                 
                 // Show the modal
                 new bootstrap.Modal(document.getElementById('editProductModal')).show();
@@ -585,6 +619,90 @@ document.addEventListener('DOMContentLoaded', function() {
             alert('Error updating product. Please try again.');
         });
     });
+    
+    // Load product relationships function
+    window.loadProductRelationships = function(nsn, mode) {
+        // mode can be 'view' or 'edit'
+        const prefix = mode === 'edit' ? 'edit' : 'view';
+        
+        fetch(`/api/products/${nsn}/relationships`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    console.error('Error loading relationships:', data.error);
+                    return;
+                }
+                
+                // Load RFQs/Quotes
+                const rfqsContainer = document.getElementById(`${prefix}RFQs`);
+                if (data.rfqs && data.rfqs.length > 0) {
+                    rfqsContainer.innerHTML = data.rfqs.map(rfq => `
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                                <strong>${rfq.request_number || 'N/A'}</strong>
+                                <br><small class="text-muted">${rfq.account_name || 'No Account'} - ${rfq.status || 'N/A'}</small>
+                            </div>
+                            <a href="/rfq/${rfq.id}" class="btn btn-sm btn-outline-primary">View</a>
+                        </div>
+                    `).join('');
+                } else {
+                    rfqsContainer.innerHTML = '<em>No related quotes found</em>';
+                }
+                
+                // Load Opportunities
+                const oppsContainer = document.getElementById(`${prefix}Opportunities`);
+                if (data.opportunities && data.opportunities.length > 0) {
+                    oppsContainer.innerHTML = data.opportunities.map(opp => `
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                                <strong>${opp.name || 'N/A'}</strong>
+                                <br><small class="text-muted">${opp.account_name || 'No Account'} - ${opp.stage || 'N/A'}</small>
+                            </div>
+                            <a href="/opportunity/${opp.id}" class="btn btn-sm btn-outline-primary">View</a>
+                        </div>
+                    `).join('');
+                } else {
+                    oppsContainer.innerHTML = '<em>No related opportunities found</em>';
+                }
+                
+                // Load Vendors
+                const vendorsContainer = document.getElementById(`${prefix}Vendors`);
+                if (data.vendors && data.vendors.length > 0) {
+                    vendorsContainer.innerHTML = data.vendors.map(vendor => `
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                                <strong>${vendor.vendor_name || 'N/A'}</strong>
+                                <br><small class="text-muted">CAGE: ${vendor.vendor_cage || 'N/A'}</small>
+                            </div>
+                            <span class="badge bg-${vendor.preferred_vendor ? 'success' : 'secondary'}">
+                                ${vendor.preferred_vendor ? 'Preferred' : 'Standard'}
+                            </span>
+                        </div>
+                    `).join('');
+                } else {
+                    vendorsContainer.innerHTML = '<em>No vendor information available</em>';
+                }
+            })
+            .catch(error => {
+                console.error('Error loading relationships:', error);
+                document.getElementById(`${prefix}RFQs`).innerHTML = '<em>Error loading quotes</em>';
+                document.getElementById(`${prefix}Opportunities`).innerHTML = '<em>Error loading opportunities</em>';
+                document.getElementById(`${prefix}Vendors`).innerHTML = '<em>Error loading vendors</em>';
+            });
+    };
+    
+    // Relationship management functions
+    window.addQuoteRelationship = function() {
+        alert('Quote linking functionality will be implemented in the next update.');
+    };
+    
+    window.addOpportunityRelationship = function() {
+        alert('Opportunity linking functionality will be implemented in the next update.');
+    };
+    
+    window.addVendorRelationship = function() {
+        alert('Vendor relationship functionality will be implemented in the next update.');
+    };
 });
 </script>
 {% endblock %}

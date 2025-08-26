@@ -257,16 +257,18 @@ class PDFProcessor:
             results['database_stats_after'] = self._get_database_stats()
             return results
         
-        # Get all PDF files
-        pdf_files = list(self.to_process_dir.glob("*.pdf")) + list(self.to_process_dir.glob("*.PDF"))
+        # Get all PDF files (avoid duplicates by using case-insensitive search)
+        pdf_files = []
+        for pattern in ["*.pdf", "*.PDF"]:
+            for file in self.to_process_dir.glob(pattern):
+                if file not in pdf_files:
+                    pdf_files.append(file)
         
         for pdf_path in pdf_files:
             try:
                 # First extract and parse data without creating records
                 text_content = self.extract_pdf_text(pdf_path)
                 parsed_data = self.parse_pdf_content(text_content, pdf_path.name)
-                
-                results['processed'] += 1
                 
                 # Check if RFQ should be processed based on filters BEFORE creating records
                 if parsed_data.get('rfq') and not self.should_process_rfq(parsed_data['rfq']):
@@ -283,6 +285,9 @@ class PDFProcessor:
                 # Only now process the data and create records
                 result = self.process_parsed_data(parsed_data)
                 result['rfq_data'] = parsed_data['rfq']
+                
+                # Only increment processed count for files that were actually processed
+                results['processed'] += 1
                 
                 # Track processed file details
                 file_result = {
@@ -326,6 +331,9 @@ class PDFProcessor:
         # Finalize report
         results['processing_end'] = datetime.now().isoformat()
         results['database_stats_after'] = self._get_database_stats()
+        
+        # Generate detailed report text for tasks
+        results['detailed_report'] = self._generate_detailed_report(results)
         
         # Save detailed report
         self._save_processing_report(results)
@@ -525,7 +533,7 @@ class PDFProcessor:
         
         # Set default values
         parsed_data['rfq']['status'] = 'New'
-        parsed_data['opportunity']['stage'] = 'Qualification'
+        parsed_data['opportunity']['stage'] = 'RFQ Received'
     
     def parse_account_info(self, text: str, parsed_data: Dict[str, Any]):
         """Parse company/account information"""
@@ -736,18 +744,20 @@ class PDFProcessor:
         if not (contact_data.get('email') or contact_data.get('last_name')):
             return None
         
-        # Check if contact exists by email or name
-        where_clause = ""
-        params = []
-        
+        # Check if contact exists by email first (most reliable)
+        existing = None
         if contact_data.get('email'):
-            where_clause = "LOWER(email) = LOWER(?)"
-            params.append(contact_data['email'])
-        elif contact_data.get('last_name'):
-            where_clause = "LOWER(last_name) = LOWER(?) AND LOWER(first_name) = LOWER(?)"
-            params.extend([contact_data.get('last_name', ''), contact_data.get('first_name', '')])
+            existing = self.crm_data.execute_query(
+                "SELECT * FROM contacts WHERE LOWER(email) = LOWER(?)",
+                [contact_data['email']]
+            )
         
-        existing = self.crm_data.execute_query(f"SELECT * FROM contacts WHERE {where_clause}", params)
+        # If not found by email, try by name
+        if not existing and contact_data.get('last_name'):
+            existing = self.crm_data.execute_query(
+                "SELECT * FROM contacts WHERE LOWER(last_name) = LOWER(?) AND LOWER(first_name) = LOWER(?)",
+                [contact_data.get('last_name', ''), contact_data.get('first_name', '')]
+            )
         
         if existing:
             # Update existing contact
@@ -756,15 +766,42 @@ class PDFProcessor:
             if account_id:
                 update_data['account_id'] = account_id
             if update_data:
-                self.crm_data.update_contact(contact_id, **update_data)
+                try:
+                    self.crm_data.update_contact(contact_id, **update_data)
+                except Exception as e:
+                    print(f"Warning: Could not update contact {contact_id}: {e}")
             return contact_id
         else:
-            # Create new contact
-            if account_id:
-                contact_data['account_id'] = account_id
-            contact_data.setdefault('status', 'Active')
-            contact_data.setdefault('created_date', datetime.now().isoformat())
-            return self.crm_data.create_contact(**contact_data)
+            # Create new contact, but handle duplicates gracefully
+            try:
+                if account_id:
+                    contact_data['account_id'] = account_id
+                contact_data.setdefault('status', 'Active')
+                contact_data.setdefault('created_date', datetime.now().isoformat())
+                return self.crm_data.create_contact(**contact_data)
+            except ValueError as e:
+                if "Duplicate contact found" in str(e):
+                    # If duplicate error, try to find the existing contact and return its ID
+                    print(f"Warning: {e}. Attempting to find existing contact...")
+                    if contact_data.get('email'):
+                        existing = self.crm_data.execute_query(
+                            "SELECT * FROM contacts WHERE LOWER(email) = LOWER(?)",
+                            [contact_data['email']]
+                        )
+                    elif contact_data.get('last_name'):
+                        existing = self.crm_data.execute_query(
+                            "SELECT * FROM contacts WHERE LOWER(last_name) = LOWER(?)",
+                            [contact_data.get('last_name', '')]
+                        )
+                    
+                    if existing:
+                        print(f"Found existing contact with ID: {existing[0]['id']}")
+                        return existing[0]['id']
+                    else:
+                        print("Could not find existing contact, skipping contact creation")
+                        return None
+                else:
+                    raise e
     
     def process_product(self, product_data: Dict[str, Any]) -> Optional[int]:
         """Process product data - create or update"""
@@ -856,8 +893,7 @@ class PDFProcessor:
                 update_data['account_id'] = record_ids['account_id']
             if record_ids.get('contact_id'):
                 update_data['contact_id'] = record_ids['contact_id']
-            if record_ids.get('rfq_id'):
-                update_data['rfq_id'] = record_ids['rfq_id']
+            # Note: RFQ linkage is handled through separate relationship table
             
             if update_data:
                 self.crm_data.update_opportunity(opportunity_id, **update_data)
@@ -869,11 +905,13 @@ class PDFProcessor:
                 opportunity_data['account_id'] = record_ids['account_id']
             if record_ids.get('contact_id'):
                 opportunity_data['contact_id'] = record_ids['contact_id']
-            if record_ids.get('rfq_id'):
-                opportunity_data['rfq_id'] = record_ids['rfq_id']
+            # Note: RFQ linkage is handled through separate relationship table
             
             opportunity_data.setdefault('created_date', datetime.now().isoformat())
             opportunity_data.setdefault('probability', 25)
+            opportunity_data.setdefault('stage', 'RFQ Received')  # Set valid default stage
+            opportunity_data.setdefault('type', 'New Business')  # Set valid default type
+            opportunity_data.setdefault('state', 'Active')       # Set valid default state
             return self.crm_data.create_opportunity(**opportunity_data)
     
     def is_new_record(self, table: str, record_id: int) -> bool:
@@ -915,6 +953,97 @@ class PDFProcessor:
             
         except Exception as e:
             print(f"Error moving {pdf_path.name}: {e}")
+
+    def _generate_detailed_report(self, results: Dict[str, Any]) -> str:
+        """Generate a detailed text report for task descriptions"""
+        from datetime import datetime
+        
+        start_time = datetime.fromisoformat(results['processing_start'])
+        end_time = datetime.fromisoformat(results['processing_end'])
+        duration = end_time - start_time
+        
+        report_lines = []
+        report_lines.append("=== DETAILED PROCESSING REPORT ===")
+        report_lines.append(f"Processing Time: {start_time.strftime('%Y-%m-%d %H:%M:%S')} - {end_time.strftime('%H:%M:%S')}")
+        report_lines.append(f"Duration: {duration.total_seconds():.1f} seconds")
+        report_lines.append("")
+        
+        # Summary Statistics
+        report_lines.append("SUMMARY:")
+        report_lines.append(f"  • Files Processed: {results['processed']}")
+        report_lines.append(f"  • Files Skipped: {results['skipped']}")
+        report_lines.append(f"  • Errors: {len(results['errors'])}")
+        report_lines.append(f"  • Opportunities Created: {results['created']}")
+        report_lines.append(f"  • Records Updated: {results['updated']}")
+        report_lines.append("")
+        
+        # Processed Files Details
+        if results['processed_files']:
+            report_lines.append("PROCESSED FILES:")
+            for file_info in results['processed_files']:
+                filename = file_info['filename']
+                rfq_data = file_info.get('rfq_data', {})
+                report_lines.append(f"  ✓ {filename}")
+                if rfq_data.get('solicitation_number'):
+                    report_lines.append(f"    - Solicitation: {rfq_data['solicitation_number']}")
+                if rfq_data.get('title'):
+                    report_lines.append(f"    - Title: {rfq_data['title'][:60]}...")
+                if rfq_data.get('due_date'):
+                    report_lines.append(f"    - Due Date: {rfq_data['due_date']}")
+                report_lines.append(f"    - Created: {file_info.get('created_records', 0)} records")
+                report_lines.append(f"    - Updated: {file_info.get('updated_records', 0)} records")
+            report_lines.append("")
+        
+        # Skipped Files Details
+        if results['skipped_files']:
+            report_lines.append("SKIPPED FILES:")
+            for file_info in results['skipped_files']:
+                filename = file_info['filename']
+                reason = file_info.get('reason', 'Unknown reason')
+                report_lines.append(f"  ⚠ {filename}")
+                report_lines.append(f"    - Reason: {reason}")
+                rfq_data = file_info.get('rfq_data', {})
+                if rfq_data.get('solicitation_number'):
+                    report_lines.append(f"    - Solicitation: {rfq_data['solicitation_number']}")
+            report_lines.append("")
+        
+        # Error Files Details
+        if results['error_files']:
+            report_lines.append("ERRORS:")
+            for error_info in results['error_files']:
+                filename = error_info['filename']
+                error = error_info['error']
+                report_lines.append(f"  ✗ {filename}")
+                report_lines.append(f"    - Error: {error}")
+            report_lines.append("")
+        
+        # Database Statistics
+        stats_before = results.get('database_stats_before', {})
+        stats_after = results.get('database_stats_after', {})
+        if stats_before and stats_after:
+            report_lines.append("DATABASE CHANGES:")
+            for table in ['opportunities', 'accounts', 'contacts', 'products']:
+                before = stats_before.get(table, 0)
+                after = stats_after.get(table, 0)
+                change = after - before
+                if change > 0:
+                    report_lines.append(f"  • {table.title()}: {before} → {after} (+{change})")
+                else:
+                    report_lines.append(f"  • {table.title()}: {before} (no change)")
+            report_lines.append("")
+        
+        # Filter Settings Applied
+        filter_settings = results.get('filter_settings', {})
+        if filter_settings:
+            report_lines.append("FILTER SETTINGS APPLIED:")
+            for key, value in filter_settings.items():
+                if value is not None and value != '':
+                    report_lines.append(f"  • {key.replace('_', ' ').title()}: {value}")
+            report_lines.append("")
+        
+        report_lines.append("=== END REPORT ===")
+        
+        return "\n".join(report_lines)
 
 # Initialize PDF processor
 pdf_processor = PDFProcessor()

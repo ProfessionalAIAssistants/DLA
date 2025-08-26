@@ -246,12 +246,15 @@ class CRMDatabase:
         self.conn.close()
     
     def execute_query(self, query, params=None):
-        """Execute a query and return results"""
+        """Execute a query and return results as dictionaries"""
         if params:
             cursor = self.conn.execute(query, params)
         else:
             cursor = self.conn.execute(query)
-        return cursor.fetchall()
+        
+        # Convert sqlite3.Row objects to dictionaries
+        rows = cursor.fetchall()
+        return [dict(row) for row in rows]
     
     def execute_update(self, query, params=None):
         """Execute an update/insert query"""

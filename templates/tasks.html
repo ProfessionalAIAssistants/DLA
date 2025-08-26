@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Tasks - DLA Codebase CRM{% endblock %}
+{% block title %}Tasks - CDE Prosperity{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
@@ -15,6 +15,99 @@
                 <i class="fas fa-plus me-2"></i>
                 Add Task
             </button>
+        </div>
+    </div>
+
+    <!-- Task Status Lifecycle Bar -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-project-diagram me-2"></i>
+                        Task Status Lifecycle
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col">
+                            <div class="lifecycle-step">
+                                <a href="/tasks?status=Not%20Started" class="text-decoration-none">
+                                    <div class="lifecycle-circle bg-secondary">
+                                        <i class="fas fa-pause"></i>
+                                    </div>
+                                    <div class="lifecycle-label">Not Started</div>
+                                    <div class="lifecycle-count">{{ stats.not_started if stats else 0 }}</div>
+                                </a>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="lifecycle-arrow">
+                                <i class="fas fa-arrow-right text-muted"></i>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="lifecycle-step">
+                                <a href="/tasks?status=In%20Progress" class="text-decoration-none">
+                                    <div class="lifecycle-circle bg-primary">
+                                        <i class="fas fa-play"></i>
+                                    </div>
+                                    <div class="lifecycle-label">In Progress</div>
+                                    <div class="lifecycle-count">{{ stats.in_progress if stats else 0 }}</div>
+                                </a>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="lifecycle-arrow">
+                                <i class="fas fa-arrow-right text-muted"></i>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="lifecycle-step">
+                                <a href="/tasks?status=Waiting" class="text-decoration-none">
+                                    <div class="lifecycle-circle bg-warning">
+                                        <i class="fas fa-clock"></i>
+                                    </div>
+                                    <div class="lifecycle-label">Waiting</div>
+                                    <div class="lifecycle-count">{{ stats.waiting if stats else 0 }}</div>
+                                </a>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="lifecycle-arrow">
+                                <i class="fas fa-arrow-right text-muted"></i>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="lifecycle-step">
+                                <a href="/tasks?status=Deferred" class="text-decoration-none">
+                                    <div class="lifecycle-circle bg-info">
+                                        <i class="fas fa-calendar-alt"></i>
+                                    </div>
+                                    <div class="lifecycle-label">Deferred</div>
+                                    <div class="lifecycle-count">{{ stats.deferred if stats else 0 }}</div>
+                                </a>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="lifecycle-arrow">
+                                <i class="fas fa-arrow-right text-muted"></i>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="lifecycle-step">
+                                <a href="/tasks?status=Completed" class="text-decoration-none">
+                                    <div class="lifecycle-circle bg-success">
+                                        <i class="fas fa-check"></i>
+                                    </div>
+                                    <div class="lifecycle-label">Completed</div>
+                                    <div class="lifecycle-count">{{ stats.completed if stats else 0 }}</div>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -122,6 +215,8 @@
                         <option value="">All Status</option>
                         <option value="Not Started" {{ 'selected' if status == 'Not Started' }}>Not Started</option>
                         <option value="In Progress" {{ 'selected' if status == 'In Progress' }}>In Progress</option>
+                        <option value="Waiting" {{ 'selected' if status == 'Waiting' }}>Waiting</option>
+                        <option value="Deferred" {{ 'selected' if status == 'Deferred' }}>Deferred</option>
                         <option value="Completed" {{ 'selected' if status == 'Completed' }}>Completed</option>
                     </select>
                 </div>
@@ -130,7 +225,7 @@
                     <select class="form-select" id="priority" name="priority">
                         <option value="">All Priorities</option>
                         <option value="High" {{ 'selected' if priority == 'High' }}>High</option>
-                        <option value="Normal" {{ 'selected' if priority == 'Normal' }}>Normal</option>
+                        <option value="Medium" {{ 'selected' if priority == 'Medium' }}>Medium</option>
                         <option value="Low" {{ 'selected' if priority == 'Low' }}>Low</option>
                     </select>
                 </div>
@@ -176,103 +271,57 @@
                         <tr>
                             <th>Task</th>
                             <th>Status</th>
-                            <th>Priority</th>
                             <th>Due Date</th>
-                            <th>Countdown</th>
-                            <th>Owner</th>
-                            <th>Related To</th>
+                            <th>Priority</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for task in tasks %}
-                        <tr class="{{ 'table-danger' if task.past_due else 'table-warning' if task.due_date == today else '' }}">
+                        <tr class="{{ 'table-danger' if task.past_due else 'table-warning' if task.due_date == today else '' }}" 
+                            style="cursor: pointer;" 
+                            ondblclick="viewTaskDetail({{ task.id }})"
+                            title="Double-click to view details">
+                            
+                            <!-- Task -->
                             <td>
                                 <div>
-                                    <strong>{{ task.subject }}</strong>
-                                    {% if task.sub_item %}
-                                        <br><small class="text-muted">{{ task.sub_item }}</small>
-                                    {% endif %}
+                                    <strong>{{ task.title }}</strong>
                                     {% if task.description %}
-                                        <br><small class="text-muted">{{ task.description[:100] }}{{ '...' if task.description|length > 100 else '' }}</small>
+                                        <br><small class="text-muted">{{ (task.description or 'No description')[:100] }}{{ '...' if (task.description or '')|length > 100 else '' }}</small>
                                     {% endif %}
                                 </div>
                             </td>
+                            
+                            <!-- Status -->
                             <td>
-                                <span class="badge bg-{{ 'secondary' if task.status == 'Not Started' else 'info' if task.status == 'In Progress' else 'success' }}">
+                                <span class="badge bg-{{ 'secondary' if task.status == 'Not Started' else 'primary' if task.status == 'In Progress' else 'warning' if task.status == 'Waiting' else 'info' if task.status == 'Deferred' else 'success' }}">
                                     {{ task.status }}
                                 </span>
                             </td>
+                            
+                            <!-- Due Date -->
+                            <td>{{ task.due_date or '' }}</td>
+                            
+                            <!-- Priority -->
                             <td>
                                 <span class="badge bg-{{ 'danger' if task.priority == 'High' else 'warning' if task.priority == 'Medium' else 'secondary' }}">
                                     {{ task.priority }}
                                 </span>
                             </td>
+                            
+                            <!-- Actions -->
                             <td>
-                                {% if task.due_date %}
-                                    {{ task.due_date }}
-                                    <br><small class="text-muted">{{ task.scheduled }}</small>
-                                {% else %}
-                                    <span class="text-muted">Not scheduled</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <span class="badge bg-{{ 'success' if 'Completed' in task.countdown else 'danger' if 'overdue' in task.countdown else 'warning' if 'Due Today' in task.countdown else 'primary' }}">
-                                    {{ task.countdown }}
-                                </span>
-                            </td>
-                            <td>{{ task.assigned_to or 'Unassigned' }}</td>
-                            <td>
-                                <div class="d-flex flex-wrap gap-1">
-                                    {% if task.account_name %}
-                                        <span class="badge bg-light text-dark">
-                                            <i class="fas fa-building me-1"></i>{{ task.account_name }}
-                                        </span>
-                                    {% endif %}
-                                    {% if task.contact_name %}
-                                        <span class="badge bg-light text-dark">
-                                            <i class="fas fa-user me-1"></i>{{ task.contact_name }}
-                                        </span>
-                                    {% endif %}
-                                    {% if task.opportunity_name %}
-                                        <span class="badge bg-light text-dark">
-                                            <i class="fas fa-dollar-sign me-1"></i>{{ task.opportunity_name }}
-                                        </span>
-                                    {% endif %}
-                                    {% if task.related_to_type and task.related_to_id %}
-                                        <span class="badge bg-light text-dark">
-                                            <i class="fas fa-link me-1"></i>{{ task.related_to_type|title }} #{{ task.related_to_id }}
-                                        </span>
-                                    {% endif %}
-                                </div>
-                            </td>
-                            <td>
-                                <div class="dropdown">
-                                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown">
-                                        <i class="fas fa-ellipsis-v"></i>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="viewTaskDetail({{ task.id }})" title="View Details">
+                                        <i class="fas fa-eye"></i>
                                     </button>
-                                    <ul class="dropdown-menu">
-                                        {% if task.status == 'Not Started' %}
-                                        <li><a class="dropdown-item" href="#" onclick="startTask({{ task.id }})">
-                                            <i class="fas fa-play me-2"></i>Start Task
-                                        </a></li>
-                                        {% endif %}
-                                        {% if task.status != 'Completed' %}
-                                        <li><a class="dropdown-item" href="#" onclick="completeTask({{ task.id }})">
-                                            <i class="fas fa-check me-2"></i>Mark Complete
-                                        </a></li>
-                                        {% endif %}
-                                        <li><a class="dropdown-item" href="#" onclick="editTask({{ task.id }})">
-                                            <i class="fas fa-edit me-2"></i>Edit
-                                        </a></li>
-                                        <li><a class="dropdown-item" href="#" onclick="rescheduleTask({{ task.id }})">
-                                            <i class="fas fa-calendar me-2"></i>Reschedule
-                                        </a></li>
-                                        <li><hr class="dropdown-divider"></li>
-                                        <li><a class="dropdown-item text-danger" href="#" onclick="deleteTask({{ task.id }})">
-                                            <i class="fas fa-trash me-2"></i>Delete
-                                        </a></li>
-                                    </ul>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="editTask({{ task.id }})" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="deleteTask({{ task.id }})" title="Delete">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
                                 </div>
                             </td>
                         </tr>
@@ -307,18 +356,78 @@
                     <div class="row">
                         <div class="col-md-8">
                             <div class="mb-3">
-                                <label for="subject" class="form-label">Task Subject *</label>
-                                <input type="text" class="form-control" id="subject" name="subject" required placeholder="Enter task subject">
+                                <label for="title" class="form-label">Task Title *</label>
+                                <input type="text" class="form-control" id="title" name="title" required placeholder="Enter task title">
                             </div>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-2">
+                            <div class="mb-3">
+                                <label for="task_status" class="form-label">Status</label>
+                                <select class="form-select" id="task_status" name="status">
+                                    <option value="Not Started" selected>Not Started</option>
+                                    <option value="In Progress">In Progress</option>
+                                    <option value="Waiting">Waiting</option>
+                                    <option value="Deferred">Deferred</option>
+                                    <option value="Completed">Completed</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
                             <div class="mb-3">
                                 <label for="task_priority" class="form-label">Priority</label>
                                 <select class="form-select" id="task_priority" name="priority">
-                                    <option value="Normal">Normal</option>
+                                    <option value="Medium" selected>Medium</option>
                                     <option value="High">High</option>
                                     <option value="Low">Low</option>
                                 </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="work_date" class="form-label">Work Date</label>
+                                <input type="date" class="form-control" id="work_date" name="work_date">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="due_date" class="form-label">Due Date</label>
+                                <input type="date" class="form-control" id="due_date" name="due_date">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="owner" class="form-label">Owner</label>
+                                <input type="text" class="form-control" id="owner" name="owner" placeholder="Task owner">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="time_taken" class="form-label">Time (minutes)</label>
+                                <input type="number" class="form-control" id="time_taken" name="time_taken" placeholder="0">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="parent_item_type" class="form-label">Parent Item Type</label>
+                                <select class="form-select" id="parent_item_type" name="parent_item_type">
+                                    <option value="">None</option>
+                                    <option value="Account">Account</option>
+                                    <option value="Contact">Contact</option>
+                                    <option value="Opportunity">Opportunity</option>
+                                    <option value="Product">Product</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="parent_item_id" class="form-label">Parent Item ID</label>
+                                <input type="number" class="form-control" id="parent_item_id" name="parent_item_id" placeholder="ID of parent item">
                             </div>
                         </div>
                     </div>
@@ -327,25 +436,6 @@
                         <label for="description" class="form-label">Description</label>
                         <textarea class="form-control" id="description" name="description" rows="3" placeholder="Detailed task description"></textarea>
                     </div>
-                    
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="task_status" class="form-label">Status</label>
-                                <select class="form-select" id="task_status" name="status">
-                                    <option value="Not Started">Not Started</option>
-                                    <option value="In Progress">In Progress</option>
-                                    <option value="Completed">Completed</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="due_date" class="form-label">Due Date</label>
-                                <input type="date" class="form-control" id="due_date" name="due_date">
-                            </div>
-                        </div>
-                        <div class="col-md-4">
                             <div class="mb-3">
                                 <label for="assigned_to" class="form-label">Assigned To</label>
                                 <input type="text" class="form-control" id="assigned_to" name="assigned_to" placeholder="Task assignee">
@@ -362,7 +452,7 @@
                                     <option value="Account">Account</option>
                                     <option value="Contact">Contact</option>
                                     <option value="Opportunity">Opportunity</option>
-                                    <option value="RFQ">RFQ</option>
+                                    <option value="Quote">Quote</option>
                                 </select>
                             </div>
                         </div>
@@ -496,9 +586,9 @@ function loadRelatedItems() {
         case 'Account':
             apiUrl = '/api/accounts';
             break;
-        case 'RFQ':
-            // RFQs might not have a dedicated API yet
-            itemSelect.innerHTML = '<option value="">RFQ API not implemented</option>';
+        case 'Quote':
+            // Quotes might not have a dedicated API yet
+            itemSelect.innerHTML = '<option value="">Quote API not implemented</option>';
             return;
         default:
             itemSelect.innerHTML = '<option value="">Unsupported type</option>';
@@ -542,13 +632,370 @@ function deleteTask(taskId) {
     }
 }
 
+// Task action functions for dropdown and double-click
+function viewTaskDetail(taskId) {
+    window.location.href = '/tasks/' + taskId;
+}
+
+function editTask(taskId) {
+    // For now, redirect to task detail page where editing can be done
+    window.location.href = '/tasks/' + taskId;
+}
+
+function startTask(taskId) {
+    updateTaskStatus(taskId, 'In Progress');
+}
+
+function completeTask(taskId) {
+    updateTaskStatus(taskId, 'Completed');
+}
+
+function deleteTask(taskId) {
+    if (confirm('Are you sure you want to delete this task?')) {
+        fetch('/tasks/' + taskId + '/delete', {
+            method: 'POST'
+        })
+        .then(response => {
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('Error deleting task');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error deleting task');
+        });
+    }
+}
+
+function updateTaskStatus(taskId, status) {
+    fetch('/tasks/' + taskId + '/status', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: status })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Failed to update task: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to update task');
+    });
+}
+
+function editTask(taskId) {
+    window.location.href = '/tasks/' + taskId + '?edit=true';
+}
+
+function rescheduleTask(taskId) {
+    const newDate = prompt('Enter new due date (YYYY-MM-DD):');
+    if (newDate) {
+        fetch('/tasks/' + taskId + '/reschedule', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ due_date: newDate })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Failed to reschedule task: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to reschedule task');
+        });
+    }
+}
+
 // Set tomorrow as default due date
 document.addEventListener('DOMContentLoaded', function() {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     const tomorrowStr = tomorrow.toISOString().split('T')[0];
     document.getElementById('due_date').value = tomorrowStr;
+    
+    // Force dropdown visibility with timeout
+    setTimeout(() => {
+        const dropdowns = document.querySelectorAll('.dropdown-menu');
+        dropdowns.forEach(dropdown => {
+            dropdown.style.zIndex = '99999';
+            dropdown.style.position = 'absolute';
+        });
+    }, 100);
 });
+
+// Enhanced Quick Actions Functions
+function changeTaskStatus(taskId, status) {
+    fetch('/tasks/' + taskId + '/status', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: status })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Failed to update status: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to update status');
+    });
+}
+
+function changeTaskPriority(taskId, priority) {
+    fetch('/tasks/' + taskId + '/priority', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ priority: priority })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Failed to update priority: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to update priority');
+    });
+}
+
+function rescheduleTaskFromList(taskId) {
+    const newDate = prompt('Enter new due date (YYYY-MM-DD):');
+    if (newDate) {
+        fetch('/tasks/' + taskId + '/reschedule', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ due_date: newDate })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Failed to reschedule: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to reschedule');
+        });
+    }
+}
+
+function logTimeFromList(taskId) {
+    const timeSpent = prompt('Enter time spent (in minutes):');
+    if (timeSpent && !isNaN(timeSpent)) {
+        fetch('/tasks/' + taskId + '/log-time', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ time_taken: parseInt(timeSpent) })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Failed to log time: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to log time');
+        });
+    }
+}
+
+function duplicateTask(taskId) {
+    if (confirm('Create a copy of this task?')) {
+        // Get the task details first
+        fetch('/api/tasks/' + taskId)
+        .then(response => response.json())
+        .then(task => {
+            if (task) {
+                // Create new task with same details but remove ID and reset status
+                const newTask = {
+                    title: task.title + ' (Copy)',
+                    description: task.description,
+                    priority: task.priority,
+                    owner: task.owner,
+                    status: 'Not Started',
+                    due_date: task.due_date
+                };
+                
+                return fetch('/api/tasks', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(newTask)
+                });
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Task duplicated successfully!');
+                location.reload();
+            } else {
+                alert('Failed to duplicate task: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to duplicate task');
+        });
+    }
+}
 </script>
+
+<style>
+/* Force dropdown to appear above everything */
+.table-responsive {
+    overflow: visible !important;
+    position: static !important;
+}
+
+.table-responsive .dropdown {
+    position: static !important;
+}
+
+.table-responsive .dropdown-menu {
+    position: absolute !important;
+    z-index: 99999 !important;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+    background: white !important;
+    border: 1px solid #dee2e6 !important;
+}
+
+/* Ensure table cells don't clip content */
+.table-responsive td:last-child {
+    position: relative;
+    overflow: visible !important;
+}
+
+/* Ensure table maintains horizontal scroll when needed */
+.table-responsive table {
+    min-width: 800px;
+}
+
+/* Popper.js override */
+.dropdown-menu[data-popper-placement] {
+    position: absolute !important;
+    z-index: 99999 !important;
+}
+
+/* Task Lifecycle Bar Styles */
+.lifecycle-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.lifecycle-step a {
+    text-decoration: none !important;
+    color: inherit;
+}
+
+.lifecycle-step a:hover .lifecycle-circle {
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.lifecycle-circle {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 24px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.lifecycle-label {
+    font-weight: 600;
+    font-size: 14px;
+    color: #495057;
+    margin-top: 5px;
+}
+
+.lifecycle-count {
+    font-weight: bold;
+    font-size: 18px;
+    color: #212529;
+    background: #f8f9fa;
+    padding: 4px 12px;
+    border-radius: 15px;
+    border: 2px solid #e9ecef;
+    transition: all 0.3s ease;
+}
+
+.lifecycle-step a:hover .lifecycle-count {
+    background: #e9ecef;
+    border-color: #dee2e6;
+}
+
+.lifecycle-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 60px;
+    font-size: 20px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .lifecycle-circle {
+        width: 45px;
+        height: 45px;
+        font-size: 18px;
+    }
+    
+    .lifecycle-label {
+        font-size: 12px;
+    }
+    
+    .lifecycle-count {
+        font-size: 14px;
+        padding: 2px 8px;
+    }
+    
+    .lifecycle-arrow {
+        font-size: 16px;
+        height: 45px;
+    }
+}
+</style>
 
 {% endblock %}

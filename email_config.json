@@ -1,0 +1,87 @@
+{
+  "smtp_configuration": {
+    "enabled": false,
+    "host": "",
+    "port": 587,
+    "username": "",
+    "password": "",
+    "use_tls": true,
+    "timeout": 30,
+    "from_name": "CDE Prosperity DLA Team",
+    "from_email": "",
+    "reply_to_email": ""
+  },
+  "rfq_automation": {
+    "enabled": false,
+    "require_manual_review": true,
+    "auto_send_approved": false,
+    "default_priority": "Normal",
+    "max_daily_sends": 50,
+    "business_hours_only": true,
+    "business_start_hour": 8,
+    "business_end_hour": 17,
+    "weekend_sending": false,
+    "quote_deadline_days": 10,
+    "follow_up_delay_days": 3,
+    "max_follow_ups": 2
+  },
+  "email_tracking": {
+    "enabled": true,
+    "delivery_receipts": true,
+    "read_receipts": false,
+    "response_monitoring": true,
+    "auto_parse_responses": true,
+    "log_all_interactions": true
+  },
+  "response_processing": {
+    "enabled": true,
+    "auto_create_quotes": true,
+    "require_quote_review": true,
+    "parse_pdf_attachments": true,
+    "extract_pricing": true,
+    "create_follow_up_tasks": true,
+    "notify_on_response": true
+  },
+  "workflow_automation": {
+    "auto_create_opportunities": true,
+    "auto_assign_tasks": false,
+    "send_confirmation_emails": true,
+    "send_daily_digest": false,
+    "alert_on_urgent_quotes": true,
+    "auto_escalate_overdue": true,
+    "escalation_delay_hours": 24
+  },
+  "notification_settings": {
+    "email_notifications": true,
+    "notification_email": "",
+    "notify_on_rfq_sent": true,
+    "notify_on_response_received": true,
+    "notify_on_quote_deadline": true,
+    "daily_summary_time": "17:00",
+    "weekly_report_day": "Friday"
+  },
+  "email_templates": {
+    "use_custom_templates": true,
+    "signature_template": "\n\nBest regards,\n{sender_name}\nCDE Prosperity DLA Team\n{company_phone}\n{company_email}",
+    "auto_include_company_logo": false,
+    "template_language": "English"
+  },
+  "security_settings": {
+    "encrypt_stored_passwords": true,
+    "require_authentication": true,
+    "session_timeout_minutes": 30,
+    "log_email_access": true,
+    "restrict_sending_domains": false,
+    "allowed_domains": []
+  },
+  "advanced_settings": {
+    "retry_failed_sends": true,
+    "max_retry_attempts": 3,
+    "retry_delay_minutes": 15,
+    "batch_sending": false,
+    "batch_size": 10,
+    "rate_limit_per_hour": 100,
+    "debug_mode": false,
+    "log_level": "INFO"
+  }
+}

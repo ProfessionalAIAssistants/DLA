@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Accounts - Local CRM{% endblock %}
+{% block title %}Accounts - CDE Prosperity{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
@@ -141,51 +141,60 @@
                             </div>
                             <div class="mb-3">
                                 <label for="accountType" class="form-label">Account Type</label>
-                                <select class="form-select" id="accountType" name="account_type">
+                                <select class="form-select" id="accountType" name="type">
                                     <option value="">Select Type</option>
-                                    <option value="Prospect">Prospect</option>
+                                    <option value="Prospect Customer">Prospect Customer</option>
                                     <option value="Customer">Customer</option>
                                     <option value="Partner">Partner</option>
                                     <option value="Vendor">Vendor</option>
+                                    <option value="Government">Government</option>
                                 </select>
-                            </div>
-                            <div class="mb-3">
-                                <label for="industry" class="form-label">Industry</label>
-                                <input type="text" class="form-control" id="industry" name="industry">
                             </div>
                             <div class="mb-3">
                                 <label for="website" class="form-label">Website</label>
                                 <input type="url" class="form-control" id="website" name="website">
                             </div>
+                            <div class="mb-3">
+                                <label for="email" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="email" name="email">
+                            </div>
+                            <div class="mb-3">
+                                <label for="location" class="form-label">Location</label>
+                                <input type="text" class="form-control" id="location" name="location" placeholder="City, State or Country">
+                            </div>
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="phone" class="form-label">Phone</label>
-                                <input type="tel" class="form-control" id="phone" name="phone">
+                                <label for="linkedin" class="form-label">LinkedIn</label>
+                                <input type="url" class="form-control" id="linkedin" name="linkedin">
                             </div>
                             <div class="mb-3">
-                                <label for="employees" class="form-label">Employees</label>
-                                <input type="number" class="form-control" id="employees" name="employees">
+                                <label for="parentCo" class="form-label">Parent Company</label>
+                                <input type="text" class="form-control" id="parentCo" name="parent_co">
                             </div>
                             <div class="mb-3">
-                                <label for="annualRevenue" class="form-label">Annual Revenue</label>
-                                <input type="number" step="0.01" class="form-control" id="annualRevenue" name="annual_revenue">
+                                <label for="cage" class="form-label">CAGE Code</label>
+                                <input type="text" class="form-control" id="cage" name="cage" maxlength="5" placeholder="5-character CAGE code">
                             </div>
                             <div class="mb-3">
-                                <label for="owner" class="form-label">Owner</label>
-                                <input type="text" class="form-control" id="owner" name="owner">
+                                <label for="image" class="form-label">Image URL</label>
+                                <input type="url" class="form-control" id="image" name="image">
+                            </div>
+                            <div class="mb-3">
+                                <label for="video" class="form-label">Video URL</label>
+                                <input type="url" class="form-control" id="video" name="video">
                             </div>
                         </div>
                     </div>
                     <div class="row">
                         <div class="col-12">
                             <div class="mb-3">
-                                <label for="billingAddress" class="form-label">Billing Address</label>
-                                <textarea class="form-control" id="billingAddress" name="billing_address" rows="2"></textarea>
+                                <label for="summary" class="form-label">Summary</label>
+                                <textarea class="form-control" id="summary" name="summary" rows="2" placeholder="Brief summary of the account"></textarea>
                             </div>
                             <div class="mb-3">
-                                <label for="description" class="form-label">Description</label>
-                                <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                                <label for="detail" class="form-label">Details</label>
+                                <textarea class="form-control" id="detail" name="detail" rows="3" placeholder="Detailed information about the account"></textarea>
                             </div>
                         </div>
                     </div>
@@ -208,6 +217,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="editAccountForm">
+                <input type="hidden" id="editAccountId" name="id">
                 <div class="modal-body">
                     <div class="row">
                         <div class="col-md-6">
@@ -217,51 +227,60 @@
                             </div>
                             <div class="mb-3">
                                 <label for="editAccountType" class="form-label">Account Type</label>
-                                <select class="form-select" id="editAccountType" name="account_type">
+                                <select class="form-select" id="editAccountType" name="type">
                                     <option value="">Select Type</option>
-                                    <option value="Prospect">Prospect</option>
+                                    <option value="Prospect Customer">Prospect Customer</option>
                                     <option value="Customer">Customer</option>
                                     <option value="Partner">Partner</option>
                                     <option value="Vendor">Vendor</option>
+                                    <option value="Government">Government</option>
                                 </select>
-                            </div>
-                            <div class="mb-3">
-                                <label for="editIndustry" class="form-label">Industry</label>
-                                <input type="text" class="form-control" id="editIndustry" name="industry">
                             </div>
                             <div class="mb-3">
                                 <label for="editWebsite" class="form-label">Website</label>
                                 <input type="url" class="form-control" id="editWebsite" name="website">
                             </div>
+                            <div class="mb-3">
+                                <label for="editEmail" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="editEmail" name="email">
+                            </div>
+                            <div class="mb-3">
+                                <label for="editLocation" class="form-label">Location</label>
+                                <input type="text" class="form-control" id="editLocation" name="location" placeholder="City, State or Country">
+                            </div>
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="editPhone" class="form-label">Phone</label>
-                                <input type="tel" class="form-control" id="editPhone" name="phone">
+                                <label for="editLinkedin" class="form-label">LinkedIn</label>
+                                <input type="url" class="form-control" id="editLinkedin" name="linkedin">
                             </div>
                             <div class="mb-3">
-                                <label for="editEmployees" class="form-label">Employees</label>
-                                <input type="number" class="form-control" id="editEmployees" name="employees">
+                                <label for="editParentCo" class="form-label">Parent Company</label>
+                                <input type="text" class="form-control" id="editParentCo" name="parent_co">
                             </div>
                             <div class="mb-3">
-                                <label for="editAnnualRevenue" class="form-label">Annual Revenue</label>
-                                <input type="number" step="0.01" class="form-control" id="editAnnualRevenue" name="annual_revenue">
+                                <label for="editCage" class="form-label">CAGE Code</label>
+                                <input type="text" class="form-control" id="editCage" name="cage" maxlength="5" placeholder="5-character CAGE code">
                             </div>
                             <div class="mb-3">
-                                <label for="editOwner" class="form-label">Owner</label>
-                                <input type="text" class="form-control" id="editOwner" name="owner">
+                                <label for="editImage" class="form-label">Image URL</label>
+                                <input type="url" class="form-control" id="editImage" name="image">
+                            </div>
+                            <div class="mb-3">
+                                <label for="editVideo" class="form-label">Video URL</label>
+                                <input type="url" class="form-control" id="editVideo" name="video">
                             </div>
                         </div>
                     </div>
                     <div class="row">
                         <div class="col-12">
                             <div class="mb-3">
-                                <label for="editBillingAddress" class="form-label">Billing Address</label>
-                                <textarea class="form-control" id="editBillingAddress" name="billing_address" rows="2"></textarea>
+                                <label for="editSummary" class="form-label">Summary</label>
+                                <textarea class="form-control" id="editSummary" name="summary" rows="2" placeholder="Brief summary of the account"></textarea>
                             </div>
                             <div class="mb-3">
-                                <label for="editDescription" class="form-label">Description</label>
-                                <textarea class="form-control" id="editDescription" name="description" rows="3"></textarea>
+                                <label for="editDetail" class="form-label">Details</label>
+                                <textarea class="form-control" id="editDetail" name="detail" rows="3" placeholder="Detailed information about the account"></textarea>
                             </div>
                         </div>
                     </div>
@@ -316,17 +335,20 @@ function editAccount(accountId) {
                 return;
             }
             
-            // Populate edit modal fields
+            // Populate edit modal fields with actual database fields
+            document.getElementById('editAccountId').value = account.id || '';
             document.getElementById('editAccountName').value = account.name || '';
-            document.getElementById('editAccountType').value = account.account_type || '';
-            document.getElementById('editIndustry').value = account.industry || '';
+            document.getElementById('editAccountType').value = account.type || '';
             document.getElementById('editWebsite').value = account.website || '';
-            document.getElementById('editPhone').value = account.phone || '';
-            document.getElementById('editEmployees').value = account.employees || '';
-            document.getElementById('editAnnualRevenue').value = account.annual_revenue || '';
-            document.getElementById('editOwner').value = account.owner || '';
-            document.getElementById('editBillingAddress').value = account.billing_address || '';
-            document.getElementById('editDescription').value = account.description || '';
+            document.getElementById('editEmail').value = account.email || '';
+            document.getElementById('editLocation').value = account.location || '';
+            document.getElementById('editLinkedin').value = account.linkedin || '';
+            document.getElementById('editParentCo').value = account.parent_co || '';
+            document.getElementById('editCage').value = account.cage || '';
+            document.getElementById('editImage').value = account.image || '';
+            document.getElementById('editVideo').value = account.video || '';
+            document.getElementById('editSummary').value = account.summary || '';
+            document.getElementById('editDetail').value = account.detail || '';
             
             // Store account ID for form submission
             document.getElementById('editAccountForm').dataset.accountId = accountId;

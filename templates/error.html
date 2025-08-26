@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}{{ error or "Error" }} - CDE Prosperity{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="text-center py-5">
+                <i class="fas fa-exclamation-triangle fa-4x text-warning mb-4"></i>
+                <h1 class="display-4 text-muted mb-3">Oops!</h1>
+                <h4 class="mb-4">{{ error or "An error occurred" }}</h4>
+                <p class="text-muted mb-4">
+                    {% if error == "Page not found" %}
+                        The page you are looking for might have been removed, had its name changed, or is temporarily unavailable.
+                    {% else %}
+                        Something went wrong while processing your request. Please try again.
+                    {% endif %}
+                </p>
+                <div>
+                    <a href="javascript:history.back()" class="btn btn-outline-secondary me-2">
+                        <i class="fas fa-arrow-left me-2"></i>Go Back
+                    </a>
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-primary">
+                        <i class="fas fa-home me-2"></i>Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

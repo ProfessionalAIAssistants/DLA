@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}RFQs - ModernCRM{% endblock %}
+{% block title %}Quotes - CDE Prosperity{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
@@ -9,14 +9,14 @@
         <div>
             <h1 class="display-6 fw-bold mb-2">
                 <i class="fas fa-file-contract me-3" style="background: var(--gradient-primary); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;"></i>
-                RFQs
+                Quotes
             </h1>
-            <p class="text-muted mb-0 fs-5">Request for Quote management and tracking</p>
+            <p class="text-muted mb-0 fs-5">Quote management and tracking</p>
         </div>
         <div>
             <button type="button" class="btn btn-success btn-lg me-2" data-bs-toggle="modal" data-bs-target="#addRFQModal">
                 <i class="fas fa-plus me-2"></i>
-                Add RFQ
+                Add Quote
             </button>
             <button type="button" class="btn btn-primary btn-lg" onclick="location.reload()">
                 <i class="fas fa-sync-alt me-2"></i>
@@ -25,7 +25,7 @@
         </div>
     </div>
 
-    <!-- RFQ Statistics - Modern Cards -->
+    <!-- Quote Statistics - Modern Cards -->
     <div class="row mb-5">
         <div class="col-md-2">
             <div class="card card-metric h-100">
@@ -175,12 +175,12 @@
         </div>
     </div>
 
-    <!-- RFQs Table -->
+    <!-- Quotes Table -->
     <div class="card">
         <div class="card-header">
             <h5 class="mb-0 d-flex align-items-center">
                 <i class="fas fa-table me-2"></i>
-                RFQs ({{ rfqs|length }} found)
+                Quotes ({{ rfqs|length }} found)
             </h5>
         </div>
         <div class="card-body">
@@ -218,7 +218,7 @@
                                 {% elif rfq.nsn %}
                                     <strong>{{ rfq.nsn }}</strong>
                                     {% if rfq.product_description %}
-                                    <br><small class="text-muted">{{ rfq.product_description[:50] }}...</small>
+                                    <br><small class="text-muted">{{ (rfq.product_description or 'No description')[:50] }}...</small>
                                     {% endif %}
                                 {% else %}
                                     <span class="text-muted">No Product Info</span>
@@ -307,7 +307,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="addRFQModalLabel">
-                    <i class="fas fa-plus me-2"></i>Add New RFQ
+                    <i class="fas fa-plus me-2"></i>Add New Quote
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>

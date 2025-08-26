@@ -1,0 +1,756 @@
+{% extends "base.html" %}
+
+{% block title %}Quote {{ quote.request_number }} - CDE Prosperity{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="display-6 fw-bold mb-2">Quote {{ quote.request_number }}</h1>
+            <p class="text-muted mb-0">Quote Details</p>
+        </div>
+        <div>
+            <a href="{{ url_for('quotes') }}" class="btn btn-outline-secondary me-2">
+                <i class="fas fa-arrow-left me-2"></i>Back to Quotes
+            </a>
+            <button class="btn btn-primary" onclick="editQuote({{ quote.id }})">
+                <i class="fas fa-edit me-2"></i>Edit Quote
+            </button>
+        </div>
+    </div>
+
+    <!-- Status Update Buttons -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="mb-1">Current Status:</h6>
+                    <span class="badge bg-{{ 'success' if quote.status == 'Won' else 'primary' if quote.status == 'Qualified' else 'info' if quote.status == 'Quoted' else 'danger' if quote.status == 'Lost' else 'warning' if quote.status == 'Reviewed' else 'secondary' }} fs-6">
+                        {{ quote.status }}
+                    </span>
+                </div>
+                <div class="btn-group" role="group">
+                    {% if quote.status == 'New' %}
+                    <button class="btn btn-success" onclick="updateQuoteStatus({{ quote.id }}, 'Reviewed')">
+                        <i class="fas fa-check me-1"></i>Mark Reviewed
+                    </button>
+                    <button class="btn btn-info" onclick="updateQuoteStatus({{ quote.id }}, 'Qualified')">
+                        <i class="fas fa-thumbs-up me-1"></i>Mark Qualified
+                    </button>
+                    {% elif quote.status == 'Reviewed' %}
+                    <button class="btn btn-info" onclick="updateQuoteStatus({{ quote.id }}, 'Qualified')">
+                        <i class="fas fa-thumbs-up me-1"></i>Mark Qualified
+                    </button>
+                    {% elif quote.status == 'Qualified' %}
+                    <button class="btn btn-primary" onclick="updateQuoteStatus({{ quote.id }}, 'Quoted')">
+                        <i class="fas fa-file-invoice-dollar me-1"></i>Mark Quoted
+                    </button>
+                    {% elif quote.status == 'Quoted' %}
+                    <button class="btn btn-success" onclick="updateQuoteStatus({{ quote.id }}, 'Won')">
+                        <i class="fas fa-trophy me-1"></i>Mark Won
+                    </button>
+                    <button class="btn btn-danger" onclick="updateQuoteStatus({{ quote.id }}, 'Lost')">
+                        <i class="fas fa-times me-1"></i>Mark Lost
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Quote Details -->
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-file-contract me-2"></i>Quote Details</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Quote ID:</label>
+                                <p class="mb-0">{{ quote.id }}</p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Request Number:</label>
+                                <p class="mb-0">{{ quote.request_number or 'Not Set' }}</p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Status:</label>
+                                <p class="mb-0">
+                                    <span class="badge bg-{{ 'success' if quote.status == 'Sent' else 'warning' if quote.status == 'Draft' else 'info' if quote.status == 'Responded' else 'secondary' }}">
+                                        {{ quote.status or 'Draft' }}
+                                    </span>
+                                </p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Quantity:</label>
+                                <p class="mb-0">{{ quote.quantity or 'Not specified' }}</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Quote Amount:</label>
+                                <p class="mb-0">
+                                    {% if quote.quote_amount %}
+                                        ${{ "{:,.2f}".format(quote.quote_amount) }}
+                                    {% else %}
+                                        Not quoted yet
+                                    {% endif %}
+                                </p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Lead Time:</label>
+                                <p class="mb-0">{{ quote.lead_time or 'Not specified' }}</p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Effective Date:</label>
+                                <p class="mb-0">{{ quote.effective_date or 'Not set' }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Product Information Only -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Product:</label>
+                                <p class="mb-0">
+                                    {% if quote.product_id %}
+                                        Product ID: {{ quote.product_id }}
+                                        {% if quote.product_name %}
+                                            <br><span class="text-muted">{{ quote.product_name }}</span>
+                                        {% endif %}
+                                    {% else %}
+                                        Not specified
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">NSN:</label>
+                                <p class="mb-0">{{ quote.nsn or 'Not specified' }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Notes -->
+                    {% if quote.notes %}
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Notes:</label>
+                        <div class="bg-light p-3 rounded">
+                            <p class="mb-0">{{ quote.notes }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Documents Section -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Documents:</label>
+                        <div class="bg-light p-3 rounded">
+                            <p class="mb-2"><i class="fas fa-paperclip me-2"></i>Attached Documents:</p>
+                            <!-- TODO: Add document upload/management functionality -->
+                            <small class="text-muted">Document management feature coming soon</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Account Information -->
+            {% if account %}
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-building me-2"></i>Vendor Account</h6>
+                </div>
+                <div class="card-body">
+                    <h6><a href="{{ url_for('account_detail', account_id=account.id) }}" class="text-decoration-none">{{ account.name }}</a></h6>
+                    <p class="text-muted mb-2">{{ account.type or 'Vendor' }}</p>
+                    {% if account.email %}
+                    <p class="mb-1"><i class="fas fa-envelope me-1"></i> {{ account.email }}</p>
+                    {% endif %}
+                    {% if account.location %}
+                    <p class="mb-1"><i class="fas fa-map-marker-alt me-1"></i> {{ account.location }}</p>
+                    {% endif %}
+                    {% if contact %}
+                    <hr class="my-2">
+                    <small class="text-muted fw-bold">Primary Contact:</small>
+                    <p class="mb-1">{{ contact.first_name }} {{ contact.last_name }}</p>
+                    {% if contact.title %}<small class="text-muted">{{ contact.title }}</small><br>{% endif %}
+                    {% if contact.email %}<small><i class="fas fa-envelope me-1"></i> {{ contact.email }}</small><br>{% endif %}
+                    {% if contact.phone %}<small><i class="fas fa-phone me-1"></i> {{ contact.phone }}</small>{% endif %}
+                    {% endif %}
+                </div>
+            </div>
+            {% else %}
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-building me-2"></i>Vendor Account</h6>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-2">No vendor assigned</p>
+                    <button class="btn btn-primary btn-sm" onclick="editQuote({{ quote.id }})">
+                        <i class="fas fa-plus me-1"></i>Assign Vendor
+                    </button>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Government Buyer Information -->
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-user-tie me-2"></i>Government Buyer</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6">
+                            <small class="text-muted">Office:</small>
+                            <p class="mb-1">{{ quote.office or 'N/A' }}</p>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted">Division:</small>
+                            <p class="mb-1">{{ quote.division or 'N/A' }}</p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12">
+                            <small class="text-muted">Buyer:</small>
+                            <p class="mb-1">{{ quote.buyer_name or 'THE BUYER' }}</p>
+                        </div>
+                    </div>
+                    {% if quote.buyer_email or quote.buyer_telephone %}
+                    <hr class="my-2">
+                    {% if quote.buyer_email %}
+                    <p class="mb-1"><i class="fas fa-envelope me-1"></i> {{ quote.buyer_email }}</p>
+                    {% endif %}
+                    {% if quote.buyer_telephone %}
+                    <p class="mb-1"><i class="fas fa-phone me-1"></i> {{ quote.buyer_telephone }}</p>
+                    {% endif %}
+                    {% endif %}
+                    
+                    {% if quote.buyer_address %}
+                    <hr class="my-2">
+                    <small class="text-muted">Address:</small>
+                    <p class="mb-0 small">{{ quote.buyer_address }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Linked Opportunity -->
+            {% if opportunity %}
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-bullseye me-2"></i>Linked Opportunity</h6>
+                </div>
+                <div class="card-body">
+                    <h6><a href="{{ url_for('opportunity_detail', opportunity_id=opportunity.id) }}" class="text-decoration-none">{{ opportunity.name }}</a></h6>
+                    <p class="text-muted mb-2">{{ opportunity.stage }}</p>
+                    {% if opportunity.value %}
+                    <p class="text-success mb-2">${{ "%.2f"|format(opportunity.value) }}</p>
+                    {% endif %}
+                    {% if opportunity.close_date %}
+                    <small class="text-muted">Close: {{ opportunity.close_date }}</small>
+                    {% endif %}
+                </div>
+            </div>
+            {% else %}
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-bullseye me-2"></i>Link Opportunity</h6>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-2">No opportunity linked to this Quote.</p>
+                    <button class="btn btn-primary btn-sm" onclick="createOpportunityFromQuote({{ quote.id }})">
+                        <i class="fas fa-plus me-1"></i>Create Opportunity
+                    </button>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Source File Information -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-file-pdf me-2"></i>Source Information</h6>
+                </div>
+                <div class="card-body">
+                    {% if quote.pdf_name %}
+                    <div class="mb-2">
+                        <small class="text-muted fw-bold">PDF Source:</small>
+                        <p class="mb-0 small">{{ quote.pdf_name }}</p>
+                    </div>
+                    {% endif %}
+                    {% if quote.solicitation_url %}
+                    <div class="mb-2">
+                        <a href="{{ quote.solicitation_url }}" target="_blank" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-external-link-alt me-1"></i>View Original Solicitation
+                        </a>
+                    </div>
+                    {% endif %}
+                    <div class="row">
+                        <div class="col-6">
+                            <small class="text-muted">Created:</small>
+                            <p class="mb-0 small">{{ quote.created_date or 'N/A' }}</p>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted">Modified:</small>
+                            <p class="mb-0 small">{{ quote.modified_date or 'N/A' }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Quote Modal -->
+<div class="modal fade" id="editQuoteModal" tabindex="-1" aria-labelledby="editQuoteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editQuoteModalLabel">
+                    <i class="fas fa-edit me-2"></i>Edit Quote - {{ quote.request_number }}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="editQuoteForm">
+                <div class="modal-body">
+                    <div class="row">
+                        <!-- Basic Quote Information -->
+                        <div class="col-lg-6">
+                            <h6 class="mb-3"><i class="fas fa-file-contract me-2"></i>Quote Details</h6>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="editRequestNumber" class="form-label">Request Number</label>
+                                        <input type="text" class="form-control" id="editRequestNumber" name="request_number" value="{{ quote.request_number }}" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="editStatus" class="form-label">Status</label>
+                                        <select class="form-select" id="editStatus" name="status" required>
+                                            <option value="Draft" {{ 'selected' if quote.status == 'Draft' }}>Draft</option>
+                                            <option value="Sent" {{ 'selected' if quote.status == 'Sent' }}>Sent</option>
+                                            <option value="Responded" {{ 'selected' if quote.status == 'Responded' }}>Responded</option>
+                                            <option value="Accepted" {{ 'selected' if quote.status == 'Accepted' }}>Accepted</option>
+                                            <option value="Declined" {{ 'selected' if quote.status == 'Declined' }}>Declined</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="editQuantity" class="form-label">Quantity</label>
+                                        <input type="number" class="form-control" id="editQuantity" name="quantity" value="{{ quote.quantity }}" min="1" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="editQuoteAmount" class="form-label">Quote Amount ($)</label>
+                                        <input type="number" step="0.01" class="form-control" id="editQuoteAmount" name="quote_amount" value="{{ quote.quote_amount }}" placeholder="0.00">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="editLeadTime" class="form-label">Lead Time</label>
+                                        <input type="text" class="form-control" id="editLeadTime" name="lead_time" value="{{ quote.lead_time }}" placeholder="e.g., 30 days, 2 weeks">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="editEffectiveDate" class="form-label">Effective Date</label>
+                                        <input type="date" class="form-control" id="editEffectiveDate" name="effective_date" value="{{ quote.effective_date }}">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="editAccount" class="form-label">Vendor (Account)</label>
+                                        <select class="form-select" id="editAccount" name="account_id">
+                                            <option value="">Select Vendor</option>
+                                            <!-- Accounts will be loaded dynamically -->
+                                        </select>
+                                        <small class="text-muted">Current: {{ account.name if account else 'None' }}</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="editContact" class="form-label">Contact</label>
+                                        <select class="form-select" id="editContact" name="contact_id">
+                                            <option value="">Select Contact</option>
+                                            <!-- Contacts will be loaded based on account -->
+                                        </select>
+                                        <small class="text-muted">Current: {{ contact.first_name + ' ' + contact.last_name if contact else 'None' }}</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="editProduct" class="form-label">Product</label>
+                                        <select class="form-select" id="editProduct" name="product_id">
+                                            <option value="">Select Product</option>
+                                            <!-- Products will be loaded dynamically -->
+                                        </select>
+                                        <small class="text-muted">Current: {{ quote.product_name or 'None' }}</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="editOpportunity" class="form-label">Linked Opportunity</label>
+                                        <select class="form-select" id="editOpportunity" name="opportunity_id">
+                                            <option value="">Select Opportunity</option>
+                                            <!-- Opportunities will be loaded dynamically -->
+                                        </select>
+                                        <small class="text-muted">Current: {{ opportunity.name if opportunity else 'None' }}</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="editNotes" class="form-label">Notes</label>
+                                <textarea class="form-control" id="editNotes" name="notes" rows="3" placeholder="Add Quote notes, specifications, or requirements...">{{ quote.notes }}</textarea>
+                            </div>
+                            
+                            <!-- Document Upload Section -->
+                            <div class="mb-3">
+                                <label class="form-label">Upload Documents</label>
+                                <input type="file" class="form-control" id="quoteDocuments" name="documents[]" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.txt">
+                                <small class="text-muted">Upload Quote documents, specifications, drawings, etc. (PDF, Word, Excel, Text)</small>
+                                <div id="existingDocuments" class="mt-2">
+                                    <small class="text-info">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        Document management feature in development
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Related Information Display -->
+                        <div class="col-lg-6">
+                            <h6 class="mb-3"><i class="fas fa-info-circle me-2"></i>Related Information</h6>
+                            
+                            <!-- Current Account Information -->
+                            {% if account %}
+                            <div class="card mb-3">
+                                <div class="card-header py-2">
+                                    <small class="fw-bold">Current Account (Vendor)</small>
+                                </div>
+                                <div class="card-body py-2">
+                                    <p class="mb-1"><strong>{{ account.name }}</strong></p>
+                                    <small class="text-muted">{{ account.type or 'N/A' }}</small>
+                                    {% if account.email %}
+                                    <br><small><i class="fas fa-envelope me-1"></i>{{ account.email }}</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            <!-- Current Product Information -->
+                            <div class="card mb-3">
+                                <div class="card-header py-2">
+                                    <small class="fw-bold">Product Information</small>
+                                </div>
+                                <div class="card-body py-2">
+                                    {% if quote.product_name %}
+                                    <p class="mb-1"><strong>{{ quote.product_name }}</strong></p>
+                                    {% endif %}
+                                    {% if quote.nsn %}
+                                    <small class="text-muted">NSN: {{ quote.nsn }}</small><br>
+                                    {% endif %}
+                                    {% if quote.fsc %}
+                                    <small class="text-muted">FSC: {{ quote.fsc }}</small><br>
+                                    {% endif %}
+                                    {% if quote.product_description %}
+                                    <small class="text-muted">{{ (quote.product_description or 'No description')[:100] }}{% if (quote.product_description or '')|length > 100 %}...{% endif %}</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- Buyer Information -->
+                            <div class="card mb-3">
+                                <div class="card-header py-2">
+                                    <small class="fw-bold">Buyer Information</small>
+                                </div>
+                                <div class="card-body py-2">
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <small class="text-muted">Office:</small>
+                                            <p class="mb-1 small">{{ quote.office or 'N/A' }}</p>
+                                        </div>
+                                        <div class="col-6">
+                                            <small class="text-muted">Division:</small>
+                                            <p class="mb-1 small">{{ quote.division or 'N/A' }}</p>
+                                        </div>
+                                    </div>
+                                    <small class="text-muted">Buyer:</small>
+                                    <p class="mb-1 small">{{ quote.buyer_name or 'THE BUYER' }}</p>
+                                    {% if quote.buyer_email %}
+                                    <small><i class="fas fa-envelope me-1"></i>{{ quote.buyer_email }}</small><br>
+                                    {% endif %}
+                                    {% if quote.buyer_telephone %}
+                                    <small><i class="fas fa-phone me-1"></i>{{ quote.buyer_telephone }}</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- Current Opportunity Information -->
+                            {% if opportunity %}
+                            <div class="card mb-3">
+                                <div class="card-header py-2">
+                                    <small class="fw-bold">Current Linked Opportunity</small>
+                                </div>
+                                <div class="card-body py-2">
+                                    <p class="mb-1"><strong>{{ opportunity.name }}</strong></p>
+                                    <small class="text-muted">Stage: {{ opportunity.stage }}</small><br>
+                                    {% if opportunity.value %}
+                                    <small class="text-success">Value: ${{ "%.2f"|format(opportunity.value) }}</small><br>
+                                    {% endif %}
+                                    {% if opportunity.close_date %}
+                                    <small class="text-muted">Close: {{ opportunity.close_date }}</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            <!-- Additional Details -->
+                            <div class="card">
+                                <div class="card-header py-2">
+                                    <small class="fw-bold">Additional Details</small>
+                                </div>
+                                <div class="card-body py-2">
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <small class="text-muted">Open Date:</small>
+                                            <p class="mb-1 small">{{ quote.open_date or 'N/A' }}</p>
+                                        </div>
+                                        <div class="col-6">
+                                            <small class="text-muted">Close Date:</small>
+                                            <p class="mb-1 small">{{ quote.close_date or 'N/A' }}</p>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <small class="text-muted">FOB:</small>
+                                            <p class="mb-1 small">{{ quote.fob or 'DESTINATION' }}</p>
+                                        </div>
+                                        <div class="col-6">
+                                            <small class="text-muted">ISO Required:</small>
+                                            <p class="mb-1 small">{{ quote.iso or 'NO' }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Check URL parameters and auto-open edit modal if requested
+document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('edit') === 'true') {
+        // Auto-open the edit modal
+        editQuote({{ quote.id }});
+    }
+});
+
+// Load data for dropdowns when edit modal opens
+document.getElementById('editQuoteModal').addEventListener('show.bs.modal', function () {
+    loadProductsForEdit();
+    loadAccountsForEdit();
+    loadOpportunitiesForEdit();
+    
+    // Load contacts if account is already selected
+    const currentAccountId = {{ quote.account_id if quote.account_id else 'null' }};
+    if (currentAccountId) {
+        loadContactsForEdit(currentAccountId);
+    }
+});
+
+// Handle account change to load related contacts in edit modal
+document.getElementById('editAccount').addEventListener('change', function() {
+    const accountId = this.value;
+    loadContactsForEdit(accountId);
+});
+
+function loadProductsForEdit() {
+    fetch('/api/products')
+    .then(response => response.json())
+    .then(products => {
+        const select = document.getElementById('editProduct');
+        select.innerHTML = '<option value="">Select Product</option>';
+        products.forEach(product => {
+            const option = document.createElement('option');
+            option.value = product.nsn || product.id;
+            option.textContent = `${product.nsn || product.id} - ${product.name}`;
+            if ('{{ quote.product_id }}' && (product.nsn == '{{ quote.product_id }}' || product.id == '{{ quote.product_id }}')) {
+                option.selected = true;
+            }
+            select.appendChild(option);
+        });
+    })
+    .catch(error => console.error('Error loading products:', error));
+}
+
+function loadAccountsForEdit() {
+    fetch('/api/accounts')
+    .then(response => response.json())
+    .then(accounts => {
+        const select = document.getElementById('editAccount');
+        select.innerHTML = '<option value="">Select Account</option>';
+        accounts.forEach(account => {
+            const option = document.createElement('option');
+            option.value = account.id;
+            option.textContent = account.name;
+            if ({{ quote.account_id if quote.account_id else 'null' }} && account.id == {{ quote.account_id if quote.account_id else 'null' }}) {
+                option.selected = true;
+            }
+            select.appendChild(option);
+        });
+    })
+    .catch(error => console.error('Error loading accounts:', error));
+}
+
+function loadContactsForEdit(accountId) {
+    const select = document.getElementById('editContact');
+    select.innerHTML = '<option value="">Select Contact</option>';
+    
+    if (!accountId) return;
+    
+    fetch(`/api/contacts?account_id=${accountId}`)
+    .then(response => response.json())
+    .then(contacts => {
+        contacts.forEach(contact => {
+            const option = document.createElement('option');
+            option.value = contact.id;
+            option.textContent = contact.name || `${contact.first_name} ${contact.last_name}`;
+            if ({{ quote.contact_id if quote.contact_id else 'null' }} && contact.id == {{ quote.contact_id if quote.contact_id else 'null' }}) {
+                option.selected = true;
+            }
+            select.appendChild(option);
+        });
+    })
+    .catch(error => console.error('Error loading contacts:', error));
+}
+
+function loadOpportunitiesForEdit() {
+    fetch('/api/opportunities')
+    .then(response => response.json())
+    .then(opportunities => {
+        const select = document.getElementById('editOpportunity');
+        select.innerHTML = '<option value="">Select Opportunity</option>';
+        opportunities.forEach(opportunity => {
+            const option = document.createElement('option');
+            option.value = opportunity.id;
+            option.textContent = opportunity.name;
+            if ({{ quote.opportunity_id if quote.opportunity_id else 'null' }} && opportunity.id == {{ quote.opportunity_id if quote.opportunity_id else 'null' }}) {
+                option.selected = true;
+            }
+            select.appendChild(option);
+        });
+    })
+    .catch(error => console.error('Error loading opportunities:', error));
+}
+
+function updateQuoteStatus(quoteId, newStatus) {
+    if (confirm(`Are you sure you want to change the status to "${newStatus}"?`)) {
+        fetch(`/api/update_quote_status/${quoteId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                status: newStatus,
+                opportunity_id: {{ opportunity.id if opportunity else 'null' }}
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error updating status: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error updating status. Please try again.');
+        });
+    }
+}
+
+function editQuote(quoteId) {
+    var modal = new bootstrap.Modal(document.getElementById('editQuoteModal'));
+    modal.show();
+}
+
+function createOpportunityFromQuote(quoteId) {
+    // This would navigate to opportunity creation with Quote data pre-filled
+    window.location.href = `/opportunities/new?quote_id=${quoteId}`;
+}
+
+// Handle edit form submission
+document.getElementById('editQuoteForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const quoteData = Object.fromEntries(formData.entries());
+    
+    // Convert empty strings to null for optional fields
+    if (!quoteData.contact_id) quoteData.contact_id = null;
+    if (!quoteData.opportunity_id) quoteData.opportunity_id = null;
+    if (!quoteData.delivery_days) quoteData.delivery_days = null;
+    if (!quoteData.notes) quoteData.notes = null;
+    if (!quoteData.product_id) quoteData.product_id = null;
+    if (!quoteData.account_id) quoteData.account_id = null;
+    
+    fetch(`/api/quotes/{{ quote.id }}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(quoteData)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        alert('Quote updated successfully!');
+        bootstrap.Modal.getInstance(document.getElementById('editQuoteModal')).hide();
+        location.reload();
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error updating Quote. Please try again.');
+    });
+});
+</script>
+{% endblock %}

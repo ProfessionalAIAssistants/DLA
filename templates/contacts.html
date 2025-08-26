@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Contacts - Local CRM{% endblock %}
+{% block title %}Contacts - CDE Prosperity{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
@@ -58,13 +58,9 @@
                 <thead>
                     <tr>
                         <th>Name</th>
-                        <th>Quality</th>
-                        <th>Status</th>
-                        <th>Account</th>
-                        <th>Title</th>
                         <th>Email</th>
                         <th>Phone</th>
-                        <th>Next Contact</th>
+                        <th>Account</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -77,32 +73,6 @@
                             <br><small class="text-muted">Code: {{ contact.buyer_code }}</small>
                             {% endif %}
                         </td>
-                        <td>
-                            {% if contact.quality %}
-                                <span class="badge bg-{{ 'success' if contact.quality >= 4 else 'warning' if contact.quality >= 3 else 'danger' }}">
-                                    {{ contact.quality }}/5
-                                </span>
-                            {% else %}
-                                <span class="text-muted">N/A</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if contact.status %}
-                                <small class="text-muted">{{ contact.status }}</small>
-                            {% else %}
-                                <small class="text-muted">No Status</small>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if contact.account_name %}
-                                <a href="{{ url_for('account_detail', account_id=contact.account_id) }}" class="text-decoration-none">
-                                    {{ contact.account_name }}
-                                </a>
-                            {% else %}
-                                <span class="text-muted">No Account</span>
-                            {% endif %}
-                        </td>
-                        <td>{{ contact.title or 'N/A' }}</td>
                         <td>
                             {% if contact.email %}
                                 <a href="mailto:{{ contact.email }}">{{ contact.email }}</a>
@@ -118,18 +88,17 @@
                             {% endif %}
                         </td>
                         <td>
-                            {% if contact.next_communication %}
-                                {{ contact.next_communication | date }}
-                                {% if contact.frequency_days %}
-                                <br><small class="text-muted">Every {{ contact.frequency_days }} days</small>
-                                {% endif %}
+                            {% if contact.account_name %}
+                                <a href="{{ url_for('account_detail', account_id=contact.account_id) }}" class="text-decoration-none">
+                                    {{ contact.account_name }}
+                                </a>
                             {% else %}
-                                <span class="text-muted">Not Set</span>
+                                <span class="text-muted">No Account</span>
                             {% endif %}
                         </td>
                         <td>
                             <div class="btn-group btn-group-sm" role="group">
-                                <button class="btn btn-outline-primary">
+                                <button class="btn btn-outline-primary" onclick="viewContact({{ contact.id }})">
                                     <i class="fas fa-eye"></i>
                                 </button>
                                 <button class="btn btn-outline-secondary" onclick="editContact({{ contact.id }})">
@@ -256,8 +225,8 @@
                                 <option value="5">5 - Excellent</option>
                                 <option value="4">4 - Good</option>
                                 <option value="3">3 - Average</option>
-                                <option value="2">2 - Fair</option>
-                                <option value="1">1 - Poor</option>
+                                <option value="2">2 - Poor</option>
+                                <option value="1">1 - Very Poor</option>
                             </select>
                         </div>
                         <div class="col-md-6">
@@ -273,8 +242,8 @@
                             <input type="text" class="form-control" id="editTitle" name="title">
                         </div>
                         <div class="col-md-6">
-                            <label for="editDepartment" class="form-label">Department</label>
-                            <input type="text" class="form-control" id="editDepartment" name="department">
+                            <label for="editFax" class="form-label">Fax</label>
+                            <input type="tel" class="form-control" id="editFax" name="fax">
                         </div>
                         <div class="col-md-6">
                             <label for="editAccountId" class="form-label">Account</label>
@@ -488,5 +457,9 @@ document.getElementById('editContactForm').addEventListener('submit', function(e
         alert('Error updating contact. Please try again.');
     });
 });
+
+function viewContact(contactId) {
+    window.location.href = '/contact/' + contactId;
+}
 </script>
 {% endblock %}

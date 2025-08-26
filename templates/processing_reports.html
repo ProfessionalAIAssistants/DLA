@@ -20,6 +20,26 @@
         </div>
     </div>
 
+    <!-- Processing Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card card-metric h-100" style="background: linear-gradient(135deg, #9b7bd8 0%, #a87ce0 100%);">
+                <div class="card-body text-center text-white">
+                    <h2 class="mb-1">{{ stats.processed or 0 }}</h2>
+                    <p class="mb-0">Processed</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card card-metric h-100" style="background: linear-gradient(135deg, #ffc107 0%, #ffb300 100%);">
+                <div class="card-body text-center text-white">
+                    <h2 class="mb-1">{{ stats.skipped or 0 }}</h2>
+                    <p class="mb-0">Skipped</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Reports List -->
     {% if reports %}
     <div class="card">
