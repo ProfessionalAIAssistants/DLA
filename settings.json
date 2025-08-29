@@ -1,15 +1,9 @@
 {
   "min_delivery_days": 50,
   "iso_required": "ANY",
-  "sampling_required": "NO",
-  "inspection_point": "DESTINATION",
-  "manufacturer_filter": "",
-  "fsc_filter": "",
-  "packaging_filter": "",
-  "auto_create_opportunities": true,
-  "link_related_records": true,
-  "move_processed_files": true,
-  "skip_duplicates": true,
-  "isoRequired": "NO",
-  "samplingRequired": "NO"
+  "sampling_required": "ANY",
+  "inspection_point": "ANY",
+  "manufacturer_filters": [],
+  "isoRequired": "ANY",
+  "samplingRequired": "ANY"
 }

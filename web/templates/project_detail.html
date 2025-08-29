@@ -1,0 +1,439 @@
+{% extends "base.html" %}
+
+{% block title %}{{ project.name }} - CDE Prosperity{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-project-diagram me-2"></i>{{ project.name }}
+        <span class="badge bg-{{ 'success' if project.status == 'Completed' else 'primary' if project.status == 'In Progress' else 'warning' if project.status == 'On Hold' else 'secondary' }} ms-2">
+            {{ project.status or 'Not Started' }}
+        </span>
+        {% if project.priority %}
+        <span class="badge bg-{{ 'danger' if project.priority == 'High' else 'warning' if project.priority == 'Medium' else 'secondary' }} ms-1">
+            {{ project.priority }} Priority
+        </span>
+        {% endif %}
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-primary" onclick="editProject({{ project.id }})">
+                <i class="fas fa-edit me-1"></i>
+                Edit Project
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-success" onclick="updateProgress({{ project.id }})">
+                <i class="fas fa-tasks me-1"></i>
+                Update Progress
+            </button>
+        </div>
+        <a href="{{ url_for('projects') }}" class="btn btn-sm btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i>
+            Back to Projects
+        </a>
+    </div>
+</div>
+
+<!-- Project Summary -->
+<div class="row">
+    <div class="col-xl-8">
+        <!-- Basic Information -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-info-circle me-2"></i>Project Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <td><strong>Name:</strong></td>
+                                <td>{{ project.name }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Status:</strong></td>
+                                <td>
+                                    <span class="badge bg-{{ 'success' if project.status == 'Completed' else 'primary' if project.status == 'In Progress' else 'warning' if project.status == 'On Hold' else 'secondary' }}">
+                                        {{ project.status or 'Not Started' }}
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Priority:</strong></td>
+                                <td>
+                                    {% if project.priority %}
+                                    <span class="badge bg-{{ 'danger' if project.priority == 'High' else 'warning' if project.priority == 'Medium' else 'secondary' }}">
+                                        {{ project.priority }}
+                                    </span>
+                                    {% else %}
+                                    N/A
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Progress:</strong></td>
+                                <td>
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar" role="progressbar" style="width: {{ project.progress_percentage or 0 }}%">
+                                            {{ project.progress_percentage or 0 }}%
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <td><strong>Start Date:</strong></td>
+                                <td>{{ project.start_date or 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Due Date:</strong></td>
+                                <td>
+                                    {% if project.due_date %}
+                                        <span class="{{ 'text-danger' if project.days_till_due and project.days_till_due < 0 else 'text-warning' if project.days_till_due and project.days_till_due <= 7 else '' }}">
+                                            {{ project.due_date }}
+                                            {% if project.days_till_due is not none %}
+                                                ({{ project.days_till_due }} days)
+                                            {% endif %}
+                                        </span>
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Project Manager:</strong></td>
+                                <td>{{ project.project_manager or 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Budget:</strong></td>
+                                <td>
+                                    {% if project.budget %}
+                                        ${{ "%.2f"|format(project.budget) }}
+                                        {% if project.actual_cost %}
+                                            <small class="text-muted">(Spent: ${{ "%.2f"|format(project.actual_cost) }})</small>
+                                        {% endif %}
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                
+                {% if project.description %}
+                <hr>
+                <div class="row">
+                    <div class="col-12">
+                        <h6><strong>Description:</strong></h6>
+                        <p>{{ project.description }}</p>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if project.summary %}
+                <hr>
+                <div class="row">
+                    <div class="col-12">
+                        <h6><strong>Summary:</strong></h6>
+                        <p>{{ project.summary }}</p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Related Information -->
+        <div class="row">
+            {% if vendor %}
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-building me-2"></i>Vendor
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <h6>
+                            <a href="/account/{{ vendor.id }}" class="text-decoration-none">
+                                {{ vendor.name }}
+                            </a>
+                        </h6>
+                        <p class="text-muted mb-0">{{ vendor.type or 'Vendor' }}</p>
+                        {% if vendor.email %}
+                        <small>
+                            <a href="mailto:{{ vendor.email }}" class="text-decoration-none">
+                                <i class="fas fa-envelope me-1"></i>{{ vendor.email }}
+                            </a>
+                        </small>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if parent_project %}
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-sitemap me-2"></i>Parent Project
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <h6>
+                            <a href="/project/{{ parent_project.id }}" class="text-decoration-none">
+                                {{ parent_project.name }}
+                            </a>
+                        </h6>
+                        <p class="text-muted mb-0">{{ parent_project.status or 'Not Started' }}</p>
+                        {% if parent_project.due_date %}
+                        <small class="text-muted">Due: {{ parent_project.due_date }}</small>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Sub-projects -->
+        {% if sub_projects %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-tasks me-2"></i>Sub-projects ({{ sub_projects|length }})
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Status</th>
+                                <th>Progress</th>
+                                <th>Due Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for sub_project in sub_projects %}
+                            <tr>
+                                <td>
+                                    <a href="/project/{{ sub_project.id }}" class="text-decoration-none">
+                                        {{ sub_project.name }}
+                                    </a>
+                                </td>
+                                <td>
+                                    <span class="badge bg-{{ 'success' if sub_project.status == 'Completed' else 'primary' if sub_project.status == 'In Progress' else 'warning' if sub_project.status == 'On Hold' else 'secondary' }}">
+                                        {{ sub_project.status or 'Not Started' }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="progress" style="height: 15px; width: 100px;">
+                                        <div class="progress-bar" role="progressbar" style="width: {{ sub_project.progress_percentage or 0 }}%">
+                                            <small>{{ sub_project.progress_percentage or 0 }}%</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if sub_project.due_date %}
+                                        <span class="{{ 'text-danger' if sub_project.days_till_due and sub_project.days_till_due < 0 else 'text-warning' if sub_project.days_till_due and sub_project.days_till_due <= 7 else '' }}">
+                                            {{ sub_project.due_date }}
+                                        </span>
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="/project/{{ sub_project.id }}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Related Tasks -->
+        {% if related_tasks %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-check-square me-2"></i>Related Tasks ({{ related_tasks|length }})
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Subject</th>
+                                <th>Status</th>
+                                <th>Priority</th>
+                                <th>Due Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for task in related_tasks %}
+                            <tr>
+                                <td>
+                                    <a href="/tasks/{{ task.id }}" class="text-decoration-none">
+                                        {{ task.subject }}
+                                    </a>
+                                </td>
+                                <td>
+                                    <span class="badge bg-{{ 'success' if task.status == 'Completed' else 'primary' if task.status == 'In Progress' else 'warning' if task.status == 'Waiting' else 'secondary' }}">
+                                        {{ task.status or 'Not Started' }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if task.priority %}
+                                    <span class="badge bg-{{ 'danger' if task.priority == 'High' else 'warning' if task.priority == 'Normal' else 'secondary' }}">
+                                        {{ task.priority }}
+                                    </span>
+                                    {% else %}
+                                    N/A
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if task.due_date %}
+                                        <span class="{{ 'text-danger' if task.days_till_due and task.days_till_due < 0 else 'text-warning' if task.days_till_due and task.days_till_due <= 7 else '' }}">
+                                            {{ task.due_date }}
+                                        </span>
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="/tasks/{{ task.id }}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-xl-4">
+        <!-- Quick Actions -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-bolt me-2"></i>Quick Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button type="button" class="btn btn-outline-success" onclick="startProject({{ project.id }})">
+                        <i class="fas fa-play me-2"></i>Start Project
+                    </button>
+                    <button type="button" class="btn btn-outline-info" onclick="updateProgress({{ project.id }})">
+                        <i class="fas fa-tasks me-2"></i>Update Progress
+                    </button>
+                    <button type="button" class="btn btn-outline-warning" onclick="completeProject({{ project.id }})">
+                        <i class="fas fa-check me-2"></i>Mark Complete
+                    </button>
+                    <button type="button" class="btn btn-outline-primary" onclick="addTask({{ project.id }})">
+                        <i class="fas fa-plus me-2"></i>Add Task
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Project Details -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-pie me-2"></i>Project Details
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6">
+                        <h4 class="text-primary">{{ project.progress_percentage or 0 }}%</h4>
+                        <small class="text-muted">Complete</small>
+                    </div>
+                    <div class="col-6">
+                        <h4 class="text-success">
+                            {% if project.days_till_due is not none %}
+                                {{ project.days_till_due }}
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </h4>
+                        <small class="text-muted">Days Left</small>
+                    </div>
+                </div>
+                <hr>
+                <div class="row text-center">
+                    <div class="col-6">
+                        <h6 class="text-muted">Team Members</h6>
+                        <p>{{ project.team_members or 'Not assigned' }}</p>
+                    </div>
+                    <div class="col-6">
+                        <h6 class="text-muted">Created</h6>
+                        <p>{{ project.created_date or 'N/A' }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notes -->
+        {% if project.notes %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-sticky-note me-2"></i>Notes
+                </h5>
+            </div>
+            <div class="card-body">
+                <p>{{ project.notes }}</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function editProject(projectId) {
+    // Implement edit functionality
+    console.log('Edit project:', projectId);
+}
+
+function updateProgress(projectId) {
+    // Implement progress update
+    console.log('Update progress for project:', projectId);
+}
+
+function startProject(projectId) {
+    // Implement start project
+    console.log('Start project:', projectId);
+}
+
+function completeProject(projectId) {
+    // Implement complete project
+    console.log('Complete project:', projectId);
+}
+
+function addTask(projectId) {
+    // Implement add task
+    console.log('Add task for project:', projectId);
+}
+</script>
+{% endblock %}

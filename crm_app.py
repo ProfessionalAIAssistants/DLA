@@ -11,17 +11,24 @@ import sqlite3
 from pathlib import Path
 
 # Import our CRM modules
-from crm_data import crm_data
-from crm_automation import crm_automation
-from pdf_processor import pdf_processor
-from email_automation import email_automation
+from src.core.config_manager import config_manager
+from src.core.crm_data import crm_data
+from src.core.crm_automation import crm_automation
+from src.pdf.dibbs_crm_processor import dibbs_processor
+from src.email_automation.email_automation import email_automation
+
+# Initialize config manager and ensure directories exist
+config_manager.ensure_directories()
+app_config = config_manager.get_app_config()
 
 app = Flask(__name__)
-app.secret_key = 'your-secret-key-here'
+
+# Use configuration for secret key
+app.secret_key = os.getenv('FLASK_SECRET_KEY', app_config.get('secret_key', 'your-secret-key-here'))
 
 # Configure template and static folders
-app.template_folder = 'templates'
-app.static_folder = 'static'
+app.template_folder = 'web/templates'
+app.static_folder = 'web/static'
 
 # Add custom Jinja2 filters
 @app.template_filter('to_datetime')
@@ -76,7 +83,7 @@ def dashboard():
 @app.route('/settings')
 def settings():
     """Settings page for PDF processing filters"""
-    current_settings = pdf_processor.get_filter_settings()
+    current_settings = dibbs_processor.get_filter_settings()
     
     # Get processing statistics
     stats = {
@@ -84,8 +91,8 @@ def settings():
         'skipped': 0
     }
     
-    # Count files in reviewed folders
-    reviewed_dir = Path("Reviewed")
+    # Count files in reviewed folders using config manager
+    reviewed_dir = config_manager.get_processed_dir()
     if reviewed_dir.exists():
         stats['processed'] = len(list(reviewed_dir.glob("*.pdf"))) + len(list(reviewed_dir.glob("*.PDF")))
         
@@ -100,7 +107,7 @@ def update_settings():
     """Update PDF processing filter settings"""
     try:
         settings_data = request.get_json()
-        pdf_processor.update_filter_settings(settings_data)
+        dibbs_processor.update_filter_settings(settings_data)
         return jsonify({'success': True, 'message': 'Settings updated successfully'})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
@@ -137,6 +144,7 @@ def handle_email_settings():
             else:
                 # Return default settings
                 default_settings = {
+                    "email_method": "smtp",  # Default method
                     "smtp_configuration": {
                         "enabled": False,
                         "host": "",
@@ -144,6 +152,21 @@ def handle_email_settings():
                         "username": "",
                         "from_name": "CDE Prosperity DLA Team",
                         "reply_to_email": ""
+                    },
+                    "gmail_oauth2": {
+                        "enabled": False,
+                        "client_id": "",
+                        "client_secret": "",
+                        "redirect_uri": "http://localhost:5000/auth/gmail/callback",
+                        "user_email": ""
+                    },
+                    "outlook_oauth2": {
+                        "enabled": False,
+                        "client_id": "",
+                        "client_secret": "",
+                        "tenant_id": "",
+                        "redirect_uri": "http://localhost:5000/auth/outlook/callback",
+                        "user_email": ""
                     },
                     "rfq_automation": {
                         "enabled": False,
@@ -195,8 +218,27 @@ def handle_email_settings():
                 with open(config_path, 'r') as f:
                     existing_config = json.load(f)
             
-            # Update with new settings
+            # Update with new settings (including OAuth2 configurations)
             existing_config.update(settings_data)
+            
+            # Also save OAuth2 settings to separate file if provided
+            if 'oauth2_method' in settings_data:
+                oauth2_config_path = 'oauth2_config.json'
+                oauth2_config = {}
+                
+                if os.path.exists(oauth2_config_path):
+                    with open(oauth2_config_path, 'r') as f:
+                        oauth2_config = json.load(f)
+                
+                # Update OAuth2 config based on method
+                method = settings_data['oauth2_method']
+                if method == 'gmail_oauth' and 'gmail_oauth2' in settings_data:
+                    oauth2_config['gmail_oauth2'] = settings_data['gmail_oauth2']
+                elif method == 'outlook_oauth' and 'outlook_oauth2' in settings_data:
+                    oauth2_config['outlook_oauth2'] = settings_data['outlook_oauth2']
+                
+                with open(oauth2_config_path, 'w') as f:
+                    json.dump(oauth2_config, f, indent=2)
             
             # Save updated config
             with open(config_path, 'w') as f:
@@ -303,6 +345,151 @@ def get_email_status():
     except Exception as e:
         app.logger.error(f"Error getting email status: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
+
+# OAuth2 Authorization Endpoints
+@app.route('/auth/gmail/initiate', methods=['POST'])
+def initiate_gmail_oauth():
+    """Initiate Gmail OAuth2 authorization flow"""
+    try:
+        import json
+        import os
+        
+        # Load OAuth2 config
+        oauth2_config_path = 'oauth2_config.json'
+        if not os.path.exists(oauth2_config_path):
+            return jsonify({'success': False, 'message': 'OAuth2 configuration not found'}), 400
+            
+        with open(oauth2_config_path, 'r') as f:
+            config = json.load(f)
+            
+        gmail_config = config.get('gmail_oauth2', {})
+        client_id = gmail_config.get('client_id')
+        
+        if not client_id:
+            return jsonify({'success': False, 'message': 'Gmail Client ID not configured'}), 400
+            
+        # Generate OAuth2 authorization URL
+        scopes = [
+            'https://www.googleapis.com/auth/gmail.send',
+            'https://www.googleapis.com/auth/gmail.readonly'
+        ]
+        
+        auth_url = (
+            f"https://accounts.google.com/o/oauth2/auth?"
+            f"client_id={client_id}&"
+            f"redirect_uri={gmail_config.get('redirect_uri', 'http://localhost:5000/auth/gmail/callback')}&"
+            f"scope={' '.join(scopes)}&"
+            f"response_type=code&"
+            f"access_type=offline"
+        )
+        
+        return jsonify({'success': True, 'auth_url': auth_url})
+        
+    except Exception as e:
+        app.logger.error(f"Error initiating Gmail OAuth2: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/auth/gmail/callback')
+def gmail_oauth_callback():
+    """Handle Gmail OAuth2 callback"""
+    try:
+        # This is a placeholder for OAuth2 callback handling
+        # In a full implementation, you would:
+        # 1. Exchange authorization code for tokens
+        # 2. Store tokens securely
+        # 3. Update OAuth2 configuration
+        
+        code = request.args.get('code')
+        if not code:
+            return "Authorization failed: No code received", 400
+            
+        # For now, just show a success message
+        return """
+        <html>
+        <body>
+            <h2>Gmail Authorization Successful!</h2>
+            <p>Authorization code received. Please complete the setup in the CRM settings.</p>
+            <script>
+                window.opener && window.opener.postMessage('gmail_auth_success', '*');
+                window.close();
+            </script>
+        </body>
+        </html>
+        """
+        
+    except Exception as e:
+        app.logger.error(f"Error in Gmail OAuth2 callback: {e}")
+        return f"Authorization error: {str(e)}", 500
+
+@app.route('/auth/outlook/initiate', methods=['POST'])
+def initiate_outlook_oauth():
+    """Initiate Outlook OAuth2 authorization flow"""
+    try:
+        import json
+        import os
+        
+        # Load OAuth2 config
+        oauth2_config_path = 'oauth2_config.json'
+        if not os.path.exists(oauth2_config_path):
+            return jsonify({'success': False, 'message': 'OAuth2 configuration not found'}), 400
+            
+        with open(oauth2_config_path, 'r') as f:
+            config = json.load(f)
+            
+        outlook_config = config.get('outlook_oauth2', {})
+        client_id = outlook_config.get('client_id')
+        tenant_id = outlook_config.get('tenant_id')
+        
+        if not client_id or not tenant_id:
+            return jsonify({'success': False, 'message': 'Outlook Client ID or Tenant ID not configured'}), 400
+            
+        # Generate OAuth2 authorization URL
+        scopes = [
+            'https://graph.microsoft.com/Mail.Send',
+            'https://graph.microsoft.com/Mail.Read',
+            'https://graph.microsoft.com/User.Read'
+        ]
+        
+        auth_url = (
+            f"https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/authorize?"
+            f"client_id={client_id}&"
+            f"redirect_uri={outlook_config.get('redirect_uri', 'http://localhost:5000/auth/outlook/callback')}&"
+            f"scope={' '.join(scopes)}&"
+            f"response_type=code&"
+            f"response_mode=query"
+        )
+        
+        return jsonify({'success': True, 'auth_url': auth_url})
+        
+    except Exception as e:
+        app.logger.error(f"Error initiating Outlook OAuth2: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/auth/outlook/callback')
+def outlook_oauth_callback():
+    """Handle Outlook OAuth2 callback"""
+    try:
+        code = request.args.get('code')
+        if not code:
+            return "Authorization failed: No code received", 400
+            
+        # For now, just show a success message
+        return """
+        <html>
+        <body>
+            <h2>Outlook Authorization Successful!</h2>
+            <p>Authorization code received. Please complete the setup in the CRM settings.</p>
+            <script>
+                window.opener && window.opener.postMessage('outlook_auth_success', '*');
+                window.close();
+            </script>
+        </body>
+        </html>
+        """
+        
+    except Exception as e:
+        app.logger.error(f"Error in Outlook OAuth2 callback: {e}")
+        return f"Authorization error: {str(e)}", 500
 
 @app.route('/accounts')
 def accounts():
@@ -619,7 +806,7 @@ def create_project_from_opportunity(opportunity_id):
             return jsonify({'success': False, 'message': 'Opportunity not found'})
         
         # Create project with opportunity data
-        from datetime import date
+        # datetime already imported at top of file
         
         # Safely get numeric values with proper defaults
         bid_price = opportunity.get('bid_price') or 0
@@ -663,7 +850,7 @@ Next Steps:
                 crm_data.update_opportunity(opportunity_id, state='Won', stage='Project Started')
             
             # Create initial project task
-            from datetime import datetime
+            # datetime already imported at top of file
             crm_data.create_task(
                 subject=f"Project Planning: {opportunity['name']}",
                 description=f"""Initial project planning for {opportunity['name']}:
@@ -695,39 +882,9 @@ Opportunity ID: {opportunity_id}
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
 
-@app.route('/rfqs')
-def rfqs():
-    """RFQs list view with pagination"""
-    status = request.args.get('status', '')
-    manufacturer = request.args.get('manufacturer', '')
-    vendor = request.args.get('vendor', '')
-    product = request.args.get('product', '')
-    page = int(request.args.get('page', 1))
-    
-    filters = {}
-    if status:
-        filters['status'] = status
-    if manufacturer:
-        filters['manufacturer'] = manufacturer
-    if vendor:
-        filters['vendor'] = vendor
-    if product:
-        filters['product'] = product
-    
-    rfqs_list = crm_data.get_rfqs(filters)
-    pagination = paginate_results(rfqs_list, page)
-    
-    return render_template('rfqs.html', 
-                         rfqs=pagination['items'], 
-                         pagination=pagination,
-                         status=status, 
-                         manufacturer=manufacturer,
-                         vendor=vendor,
-                         product=product)
-
 @app.route('/quotes')
 def quotes():
-    """Quotes list view with pagination (same as RFQs but with quotes template)"""
+    """Quotes list view with pagination"""
     status = request.args.get('status', '')
     manufacturer = request.args.get('manufacturer', '')
     vendor = request.args.get('vendor', '')
@@ -744,8 +901,8 @@ def quotes():
     if product:
         filters['product'] = product
     
-    rfqs_list = crm_data.get_rfqs(filters)
-    pagination = paginate_results(rfqs_list, page)
+    quotes_list = crm_data.get_quotes(filters)
+    pagination = paginate_results(quotes_list, page)
     
     return render_template('quotes.html', 
                          rfqs=pagination['items'], 
@@ -755,45 +912,25 @@ def quotes():
                          vendor=vendor,
                          product=product)
 
+# Keep legacy RFQ route for backward compatibility but redirect to quotes
+@app.route('/rfqs')
+def rfqs():
+    """Legacy RFQ route - redirects to quotes"""
+    return redirect(url_for('quotes', **request.args))
+
+# Legacy RFQ detail route - redirects to quote detail
 @app.route('/rfq/<int:rfq_id>')
 def rfq_detail(rfq_id):
-    """RFQ detail view"""
-    rfq = crm_data.execute_query("SELECT * FROM rfqs WHERE id = ?", [rfq_id])
-    if not rfq:
-        flash('RFQ not found', 'error')
-        return redirect(url_for('rfqs'))
-    
-    rfq = rfq[0]
-    
-    # Get related records
-    opportunity = None
-    if rfq['opportunity_id']:
-        opp_results = crm_data.execute_query("SELECT * FROM opportunities WHERE id = ?", [rfq['opportunity_id']])
-        opportunity = opp_results[0] if opp_results else None
-    
-    account = None
-    if rfq['account_id']:
-        account = crm_data.get_account_by_id(rfq['account_id'])
-    
-    contact = None
-    if rfq['contact_id']:
-        contact = crm_data.get_contact_by_id(rfq['contact_id'])
-    
-    return render_template('rfq_detail.html', 
-                         rfq=rfq, 
-                         opportunity=opportunity, 
-                         account=account, 
-                         contact=contact)
+    """Legacy RFQ detail route - redirects to quote detail"""
+    return redirect(url_for('quote_detail', quote_id=rfq_id))
 
 @app.route('/quote/<int:quote_id>')
 def quote_detail(quote_id):
-    """Quote detail view (same as RFQ but with quote template)"""
-    quote = crm_data.execute_query("SELECT * FROM rfqs WHERE id = ?", [quote_id])
+    """Quote detail view"""
+    quote = crm_data.get_quote_by_id(quote_id)
     if not quote:
         flash('Quote not found', 'error')
         return redirect(url_for('quotes'))
-    
-    quote = quote[0]
     
     # Get related records
     opportunity = None
@@ -810,7 +947,8 @@ def quote_detail(quote_id):
         contact = crm_data.get_contact_by_id(quote['contact_id'])
     
     return render_template('quote_detail.html', 
-                         quote=quote, 
+                         quote=quote,  # For quote_detail.html template
+                         rfq=quote,    # For backward compatibility
                          opportunity=opportunity, 
                          account=account, 
                          contact=contact)
@@ -818,7 +956,7 @@ def quote_detail(quote_id):
 @app.route('/tasks')
 def tasks():
     """Tasks list view with pagination"""
-    from datetime import date
+        # datetime already imported at top of file
     
     # Get filter parameters
     status = request.args.get('status', '')
@@ -940,10 +1078,14 @@ def api_update_product(nsn):
 def api_delete_product(nsn):
     """API endpoint to delete product by NSN"""
     try:
+        # Decode URL-encoded NSN
+        from urllib.parse import unquote
+        nsn = unquote(nsn)
+        
         # Get the product first to get its ID
         products = crm_data.get_products({'nsn': nsn})
         if not products:
-            return jsonify({'error': 'Product not found'}), 404
+            return jsonify({'error': 'Product not found. It may have already been deleted.'}), 404
             
         product = products[0]
         product_id = product['id']
@@ -953,7 +1095,7 @@ def api_delete_product(nsn):
         rfqs = crm_data.execute_query("SELECT COUNT(*) as count FROM rfqs WHERE product_id = ?", [product_id])
         if rfqs and rfqs[0]['count'] > 0:
             return jsonify({
-                'error': f'Cannot delete product. It is referenced by {rfqs[0]["count"]} RFQ(s). Please remove these references first.'
+                'error': f'Cannot delete product. It is referenced by {rfqs[0]["count"]} quote(s). Please remove these references first.'
             }), 400
             
         # Check opportunities
@@ -972,7 +1114,8 @@ def api_delete_product(nsn):
             return jsonify({'error': 'Product not found or already deleted'}), 404
             
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        app.logger.error(f"Error deleting product {nsn}: {str(e)}")  # Better logging
+        return jsonify({'error': f'Failed to delete product: {str(e)}'}), 500
 
 @app.route('/api/products/<nsn>/relationships')
 def api_get_product_relationships(nsn):
@@ -1008,7 +1151,7 @@ def api_get_product_relationships(nsn):
 @app.route('/interactions')
 def interactions():
     """Interactions list view"""
-    from datetime import datetime, timedelta
+        # datetime already imported at top of file
     
     # Get filters from request
     filters = {}
@@ -1068,9 +1211,14 @@ def interactions():
 @app.route('/interactions/<int:interaction_id>')
 def interaction_detail(interaction_id):
     """Interaction detail view"""
-    # Redirect to interactions page with the interaction_id parameter
-    # This will automatically open the interaction detail modal
-    return redirect(url_for('interactions', interaction_id=interaction_id))
+    try:
+        interaction = crm_data.get_interaction_by_id(interaction_id)
+        if not interaction:
+            return render_template('error.html', error="Interaction not found"), 404
+        
+        return render_template('interaction_detail.html', interaction=interaction)
+    except Exception as e:
+        return render_template('error.html', error=str(e)), 500
 
 # API Routes for AJAX operations
 
@@ -1085,13 +1233,25 @@ def complete_task(task_id):
 
 @app.route('/api/update_rfq_status/<int:rfq_id>', methods=['POST'])
 def update_rfq_status(rfq_id):
-    """Update RFQ status"""
+    """Update RFQ status (legacy route)"""
     try:
         status = request.json.get('status')
         opportunity_id = request.json.get('opportunity_id')
         
         crm_data.update_rfq_status(rfq_id, status, opportunity_id)
         return jsonify({'success': True, 'message': 'RFQ status updated'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/api/quotes/<int:quote_id>/status', methods=['POST'])
+def update_quote_status(quote_id):
+    """Update quote status"""
+    try:
+        status = request.json.get('status')
+        opportunity_id = request.json.get('opportunity_id')
+        
+        crm_data.update_rfq_status(quote_id, status, opportunity_id)
+        return jsonify({'success': True, 'message': 'Quote status updated'})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
 
@@ -1174,12 +1334,12 @@ def create_quote():
 
 @app.route('/api/quotes/<int:quote_id>', methods=['PUT'])
 def update_quote(quote_id):
-    """Update a Quote (same as RFQ)"""
+    """Update a Quote"""
     try:
         data = request.json
         
-        # Update the Quote (using RFQ table)
-        updated = crm_data.update_rfq(quote_id, **data)
+        # Update the Quote
+        updated = crm_data.update_quote(quote_id, **data)
         if updated:
             return jsonify({'success': True, 'message': 'Quote updated successfully'})
         else:
@@ -1194,25 +1354,6 @@ def delete_quote(quote_id):
         deleted = crm_data.delete_rfq(quote_id)
         if deleted:
             return jsonify({'success': True, 'message': 'Quote deleted successfully'})
-        else:
-            return jsonify({'error': 'Quote not found'}), 404
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/update_quote_status/<int:quote_id>', methods=['POST'])
-def update_quote_status(quote_id):
-    """Update Quote status (same as RFQ)"""
-    try:
-        data = request.json
-        status = data.get('status')
-        
-        if not status:
-            return jsonify({'error': 'Status is required'}), 400
-        
-        # Update the Quote status (using RFQ table)
-        updated = crm_data.update_rfq(quote_id, status=status)
-        if updated:
-            return jsonify({'success': True, 'message': f'Quote status updated to {status}'})
         else:
             return jsonify({'error': 'Quote not found'}), 404
     except Exception as e:
@@ -1314,7 +1455,7 @@ def task_detail(task_id):
             # For processing tasks, get opportunities created around the same time
             if task.get('created_date'):
                 # Get opportunities created on the same day as the task
-                from datetime import datetime, timedelta
+        # datetime already imported at top of file
                 try:
                     task_date = datetime.strptime(task['created_date'][:10], '%Y-%m-%d')
                     # Get opportunities from the task creation date
@@ -1322,7 +1463,7 @@ def task_detail(task_id):
                     opportunities = crm_data.get_opportunities_by_date(date_str)
                 except:
                     # Fallback to today's opportunities
-                    from datetime import date
+        # datetime already imported at top of file
                     today = date.today().strftime('%Y-%m-%d')
                     opportunities = crm_data.get_opportunities_by_date(today)
             
@@ -1359,12 +1500,12 @@ def update_task_status(task_id):
         
         # If starting the task, set start date
         if status == 'In Progress':
-            from datetime import datetime
+        # datetime already imported at top of file
             updates['start_date'] = datetime.now().strftime("%Y-%m-%d")
         
         # If completing the task, set completed date
         elif status == 'Completed':
-            from datetime import datetime
+        # datetime already imported at top of file
             updates['completed_date'] = datetime.now().strftime("%Y-%m-%d")
         
         result = crm_data.update_task(task_id, **updates)
@@ -1381,7 +1522,7 @@ def update_task_status(task_id):
 def start_task(task_id):
     """Start a task - sets status to In Progress and records start date"""
     try:
-        from datetime import datetime
+        # datetime already imported at top of file
         
         updates = {
             'status': 'In Progress',
@@ -1402,7 +1543,7 @@ def start_task(task_id):
 def end_task(task_id):
     """End a task - sets status to Completed and records completion date"""
     try:
-        from datetime import datetime
+        # datetime already imported at top of file
         
         updates = {
             'status': 'Completed',
@@ -1603,6 +1744,15 @@ def create_interaction():
         return jsonify({'success': True, 'interaction_id': interaction_id, 'message': 'Interaction created'})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/api/interactions', methods=['GET'])
+def api_get_interactions():
+    """Get all interactions via API"""
+    try:
+        interactions = crm_data.get_interactions()
+        return jsonify(interactions)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/interactions', methods=['POST'])
 def api_create_interaction():
@@ -1997,6 +2147,41 @@ def projects():
                          vendor_id=vendor_id,
                          search=search)
 
+@app.route('/project/<int:project_id>')
+def project_detail(project_id):
+    """Project detail page"""
+    project = crm_data.get_project_by_id(project_id)
+    if not project:
+        flash('Project not found', 'error')
+        return redirect(url_for('projects'))
+    
+    # Get related data
+    vendor = None
+    if project.get('vendor_id'):
+        vendor = crm_data.get_account_by_id(project['vendor_id'])
+    
+    parent_project = None
+    if project.get('parent_project_id'):
+        parent_project = crm_data.get_project_by_id(project['parent_project_id'])
+    
+    # Get sub-projects
+    sub_projects = crm_data.get_projects({'parent_project_id': project_id})
+    
+    # Get related tasks (if any)
+    related_tasks = []
+    try:
+        all_tasks = crm_data.get_tasks()
+        related_tasks = [task for task in all_tasks if str(project_id) in str(task.get('subject', '')) or str(project_id) in str(task.get('description', ''))]
+    except:
+        pass
+    
+    return render_template('project_detail.html',
+                         project=project,
+                         vendor=vendor,
+                         parent_project=parent_project,
+                         sub_projects=sub_projects,
+                         related_tasks=related_tasks)
+
 @app.route('/api/projects', methods=['POST'])
 def api_create_project():
     try:
@@ -2069,7 +2254,7 @@ def api_delete_project(project_id):
 def get_pdf_count():
     """Get count of PDFs in To Process folder"""
     try:
-        to_process_dir = Path("To Process")
+        to_process_dir = config_manager.get_upload_dir()
         if not to_process_dir.exists():
             return jsonify({'count': 0, 'status': 'No directory'})
         
@@ -2114,12 +2299,12 @@ def get_pdf_count():
 def load_pdfs():
     """Process PDFs from To Process folder and load into database"""
     try:
-        # Check if the To Process directory exists first
-        to_process_dir = Path("To Process")
+        # Check if the To Process directory exists first using config manager
+        to_process_dir = config_manager.get_upload_dir()
         if not to_process_dir.exists():
             return jsonify({
                 'success': False,
-                'message': 'To Process directory does not exist'
+                'message': 'Upload directory does not exist'
             }), 404
             
         # Check if there are PDFs to process
@@ -2134,11 +2319,11 @@ def load_pdfs():
                 'errors': []
             })
             
-        # Process the PDFs
-        results = pdf_processor.process_all_pdfs()
+        # Process the PDFs using DIBBs processor
+        results = dibbs_processor.process_all_pdfs()
         
         # Generate a comprehensive report ID for viewing
-        from datetime import datetime
+        # datetime already imported at top of file
         report_id = datetime.now().strftime("%Y%m%d_%H%M%S")
         
         # Auto-create review task for successful processing
@@ -2241,6 +2426,27 @@ def get_account(account_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/create_account', methods=['POST'])
+def create_account():
+    """Create a new account"""
+    try:
+        data = request.json
+        if not data or not data.get('name'):
+            return jsonify({'error': 'Account name is required'}), 400
+        
+        # Create the account
+        account_id = crm_data.create_account(**data)
+        if account_id:
+            return jsonify({
+                'success': True, 
+                'message': 'Account created successfully',
+                'account_id': account_id
+            })
+        else:
+            return jsonify({'error': 'Failed to create account'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/accounts/<int:account_id>', methods=['PUT'])
 def update_account(account_id):
     """Update account details"""
@@ -2258,10 +2464,10 @@ def update_account(account_id):
 def delete_account(account_id):
     """Delete an account"""
     try:
-        # Check if account has any related data
+        # Check if account exists
         account = crm_data.get_account_by_id(account_id)
         if not account:
-            return jsonify({'error': 'Account not found'}), 404
+            return jsonify({'error': 'Account not found. It may have already been deleted.'}), 404
         
         # Check for related contacts
         contacts = crm_data.get_contacts_by_account(account_id)
@@ -2270,11 +2476,18 @@ def delete_account(account_id):
                 'error': f'Cannot delete account. It has {len(contacts)} associated contact(s). Please remove these contacts first.'
             }), 400
         
-        # Check for related opportunities
-        opportunities = crm_data.get_opportunities(account_id=account_id)
+        # Check for related opportunities  
+        opportunities = crm_data.get_opportunities(filters={'account_id': account_id})
         if opportunities:
             return jsonify({
                 'error': f'Cannot delete account. It has {len(opportunities)} associated opportunity(ies). Please remove these opportunities first.'
+            }), 400
+        
+        # Check for related interactions
+        interactions = crm_data.execute_query("SELECT COUNT(*) as count FROM interactions WHERE account_id = ?", [account_id])
+        if interactions and interactions[0]['count'] > 0:
+            return jsonify({
+                'error': f'Cannot delete account. It has {interactions[0]["count"]} associated interaction(s). Please remove these interactions first.'
             }), 400
         
         # Delete the account
@@ -2282,7 +2495,40 @@ def delete_account(account_id):
         if deleted:
             return jsonify({'success': True, 'message': 'Account deleted successfully'})
         else:
-            return jsonify({'error': 'Failed to delete account'}), 500
+            return jsonify({'error': 'Failed to delete account. No rows were affected.'}), 500
+    except Exception as e:
+        app.logger.error(f"Error deleting account {account_id}: {str(e)}")
+        return jsonify({'error': f'Failed to delete account: {str(e)}'}), 500
+
+@app.route('/api/contacts/<int:contact_id>', methods=['DELETE'])
+def delete_contact(contact_id):
+    """Delete a contact"""
+    try:
+        # Check if contact exists
+        contact = crm_data.get_contact_by_id(contact_id)
+        if not contact:
+            return jsonify({'error': 'Contact not found'}), 404
+        
+        # Check for related data (interactions, opportunities, etc.)
+        interactions = crm_data.execute_query("SELECT COUNT(*) as count FROM interactions WHERE contact_id = ?", [contact_id])
+        if interactions and interactions[0]['count'] > 0:
+            return jsonify({
+                'error': f'Cannot delete contact. It has {interactions[0]["count"]} associated interaction(s). Please remove these interactions first.'
+            }), 400
+        
+        # Check for related opportunities
+        opportunities = crm_data.execute_query("SELECT COUNT(*) as count FROM opportunities WHERE contact_id = ?", [contact_id])
+        if opportunities and opportunities[0]['count'] > 0:
+            return jsonify({
+                'error': f'Cannot delete contact. It has {opportunities[0]["count"]} associated opportunity(ies). Please remove these opportunities first.'
+            }), 400
+        
+        # Delete the contact
+        deleted = crm_data.delete_contact(contact_id)
+        if deleted:
+            return jsonify({'success': True, 'message': 'Contact deleted successfully'})
+        else:
+            return jsonify({'error': 'Failed to delete contact'}), 500
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -2380,8 +2626,8 @@ def processing_reports():
         'skipped': 0
     }
     
-    # Count files in reviewed folders
-    reviewed_dir = Path("Reviewed")
+    # Count files in reviewed folders using config manager
+    reviewed_dir = config_manager.get_processed_dir()
     if reviewed_dir.exists():
         stats['processed'] = len(list(reviewed_dir.glob("*.pdf"))) + len(list(reviewed_dir.glob("*.PDF")))
         
@@ -2389,8 +2635,8 @@ def processing_reports():
         if skipped_dir.exists():
             stats['skipped'] = len(list(skipped_dir.glob("*.pdf"))) + len(list(skipped_dir.glob("*.PDF")))
     
-    # Get all report files
-    output_dir = Path("Output")
+    # Get all report files using config manager
+    output_dir = config_manager.get_output_dir()
     report_files = []
     
     if output_dir.exists():
@@ -2420,7 +2666,7 @@ def view_processing_report(filename):
     import json
     from pathlib import Path
     
-    report_file = Path("Output") / filename
+    report_file = config_manager.get_output_dir() / filename
     
     if not report_file.exists():
         return "Report not found", 404
@@ -2439,7 +2685,7 @@ def get_latest_processing_report():
     import json
     from pathlib import Path
     
-    output_dir = Path("Output")
+    output_dir = config_manager.get_output_dir()
     if not output_dir.exists():
         return jsonify({'error': 'No reports found'}), 404
     
@@ -2631,597 +2877,51 @@ def bulk_update_vendor_email_status():
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
 
-@app.route('/api/email-responses/process', methods=['POST'])
-def process_email_response():
-    """Process vendor email response with all 4 required features"""
-    try:
-        from enhanced_email_response_processor import EnhancedEmailResponseProcessor
-        processor = EnhancedEmailResponseProcessor()
-        
-        email_data = request.get_json()
-        
-        if not email_data:
-            return jsonify({'success': False, 'message': 'No email data provided'})
-        
-        # Process email with all 4 features:
-        # 1. Create new quote from email response
-        # 2. Update interaction from vendor response  
-        # 3. Parse email response auto-load quote
-        # 4. Update opportunity to "quote received"
-        result = processor.process_complete_email_response(email_data)
-        
-        return jsonify(result)
-        
-    except Exception as e:
-        app.logger.error(f"Error processing email response: {e}")
-        return jsonify({'success': False, 'message': str(e)})
-
-@app.route('/api/email-responses/test', methods=['POST'])
-def test_email_response_processing():
-    """Test endpoint for email response processing features"""
-    try:
-        from enhanced_email_response_processor import test_email_response_features
-        
-        result = test_email_response_features()
-        return jsonify(result)
-        
-    except Exception as e:
-        app.logger.error(f"Error testing email response processing: {e}")
-        return jsonify({'success': False, 'message': str(e)})
-
-@app.route('/api/quotes/create-from-email', methods=['POST'])
-def create_quote_from_email():
-    """Feature 1: Create new quote from email response"""
-    try:
-        from enhanced_email_response_processor import EnhancedEmailResponseProcessor
-        processor = EnhancedEmailResponseProcessor()
-        
-        data = request.get_json()
-        email_data = data.get('email_data', {})
-        opportunity_id = data.get('opportunity_id')
-        vendor_account_id = data.get('vendor_account_id')
-        
-        if not all([email_data, opportunity_id, vendor_account_id]):
-            return jsonify({'success': False, 'message': 'Missing required data'})
-        
-        quote_id = processor.create_new_quote_from_email_response(email_data, opportunity_id, vendor_account_id)
-        
-        return jsonify({
-            'success': bool(quote_id),
-            'quote_id': quote_id,
-            'message': 'Quote created successfully' if quote_id else 'Failed to create quote'
-        })
-        
-    except Exception as e:
-        app.logger.error(f"Error creating quote from email: {e}")
-        return jsonify({'success': False, 'message': str(e)})
-
-@app.route('/api/interactions/update-from-email', methods=['POST'])
-def update_interaction_from_email():
-    """Feature 2: Update interaction from vendor response"""
-    try:
-        from enhanced_email_response_processor import EnhancedEmailResponseProcessor
-        processor = EnhancedEmailResponseProcessor()
-        
-        data = request.get_json()
-        email_data = data.get('email_data', {})
-        opportunity_id = data.get('opportunity_id')
-        vendor_account_id = data.get('vendor_account_id')
-        
-        if not all([email_data, opportunity_id, vendor_account_id]):
-            return jsonify({'success': False, 'message': 'Missing required data'})
-        
-        interaction_id = processor.update_interaction_from_vendor_response(email_data, opportunity_id, vendor_account_id)
-        
-        return jsonify({
-            'success': bool(interaction_id),
-            'interaction_id': interaction_id,
-            'message': 'Interaction updated successfully' if interaction_id else 'Failed to update interaction'
-        })
-        
-    except Exception as e:
-        app.logger.error(f"Error updating interaction from email: {e}")
-        return jsonify({'success': False, 'message': str(e)})
-
-@app.route('/api/quotes/parse-from-email', methods=['POST'])
-def parse_quote_from_email():
-    """Feature 3: Parse email response auto-load quote"""
-    try:
-        from enhanced_email_response_processor import EnhancedEmailResponseProcessor
-        processor = EnhancedEmailResponseProcessor()
-        
-        email_data = request.get_json()
-        
-        if not email_data:
-            return jsonify({'success': False, 'message': 'No email data provided'})
-        
-        quote_data = processor.parse_email_response_auto_load_quote(email_data)
-        
-        return jsonify({
-            'success': True,
-            'quote_data': quote_data,
-            'message': 'Quote data parsed successfully'
-        })
-        
-    except Exception as e:
-        app.logger.error(f"Error parsing quote from email: {e}")
-        return jsonify({'success': False, 'message': str(e)})
-
-@app.route('/api/opportunities/<int:opportunity_id>/mark-quote-received', methods=['POST'])
-def mark_opportunity_quote_received(opportunity_id):
-    """Feature 4: Update opportunity status to "quote received" """
-    try:
-        from enhanced_email_response_processor import EnhancedEmailResponseProcessor
-        processor = EnhancedEmailResponseProcessor()
-        
-        data = request.get_json() or {}
-        quote_data = data.get('quote_data', {})
-        
-        success = processor.update_opportunity_to_quote_received(opportunity_id, quote_data)
-        
-        return jsonify({
-            'success': success,
-            'message': 'Opportunity updated to Quote Received' if success else 'Failed to update opportunity'
-        })
-        
-    except Exception as e:
-        app.logger.error(f"Error marking opportunity quote received: {e}")
-        return jsonify({'success': False, 'message': str(e)})
-
-# ==================== EMAIL AUTOMATION SERVICE ENDPOINTS ====================
-
-@app.route('/api/email-automation/status', methods=['GET'])
-def get_email_automation_status():
-    """Get email automation service status"""
-    try:
-        from email_automation_service import email_service
-        
-        # Check if service is running
-        service_running = email_service.running
-        
-        # Get basic statistics
-        conn = sqlite3.connect('crm.db')
-        cursor = conn.cursor()
-        
-        # Count email accounts
-        cursor.execute("SELECT COUNT(*) FROM email_accounts WHERE enabled = 1")
-        result = cursor.fetchone()
-        active_accounts = result[0] if result else 0
-        
-        # Count pending emails
-        cursor.execute("SELECT COUNT(*) FROM email_processing_queue WHERE status = 'pending'")
-        result = cursor.fetchone()
-        pending_emails = result[0] if result else 0
-        
-        # Count today's processed emails
-        today = datetime.now().date().isoformat()
-        cursor.execute("SELECT COUNT(*) FROM email_processing_queue WHERE DATE(last_attempt) = ? AND status = 'completed'", (today,))
-        result = cursor.fetchone()
-        emails_processed_today = result[0] if result else 0
-        
-        conn.close()
-        
-        return jsonify({
-            'success': True,
-            'status': {
-                'service_running': service_running,
-                'active_accounts': active_accounts,
-                'pending_emails': pending_emails,
-                'emails_processed_today': emails_processed_today,
-                'last_updated': datetime.now().isoformat()
-            }
-        })
-        
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)})
-
-@app.route('/api/email-automation/start', methods=['POST'])
-def start_email_automation():
-    """Start email automation service"""
-    try:
-        from email_automation_service import email_service
-        
-        if email_service.running:
-            return jsonify({'success': False, 'message': 'Email automation is already running'})
-        
-        email_service.start_monitoring()
-        
-        return jsonify({
-            'success': True,
-            'message': 'Email automation service started successfully'
-        })
-        
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)})
-
-@app.route('/api/email-automation/stop', methods=['POST'])
-def stop_email_automation():
-    """Stop email automation service"""
-    try:
-        from email_automation_service import email_service
-        
-        if not email_service.running:
-            return jsonify({'success': False, 'message': 'Email automation is not running'})
-        
-        email_service.stop_monitoring()
-        
-        return jsonify({
-            'success': True,
-            'message': 'Email automation service stopped successfully'
-        })
-        
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)})
-
-@app.route('/api/email-automation/accounts', methods=['GET', 'POST'])
-def manage_email_accounts():
-    """Manage email accounts for monitoring"""
-    if request.method == 'GET':
-        try:
-            conn = sqlite3.connect('crm.db')
-            cursor = conn.cursor()
-            
-            cursor.execute("""
-                SELECT id, account_name, email_address, account_type, server_host, 
-                       server_port, use_ssl, enabled, last_check, check_frequency_minutes
-                FROM email_accounts
-                ORDER BY account_name
-            """)
-            
-            accounts = []
-            for row in cursor.fetchall():
-                accounts.append({
-                    'id': row[0],
-                    'account_name': row[1],
-                    'email_address': row[2],
-                    'account_type': row[3],
-                    'server_host': row[4],
-                    'server_port': row[5],
-                    'use_ssl': bool(row[6]),
-                    'enabled': bool(row[7]),
-                    'last_check': row[8],
-                    'check_frequency_minutes': row[9]
-                })
-            
-            conn.close()
-            
-            return jsonify({'success': True, 'accounts': accounts})
-            
-        except Exception as e:
-            return jsonify({'success': False, 'message': str(e)})
-    
-    elif request.method == 'POST':
-        try:
-            from email_automation_service import email_service
-            
-            data = request.get_json()
-            
-            success = email_service.add_email_account(
-                data['account_name'],
-                data['email_address'],
-                data['account_type'],
-                data['server_host'],
-                data['server_port'],
-                data['username'],
-                data['password'],
-                data.get('use_ssl', True),
-                data.get('check_frequency_minutes', 5)
-            )
-            
-            if success:
-                return jsonify({'success': True, 'message': 'Email account added successfully'})
-            else:
-                return jsonify({'success': False, 'message': 'Failed to add email account'})
-                
-        except Exception as e:
-            return jsonify({'success': False, 'message': str(e)})
-
-@app.route('/api/email-automation/accounts/<int:account_id>', methods=['PUT', 'DELETE'])
-def update_email_account(account_id):
-    """Update or delete email account"""
-    if request.method == 'PUT':
-        try:
-            data = request.get_json()
-            
-            conn = sqlite3.connect('crm.db')
-            cursor = conn.cursor()
-            
-            cursor.execute("""
-                UPDATE email_accounts 
-                SET enabled = ?, check_frequency_minutes = ?
-                WHERE id = ?
-            """, (data.get('enabled', True), data.get('check_frequency_minutes', 5), account_id))
-            
-            conn.commit()
-            conn.close()
-            
-            return jsonify({'success': True, 'message': 'Email account updated successfully'})
-            
-        except Exception as e:
-            return jsonify({'success': False, 'message': str(e)})
-    
-    elif request.method == 'DELETE':
-        try:
-            conn = sqlite3.connect('crm.db')
-            cursor = conn.cursor()
-            
-            cursor.execute("DELETE FROM email_accounts WHERE id = ?", (account_id,))
-            
-            conn.commit()
-            conn.close()
-            
-            return jsonify({'success': True, 'message': 'Email account deleted successfully'})
-            
-        except Exception as e:
-            return jsonify({'success': False, 'message': str(e)})
-
-@app.route('/api/email-automation/check-now', methods=['POST'])
-def check_emails_now():
-    """Manually trigger email check for all accounts"""
-    try:
-        from email_automation_service import email_service
-        
-        # Run check in background thread
-        import threading
-        
-        def run_check():
-            email_service.check_all_accounts()
-        
-        thread = threading.Thread(target=run_check, daemon=True)
-        thread.start()
-        
-        return jsonify({
-            'success': True,
-            'message': 'Email check initiated for all accounts'
-        })
-        
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)})
-
-@app.route('/api/email-automation/send-email', methods=['POST'])
-def send_automated_email():
-    """Send email through automation service with tracking"""
-    try:
-        from email_automation_service import email_service
-        
-        data = request.get_json()
-        
-        success = email_service.send_email_smtp(
-            data['to_email'],
-            data['subject'],
-            data['content'],
-            data.get('opportunity_id'),
-            data.get('account_id'),
-            data.get('contact_id'),
-            data.get('email_type', 'general')
-        )
-        
-        if success:
-            return jsonify({'success': True, 'message': 'Email sent successfully'})
-        else:
-            return jsonify({'success': False, 'message': 'Failed to send email'})
-            
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)})
-
-@app.route('/api/email-automation/processing-queue', methods=['GET'])
-def get_email_processing_queue():
-    """Get email processing queue status"""
-    try:
-        conn = sqlite3.connect('crm.db')
-        cursor = conn.cursor()
-        
-        cursor.execute("""
-            SELECT id, sender_email, subject, received_date, priority, status, 
-                   processing_attempts, error_message, related_opportunity_id
-            FROM email_processing_queue
-            ORDER BY priority ASC, received_date DESC
-            LIMIT 100
-        """)
-        
-        queue_items = []
-        for row in cursor.fetchall():
-            queue_items.append({
-                'id': row[0],
-                'sender_email': row[1],
-                'subject': row[2],
-                'received_date': row[3],
-                'priority': row[4],
-                'status': row[5],
-                'processing_attempts': row[6],
-                'error_message': row[7],
-                'related_opportunity_id': row[8]
-            })
-        
-        conn.close()
-        
-        return jsonify({'success': True, 'queue': queue_items})
-        
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)})
-
-@app.route('/api/email-automation/statistics', methods=['GET'])
-def get_email_automation_statistics():
-    """Get comprehensive email automation statistics"""
-    try:
-        from email_automation_service import email_service
-        
-        # Get daily statistics
-        stats = email_service.get_daily_email_statistics()
-        
-        # Get additional statistics
-        conn = sqlite3.connect('crm.db')
-        cursor = conn.cursor()
-        
-        # Weekly statistics
-        week_ago = (datetime.now() - timedelta(days=7)).date().isoformat()
-        cursor.execute("""
-            SELECT COUNT(*) FROM email_processing_queue 
-            WHERE DATE(received_date) >= ?
-        """, (week_ago,))
-        emails_this_week = cursor.fetchone()[0]
-        
-        # Monthly statistics
-        month_ago = (datetime.now() - timedelta(days=30)).date().isoformat()
-        cursor.execute("""
-            SELECT COUNT(*) FROM email_processing_queue 
-            WHERE DATE(received_date) >= ?
-        """, (month_ago,))
-        emails_this_month = cursor.fetchone()[0]
-        
-        # Account status
-        cursor.execute("""
-            SELECT account_name, last_check, 
-                   (SELECT COUNT(*) FROM email_processing_queue epq 
-                    WHERE DATE(epq.received_date) = DATE('now') 
-                    AND epq.account_id = ea.id) as emails_today
-            FROM email_accounts ea
-            WHERE enabled = 1
-        """)
-        account_status = cursor.fetchall()
-        
-        conn.close()
-        
-        return jsonify({
-            'success': True,
-            'statistics': {
-                'daily': stats,
-                'weekly': {
-                    'emails_received': emails_this_week
-                },
-                'monthly': {
-                    'emails_received': emails_this_month
-                },
-                'accounts': [
-                    {
-                        'name': row[0],
-                        'last_check': row[1],
-                        'emails_today': row[2]
-                    } for row in account_status
-                ]
-            }
-        })
-        
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)})
-
-@app.route('/api/automation/process-tasks', methods=['POST'])
-def process_automated_tasks():
-    """Process pending automated tasks"""
-    try:
-        from enhanced_email_automation import EnhancedEmailAutomation
-        enhanced_automation = EnhancedEmailAutomation()
-        
-        processed_count = enhanced_automation.process_pending_automated_tasks()
-        
-        return jsonify({
-            'success': True, 
-            'message': f'Processed {processed_count} automated tasks',
-            'processed_count': processed_count
-        })
-        
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)})
-
-# Workflow Automation Endpoints
-@app.route('/api/workflow/trigger/<event_type>', methods=['POST'])
-def trigger_workflow_event(event_type):
-    """Trigger workflow automation event"""
-    try:
-        from workflow_automation_manager import WorkflowAutomationManager
-        workflow_manager = WorkflowAutomationManager()
-        
-        event_data = request.get_json() or {}
-        event_data['event_type'] = event_type
-        event_data['timestamp'] = datetime.now().isoformat()
-        
-        results = workflow_manager.trigger_workflow_event(event_type, event_data)
-        
-        return jsonify({
-            'success': True,
-            'message': f'Triggered {len(results)} workflow rules',
-            'results': results
-        })
-        
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)})
-
-@app.route('/api/workflow/statistics', methods=['GET'])
-def get_workflow_statistics():
-    """Get workflow automation statistics"""
-    try:
-        from workflow_automation_manager import WorkflowAutomationManager
-        workflow_manager = WorkflowAutomationManager()
-        
-        stats = workflow_manager.get_workflow_statistics()
-        
-        return jsonify({'success': True, 'statistics': stats})
-        
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)})
-
-@app.route('/api/opportunities/<int:opportunity_id>/mark-won', methods=['POST'])
-def mark_opportunity_won_with_automation(opportunity_id):
-    """Mark opportunity as won and trigger automation"""
-    try:
-        # Mark opportunity as won
-        success = crm_data.update_opportunity(opportunity_id, 
-            state='Won', 
-            stage='Project Started',
-            modified_date=datetime.now().isoformat()
-        )
-        
-        if success:
-            # Trigger workflow automation
-            from workflow_automation_manager import trigger_opportunity_won_workflow
-            automation_results = trigger_opportunity_won_workflow(opportunity_id)
-            
-            return jsonify({
-                'success': True,
-                'message': 'Opportunity marked as won and automation triggered',
-                'automation_results': automation_results
-            })
-        else:
-            return jsonify({'success': False, 'message': 'Failed to update opportunity'})
-            
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)})
-
 # Calendar API endpoints
-@app.route('/api/calendar-events', methods=['POST'])
+@app.route('/api/calendar-events', methods=['GET', 'POST'])
 def api_calendar_events():
     """Get calendar events for date range"""
     try:
-        from dashboard_calendar import dashboard_calendar
+        from src.core.dashboard_calendar import dashboard_calendar
         
-        data = request.get_json()
-        start_date = data.get('start', '')
-        end_date = data.get('end', '')
+        # Handle both GET and POST requests
+        if request.method == 'POST':
+            data = request.get_json() or {}
+            start_date = data.get('start', '')
+            end_date = data.get('end', '')
+        else:  # GET request
+            start_date = request.args.get('start', '')
+            end_date = request.args.get('end', '')
         
-        # Convert to date objects
-        start = datetime.fromisoformat(start_date.replace('Z', '')).date() if start_date else None
-        end = datetime.fromisoformat(end_date.replace('Z', '')).date() if end_date else None
+        # Convert to datetime objects if provided
+        start = None
+        end = None
+        
+        if start_date:
+            try:
+                start = datetime.fromisoformat(start_date.replace('Z', ''))
+            except:
+                start = None
+                
+        if end_date:
+            try:
+                end = datetime.fromisoformat(end_date.replace('Z', ''))
+            except:
+                end = None
         
         events = dashboard_calendar.get_calendar_events(start, end)
         
-        return jsonify({
-            'success': True,
-            'events': events
-        })
+        return jsonify(events)  # Return events directly for FullCalendar
         
     except Exception as e:
         logging.error(f"Error loading calendar events: {e}")
-        return jsonify({
-            'success': False,
-            'message': str(e),
-            'events': []
-        }), 500
+        return jsonify([]), 500  # Return empty array on error
 
 @app.route('/api/upcoming-events', methods=['GET'])
 def api_upcoming_events():
     """Get upcoming events for sidebar"""
     try:
-        from dashboard_calendar import dashboard_calendar
+        from src.core.dashboard_calendar import dashboard_calendar
         
         days = request.args.get('days', 7, type=int)
         events = dashboard_calendar.get_upcoming_events(days)
@@ -3243,7 +2943,7 @@ def api_upcoming_events():
 def api_calendar_summary():
     """Get calendar summary statistics"""
     try:
-        from dashboard_calendar import dashboard_calendar
+        from src.core.dashboard_calendar import dashboard_calendar
         
         summary = dashboard_calendar.get_calendar_summary()
         
@@ -3264,8 +2964,8 @@ def api_calendar_summary():
 def api_complete_task(task_id):
     """Mark a task as complete"""
     try:
-        # Update task status in database
-        query = "UPDATE tasks SET status = 'Completed', date_modified = CURRENT_TIMESTAMP WHERE id = ?"
+        # Update task status in database (removing date_modified reference since column doesn't exist)
+        query = "UPDATE tasks SET status = 'Completed' WHERE id = ?"
         crm_data.execute_query(query, (task_id,))
         
         return jsonify({
@@ -3287,10 +2987,10 @@ def favicon():
     return Response(status=204)  # No content response for favicon
 
 if __name__ == '__main__':
-    # Create templates and static directories
-    Path('templates').mkdir(exist_ok=True)
-    Path('static').mkdir(exist_ok=True)
-    Path('static/css').mkdir(exist_ok=True)
-    Path('static/js').mkdir(exist_ok=True)
+    # Create web directories
+    Path('web/templates').mkdir(parents=True, exist_ok=True)
+    Path('web/static').mkdir(parents=True, exist_ok=True)
+    Path('web/static/css').mkdir(parents=True, exist_ok=True)
+    Path('web/static/js').mkdir(parents=True, exist_ok=True)
     
     app.run(debug=True, host='0.0.0.0', port=5000)

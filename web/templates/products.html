@@ -1,0 +1,767 @@
+{% extends "base.html" %}
+
+{% block title %}Products - CDE Prosperity{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Modern Header -->
+    <div class="d-flex justify-content-between align-items-center mb-5">
+        <div>
+            <h1 class="display-6 fw-bold mb-2">
+                <i class="fas fa-box me-3" style="background: var(--gradient-primary); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;"></i>
+                Products
+            </h1>
+            <p class="text-muted mb-0 fs-5">Manage product catalog and inventory</p>
+        </div>
+        <div>
+            <button type="button" class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#newProductModal">
+                <i class="fas fa-plus me-2"></i>
+                New Product
+            </button>
+        </div>
+    </div>
+
+    <!-- Modern Search and Filters -->
+    <div class="card mb-5">
+        <div class="card-header">
+            <h5 class="mb-0 d-flex align-items-center">
+                <i class="fas fa-search me-2"></i>
+                Search & Filter Products
+            </h5>
+        </div>
+        <div class="card-body">
+            <form method="GET" class="row g-4">
+                <div class="col-md-4">
+                    <label for="search" class="form-label fw-medium">Search Products</label>
+                    <input type="text" class="form-control" id="search" name="search" 
+                           value="{{ search }}" placeholder="Search by NSN, FSC, or category...">
+                </div>
+                <div class="col-md-3">
+                    <label for="fsc" class="form-label fw-medium">FSC Filter</label>
+                    <input type="text" class="form-control" id="fsc" name="fsc" value="{{ fsc }}" placeholder="Filter by FSC...">
+                </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary me-2">
+                    <i class="fas fa-search me-1"></i>
+                    Search
+                </button>
+                <a href="{{ url_for('products') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times me-1"></i>
+                    Clear
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Products Table -->
+<div class="card">
+    <div class="card-body">
+        {% if products %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>NSN</th>
+                        <th>FSC</th>
+                        <th>Category</th>
+                        <th>Manufacturer</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in products %}
+                    <tr>
+                        <td>
+                            <strong>{{ product.nsn or 'N/A' }}</strong>
+                            {% if product.description %}
+                            <br><small class="text-muted">{{ (product.description or 'No description')[:80] }}{% if (product.description or '')|length > 80 %}...{% endif %}</small>
+                            {% endif %}
+                        </td>
+                        <td>{{ product.fsc or 'N/A' }}</td>
+                        <td>{{ product.category or product.name or 'N/A' }}</td>
+                        <td>
+                            {% if product.manufacturer %}
+                                {% set mfr_parts = product.manufacturer.split(' P/N ') %}
+                                {{ mfr_parts[0] }}
+                                {% if mfr_parts|length > 1 %}
+                                <br><small class="text-muted">P/N: {{ mfr_parts[1] }}</small>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-muted">N/A</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <button class="btn btn-outline-primary" onclick="viewProduct('{{ product.nsn }}')" title="View Product">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="btn btn-outline-secondary" onclick="editProduct('{{ product.nsn }}')" title="Edit Product">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-outline-danger" onclick="deleteProduct('{{ product.nsn }}', '{{ product.name or product.nsn }}')" title="Delete Product">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-box fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">No Products Found</h5>
+            <p class="text-muted">No products match your current search criteria. Try searching by NSN, DLA name, or adjust your filters.</p>
+        </div>
+        {% endif %}
+        
+        <!-- Pagination -->
+        {% include 'pagination.html' %}
+    </div>
+</div>
+
+<!-- New Product Modal -->
+<div class="modal fade" id="newProductModal" tabindex="-1" aria-labelledby="newProductModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="newProductModalLabel">New Product</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="newProductForm">
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="name" class="form-label">Product Name *</label>
+                            <input type="text" class="form-control" id="name" name="name" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="product_code" class="form-label">Product Code</label>
+                            <input type="text" class="form-control" id="product_code" name="product_code">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="nsn" class="form-label">NSN (National Stock Number) <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="nsn" name="nsn" required
+                                   placeholder="e.g., 1234-56-789-0123" pattern="[0-9]{4}-[0-9]{2}-[0-9]{3}-[0-9]{4}">
+                            <div class="invalid-feedback"></div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="fsc" class="form-label">FSC (Federal Supply Class)</label>
+                            <input type="text" class="form-control" id="fsc" name="fsc">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="manufacturer" class="form-label">Manufacturer</label>
+                            <input type="text" class="form-control" id="manufacturer" name="manufacturer">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="part_number" class="form-label">Part Number</label>
+                            <input type="text" class="form-control" id="part_number" name="part_number">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="category" class="form-label">Category</label>
+                            <input type="text" class="form-control" id="category" name="category">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="family" class="form-label">Family</label>
+                            <input type="text" class="form-control" id="family" name="family">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="unit_price" class="form-label">Unit Price</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" id="unit_price" name="unit_price" 
+                                       step="0.01" min="0">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="cost_price" class="form-label">Cost Price</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" id="cost_price" name="cost_price" 
+                                       step="0.01" min="0">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="list_price" class="form-label">List Price</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" id="list_price" name="list_price" 
+                                       step="0.01" min="0">
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                        </div>
+                    </div>
+                    <div id="duplicateAlert" class="alert alert-warning mt-3" style="display: none;">
+                        <strong>Warning:</strong> <span id="duplicateMessage"></span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Product</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- View Product Modal -->
+<div class="modal fade" id="viewProductModal" tabindex="-1" aria-labelledby="viewProductModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="viewProductModalLabel">Product Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label"><strong>NSN</strong></label>
+                        <p id="viewNSN" class="form-control-plaintext">-</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label"><strong>FSC</strong></label>
+                        <p id="viewFSC" class="form-control-plaintext">-</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label"><strong>Category</strong></label>
+                        <p id="viewCategory" class="form-control-plaintext">-</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label"><strong>Created Date</strong></label>
+                        <p id="viewCreatedDate" class="form-control-plaintext">-</p>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label"><strong>Manufacturer</strong></label>
+                        <p id="viewManufacturer" class="form-control-plaintext">-</p>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label"><strong>Description</strong></label>
+                        <p id="viewDescription" class="form-control-plaintext">-</p>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label"><strong>Unit Price</strong></label>
+                        <p id="viewUnitPrice" class="form-control-plaintext">-</p>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label"><strong>Cost Price</strong></label>
+                        <p id="viewCostPrice" class="form-control-plaintext">-</p>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label"><strong>List Price</strong></label>
+                        <p id="viewListPrice" class="form-control-plaintext">-</p>
+                    </div>
+                </div>
+                
+                <!-- Relationships Section -->
+                <hr class="my-4">
+                <h6>Related Information</h6>
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label"><strong>Related Quotes</strong></label>
+                        <div id="viewRFQs" class="border rounded p-2 bg-light">
+                            <em>Loading...</em>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label"><strong>Related Opportunities</strong></label>
+                        <div id="viewOpportunities" class="border rounded p-2 bg-light">
+                            <em>Loading...</em>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label"><strong>Vendors</strong></label>
+                        <div id="viewVendors" class="border rounded p-2 bg-light">
+                            <em>Loading...</em>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="openEditModal()">Edit Product</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Product Modal -->
+<div class="modal fade" id="editProductModal" tabindex="-1" aria-labelledby="editProductModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editProductModalLabel">Edit Product</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="editProductForm">
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="editNSN" class="form-label">NSN <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="editNSN" name="nsn" required readonly>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="editFSC" class="form-label">FSC</label>
+                            <input type="text" class="form-control" id="editFSC" name="fsc">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="editName" class="form-label">Name/Category</label>
+                            <input type="text" class="form-control" id="editName" name="name">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="editCategory" class="form-label">Category</label>
+                            <input type="text" class="form-control" id="editCategory" name="category">
+                        </div>
+                        <div class="col-12">
+                            <label for="editDescription" class="form-label">Description</label>
+                            <textarea class="form-control" id="editDescription" name="description" rows="3"></textarea>
+                        </div>
+                        <div class="col-12">
+                            <label for="editManufacturer" class="form-label">Manufacturer</label>
+                            <input type="text" class="form-control" id="editManufacturer" name="manufacturer">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="editUnitPrice" class="form-label">Unit Price</label>
+                            <input type="number" step="0.01" class="form-control" id="editUnitPrice" name="unit_price">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="editCostPrice" class="form-label">Cost Price</label>
+                            <input type="number" step="0.01" class="form-control" id="editCostPrice" name="cost_price">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="editListPrice" class="form-label">List Price</label>
+                            <input type="number" step="0.01" class="form-control" id="editListPrice" name="list_price">
+                        </div>
+                    </div>
+                    
+                    <!-- Relationships Section -->
+                    <hr class="my-4">
+                    <h6>Relationships</h6>
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label"><strong>Related Quotes</strong></label>
+                            <div id="editRFQs" class="border rounded p-2 bg-light mb-2">
+                                <em>Loading...</em>
+                            </div>
+                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="addQuoteRelationship()">
+                                <i class="fas fa-plus me-1"></i>Link Quote
+                            </button>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label"><strong>Related Opportunities</strong></label>
+                            <div id="editOpportunities" class="border rounded p-2 bg-light mb-2">
+                                <em>Loading...</em>
+                            </div>
+                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="addOpportunityRelationship()">
+                                <i class="fas fa-plus me-1"></i>Link Opportunity
+                            </button>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label"><strong>Vendors</strong></label>
+                            <div id="editVendors" class="border rounded p-2 bg-light mb-2">
+                                <em>Loading...</em>
+                            </div>
+                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="addVendorRelationship()">
+                                <i class="fas fa-plus me-1"></i>Add Vendor
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('newProductForm');
+    const nsnInput = document.getElementById('nsn');
+    const duplicateAlert = document.getElementById('duplicateAlert');
+    const duplicateMessage = document.getElementById('duplicateMessage');
+    
+    // Real-time NSN duplicate checking
+    let checkTimeout;
+    
+    function checkForDuplicates() {
+        const nsn = nsnInput.value.trim();
+        
+        if (!nsn) {
+            duplicateAlert.style.display = 'none';
+            return;
+        }
+        
+        clearTimeout(checkTimeout);
+        checkTimeout = setTimeout(() => {
+            fetch('/api/check_product_duplicate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    nsn: nsn
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.has_duplicates) {
+                    const messages = data.duplicates.map(dup => dup.message).join('; ');
+                    duplicateMessage.textContent = messages;
+                    duplicateAlert.style.display = 'block';
+                    nsnInput.classList.add('is-invalid');
+                } else {
+                    duplicateAlert.style.display = 'none';
+                    nsnInput.classList.remove('is-invalid');
+                }
+            })
+            .catch(error => {
+                console.error('Error checking duplicates:', error);
+            });
+        }, 500); // Wait 500ms after user stops typing
+    }
+    
+    nsnInput.addEventListener('input', checkForDuplicates);
+    
+    // Form submission
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(form);
+        const productData = Object.fromEntries(formData.entries());
+        
+        // Remove empty values
+        Object.keys(productData).forEach(key => {
+            if (!productData[key]) {
+                delete productData[key];
+            }
+        });
+        
+        // Convert numeric fields
+        if (productData.unit_price) productData.unit_price = parseFloat(productData.unit_price);
+        if (productData.cost_price) productData.cost_price = parseFloat(productData.cost_price);
+        if (productData.list_price) productData.list_price = parseFloat(productData.list_price);
+        
+        fetch('/api/create_product', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(productData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Success - close modal and reload page
+                bootstrap.Modal.getInstance(document.getElementById('newProductModal')).hide();
+                location.reload();
+            } else {
+                // Show error
+                alert('Error creating product: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error creating product. Please try again.');
+        });
+    });
+    
+    // Reset form when modal is closed
+    document.getElementById('newProductModal').addEventListener('hidden.bs.modal', function() {
+        form.reset();
+        duplicateAlert.style.display = 'none';
+        // Clear validation states
+        form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+    });
+    
+    // View and Edit Product Functions
+    window.viewProduct = function(nsn) {
+        // Fetch product details and show in modal
+        fetch(`/api/products/${nsn}`)
+            .then(response => response.json())
+            .then(product => {
+                if (product.error) {
+                    alert('Error: ' + product.error);
+                    return;
+                }
+                
+                // Populate view modal fields
+                document.getElementById('viewNSN').textContent = product.nsn || 'N/A';
+                document.getElementById('viewFSC').textContent = product.fsc || 'N/A';
+                document.getElementById('viewCategory').textContent = product.category || product.name || 'N/A';
+                document.getElementById('viewCreatedDate').textContent = product.created_date ? product.created_date.substring(0, 10) : 'N/A';
+                document.getElementById('viewManufacturer').textContent = product.manufacturer || 'N/A';
+                document.getElementById('viewDescription').textContent = product.description || 'N/A';
+                document.getElementById('viewUnitPrice').textContent = product.unit_price ? '$' + product.unit_price : 'N/A';
+                document.getElementById('viewCostPrice').textContent = product.cost_price ? '$' + product.cost_price : 'N/A';
+                document.getElementById('viewListPrice').textContent = product.list_price ? '$' + product.list_price : 'N/A';
+                
+                // Store NSN for edit functionality
+                window.currentProductNSN = nsn;
+                
+                // Load related information
+                loadProductRelationships(nsn, 'view');
+                
+                // Show the modal
+                new bootstrap.Modal(document.getElementById('viewProductModal')).show();
+            })
+            .catch(error => {
+                console.error('Error fetching product:', error);
+                alert('Error loading product details. Please try again.');
+            });
+    };
+    
+    window.editProduct = function(nsn) {
+        // Fetch product details and show in edit modal
+        fetch(`/api/products/${nsn}`)
+            .then(response => response.json())
+            .then(product => {
+                if (product.error) {
+                    alert('Error: ' + product.error);
+                    return;
+                }
+                
+                // Populate edit modal fields
+                document.getElementById('editNSN').value = product.nsn || '';
+                document.getElementById('editFSC').value = product.fsc || '';
+                document.getElementById('editName').value = product.name || '';
+                document.getElementById('editCategory').value = product.category || '';
+                document.getElementById('editDescription').value = product.description || '';
+                document.getElementById('editManufacturer').value = product.manufacturer || '';
+                document.getElementById('editUnitPrice').value = product.unit_price || '';
+                document.getElementById('editCostPrice').value = product.cost_price || '';
+                document.getElementById('editListPrice').value = product.list_price || '';
+                
+                // Load relationships for editing
+                loadProductRelationships(nsn, 'edit');
+                
+                // Show the modal
+                new bootstrap.Modal(document.getElementById('editProductModal')).show();
+            })
+            .catch(error => {
+                console.error('Error fetching product:', error);
+                alert('Error loading product details. Please try again.');
+            });
+    };
+    
+    window.deleteProduct = function(nsn, productName) {
+        // First check for relationships
+        fetch(`/api/products/${encodeURIComponent(nsn)}/relationships`)
+            .then(response => response.json())
+            .then(data => {
+                let relationships = [];
+                if (data.rfqs && data.rfqs.length > 0) {
+                    relationships.push(`${data.rfqs.length} quote(s)`);
+                }
+                if (data.opportunities && data.opportunities.length > 0) {
+                    relationships.push(`${data.opportunities.length} opportunity(ies)`);
+                }
+                
+                const message = `Are you sure you want to delete product "${productName}"?\n\nNSN: ${nsn}`;
+                
+                if (window.enhancedDelete) {
+                    // Use enhanced delete modal if available
+                    window.enhancedDelete.show(
+                        'Delete Product',
+                        message,
+                        function() { performProductDelete(nsn, productName); },
+                        relationships
+                    );
+                } else {
+                    // Fallback to simple confirm
+                    if (confirm(message + (relationships.length > 0 ? '\n\nWarning: This product has dependencies that may prevent deletion.' : ''))) {
+                        performProductDelete(nsn, productName);
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error checking relationships:', error);
+                // Fallback to simple delete
+                if (confirm(`Are you sure you want to delete product "${productName}"?\n\nThis action cannot be undone.`)) {
+                    performProductDelete(nsn, productName);
+                }
+            });
+    };
+    
+    function performProductDelete(nsn, productName) {
+        fetch(`/api/products/${encodeURIComponent(nsn)}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                return response.json();
+            } else {
+                // Handle non-JSON error responses
+                return response.text().then(text => {
+                    try {
+                        return JSON.parse(text);
+                    } catch {
+                        return { error: `HTTP ${response.status}: ${response.statusText}` };
+                    }
+                });
+            }
+        })
+        .then(result => {
+            if (result.success) {
+                alert('Product deleted successfully!');
+                location.reload(); // Refresh the page to show updates
+            } else {
+                // Show a cleaner error message
+                const errorMsg = result.error || result.message || 'Unknown error';
+                if (errorMsg.includes('not found')) {
+                    alert('Product not found. It may have already been deleted.');
+                } else if (errorMsg.includes('referenced by')) {
+                    alert('Cannot delete product: ' + errorMsg);
+                } else {
+                    alert('Error deleting product: ' + errorMsg);
+                }
+                location.reload(); // Refresh to show current state
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error deleting product. Please try again.');
+        });
+    }
+    
+    window.openEditModal = function() {
+        // Close view modal and open edit modal
+        bootstrap.Modal.getInstance(document.getElementById('viewProductModal')).hide();
+        if (window.currentProductNSN) {
+            editProduct(window.currentProductNSN);
+        }
+    };
+    
+    // Handle edit form submission
+    document.getElementById('editProductForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        const nsn = formData.get('nsn');
+        
+        // Convert FormData to JSON
+        const data = {};
+        for (let [key, value] of formData.entries()) {
+            if (value !== '') {
+                data[key] = value;
+            }
+        }
+        
+        fetch(`/api/products/${nsn}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.error) {
+                alert('Error: ' + result.error);
+            } else {
+                alert('Product updated successfully!');
+                bootstrap.Modal.getInstance(document.getElementById('editProductModal')).hide();
+                location.reload(); // Refresh the page to show updates
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error updating product. Please try again.');
+        });
+    });
+    
+    // Load product relationships function
+    window.loadProductRelationships = function(nsn, mode) {
+        // mode can be 'view' or 'edit'
+        const prefix = mode === 'edit' ? 'edit' : 'view';
+        
+        fetch(`/api/products/${nsn}/relationships`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    console.error('Error loading relationships:', data.error);
+                    return;
+                }
+                
+                // Load RFQs/Quotes
+                const rfqsContainer = document.getElementById(`${prefix}RFQs`);
+                if (data.rfqs && data.rfqs.length > 0) {
+                    rfqsContainer.innerHTML = data.rfqs.map(rfq => `
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                                <strong>${rfq.request_number || 'N/A'}</strong>
+                                <br><small class="text-muted">${rfq.account_name || 'No Account'} - ${rfq.status || 'N/A'}</small>
+                            </div>
+                            <a href="/rfq/${rfq.id}" class="btn btn-sm btn-outline-primary">View</a>
+                        </div>
+                    `).join('');
+                } else {
+                    rfqsContainer.innerHTML = '<em>No related quotes found</em>';
+                }
+                
+                // Load Opportunities
+                const oppsContainer = document.getElementById(`${prefix}Opportunities`);
+                if (data.opportunities && data.opportunities.length > 0) {
+                    oppsContainer.innerHTML = data.opportunities.map(opp => `
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                                <strong>${opp.name || 'N/A'}</strong>
+                                <br><small class="text-muted">${opp.account_name || 'No Account'} - ${opp.stage || 'N/A'}</small>
+                            </div>
+                            <a href="/opportunity/${opp.id}" class="btn btn-sm btn-outline-primary">View</a>
+                        </div>
+                    `).join('');
+                } else {
+                    oppsContainer.innerHTML = '<em>No related opportunities found</em>';
+                }
+                
+                // Load Vendors
+                const vendorsContainer = document.getElementById(`${prefix}Vendors`);
+                if (data.vendors && data.vendors.length > 0) {
+                    vendorsContainer.innerHTML = data.vendors.map(vendor => `
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                                <strong>${vendor.vendor_name || 'N/A'}</strong>
+                                <br><small class="text-muted">CAGE: ${vendor.vendor_cage || 'N/A'}</small>
+                            </div>
+                            <span class="badge bg-${vendor.preferred_vendor ? 'success' : 'secondary'}">
+                                ${vendor.preferred_vendor ? 'Preferred' : 'Standard'}
+                            </span>
+                        </div>
+                    `).join('');
+                } else {
+                    vendorsContainer.innerHTML = '<em>No vendor information available</em>';
+                }
+            })
+            .catch(error => {
+                console.error('Error loading relationships:', error);
+                document.getElementById(`${prefix}RFQs`).innerHTML = '<em>Error loading quotes</em>';
+                document.getElementById(`${prefix}Opportunities`).innerHTML = '<em>Error loading opportunities</em>';
+                document.getElementById(`${prefix}Vendors`).innerHTML = '<em>Error loading vendors</em>';
+            });
+    };
+    
+    // Relationship management functions
+    window.addQuoteRelationship = function() {
+        alert('Quote linking functionality will be implemented in the next update.');
+    };
+    
+    window.addOpportunityRelationship = function() {
+        alert('Opportunity linking functionality will be implemented in the next update.');
+    };
+    
+    window.addVendorRelationship = function() {
+        alert('Vendor relationship functionality will be implemented in the next update.');
+    };
+});
+</script>
+{% endblock %}

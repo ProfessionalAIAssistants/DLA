@@ -1,0 +1,1164 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - CDE Prosperity{% endblock %}
+
+{% block head %}
+{{ super() }}
+<style>
+    .status-indicator {
+        width: 12px;
+        height: 12px;
+        display: inline-block;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Modern Header -->
+    <div class="d-flex justify-content-between align-items-center mb-5">
+        <div>
+            <h1 class="display-6 fw-bold mb-2">
+                <i class="fas fa-cog me-3" style="background: var(--gradient-primary); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;"></i>
+                Settings
+            </h1>
+            <p class="text-muted mb-0 fs-5">Configure system settings, filters, automation, and email integration</p>
+        </div>
+    </div>
+
+    <!-- Tabbed Interface -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-0 pb-0">
+            <ul class="nav nav-tabs nav-tabs-line" id="settingsTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active fw-semibold" id="filters-tab" data-bs-toggle="tab" data-bs-target="#filters" type="button" role="tab" aria-controls="filters" aria-selected="true">
+                        <i class="fas fa-filter me-2"></i>PDF Filters
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-semibold" id="automation-tab" data-bs-toggle="tab" data-bs-target="#automation" type="button" role="tab" aria-controls="automation" aria-selected="false">
+                        <i class="fas fa-robot me-2"></i>Automation
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-semibold" id="email-tab" data-bs-toggle="tab" data-bs-target="#email" type="button" role="tab" aria-controls="email" aria-selected="false">
+                        <i class="fas fa-envelope me-2"></i>Email Settings
+                    </button>
+                </li>
+            </ul>
+        </div>
+        
+        <div class="card-body">
+            <div class="tab-content" id="settingsTabContent">
+                
+                <!-- Filters Tab -->
+                <div class="tab-pane fade show active" id="filters" role="tabpanel" aria-labelledby="filters-tab">
+                    <div class="row">
+                        <div class="col-lg-8">
+                            <h5 class="mb-4">
+                                <i class="fas fa-filter me-2 text-primary"></i>PDF Processing Filters
+                            </h5>
+                            <p class="text-muted mb-4">Configure which PDFs should be automatically processed vs. moved to review</p>
+                            
+                            <form id="settingsForm">
+                                <div class="row">
+                            <!-- Delivery Days Filter -->
+                            <div class="col-md-6 mb-4">
+                                <label for="minDeliveryDays" class="form-label fw-bold">
+                                    <i class="fas fa-shipping-fast me-2"></i>Minimum Delivery Days
+                                </label>
+                                <input type="number" class="form-control" id="minDeliveryDays" 
+                                       value="{{ settings.min_delivery_days }}" min="0" max="999">
+                                <div class="form-text">Only process RFQs with delivery days >= this value</div>
+                            </div>
+
+                            <!-- ISO Requirement -->
+                            <div class="col-md-6 mb-4">
+                                <fieldset>
+                                    <legend class="form-label fw-bold">
+                                        <i class="fas fa-certificate me-2"></i>ISO Requirement
+                                    </legend>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="isoRequired" id="isoNo" 
+                                               value="NO" {% if settings.iso_required == 'NO' %}checked{% endif %}>
+                                        <label class="form-check-label" for="isoNo">
+                                            Process only NON-ISO required RFQs
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="isoRequired" id="isoYes" 
+                                               value="YES" {% if settings.iso_required == 'YES' %}checked{% endif %}>
+                                        <label class="form-check-label" for="isoYes">
+                                            Process only ISO required RFQs
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="isoRequired" id="isoAny" 
+                                               value="ANY" {% if settings.iso_required == 'ANY' %}checked{% endif %}>
+                                        <label class="form-check-label" for="isoAny">
+                                            Process regardless of ISO requirement
+                                        </label>
+                                    </div>
+                                </fieldset>
+                            </div>
+
+                            <!-- Sampling Requirement -->
+                            <div class="col-md-6 mb-4">
+                                <fieldset>
+                                    <legend class="form-label fw-bold">
+                                        <i class="fas fa-vial me-2"></i>Sampling Requirement
+                                    </legend>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="samplingRequired" id="samplingNo" 
+                                               value="NO" {% if settings.sampling_required == 'NO' %}checked{% endif %}>
+                                        <label class="form-check-label" for="samplingNo">
+                                            Process only NON-sampling required RFQs
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="samplingRequired" id="samplingYes" 
+                                               value="YES" {% if settings.sampling_required == 'YES' %}checked{% endif %}>
+                                        <label class="form-check-label" for="samplingYes">
+                                            Process only sampling required RFQs
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="samplingRequired" id="samplingAny" 
+                                               value="ANY" {% if settings.sampling_required == 'ANY' %}checked{% endif %}>
+                                        <label class="form-check-label" for="samplingAny">
+                                            Process regardless of sampling requirement
+                                        </label>
+                                    </div>
+                                </fieldset>
+                            </div>
+
+                            <!-- Inspection Point -->
+                            <div class="col-md-6 mb-4">
+                                <label class="form-label fw-bold">
+                                    <i class="fas fa-search me-2"></i>Inspection Point
+                                </label>
+                                <select class="form-select" id="inspectionPoint">
+                                    <option value="ANY" {% if settings.inspection_point == 'ANY' %}selected{% endif %}>Any Inspection Point</option>
+                                    <option value="DESTINATION" {% if settings.inspection_point == 'DESTINATION' %}selected{% endif %}>Destination Only</option>
+                                    <option value="ORIGIN" {% if settings.inspection_point == 'ORIGIN' %}selected{% endif %}>Origin Only</option>
+                                    <option value="SOURCE" {% if settings.inspection_point == 'SOURCE' %}selected{% endif %}>Source Only</option>
+                                </select>
+                                <div class="form-text">Which inspection points to accept</div>
+                            </div>
+
+                            <!-- Manufacturer Filter -->
+                            <div class="col-12 mb-4">
+                                <label for="manufacturerFilter" class="form-label fw-bold">
+                                    <i class="fas fa-industry me-2"></i>Manufacturer Filter
+                                </label>
+                                <textarea class="form-control" id="manufacturerFilter" rows="3" 
+                                          placeholder="Enter manufacturer names, one per line">{{ settings.manufacturer_filter }}</textarea>
+                                <div class="form-text">Only process RFQs from these manufacturers (leave empty to accept all)</div>
+                            </div>
+
+                            <!-- FSC Filter -->
+                            <div class="col-md-6 mb-4">
+                                <label for="fscFilter" class="form-label fw-bold">
+                                    <i class="fas fa-filter me-2"></i>FSC Filter
+                                </label>
+                                <textarea class="form-control" id="fscFilter" rows="3" 
+                                          placeholder="Enter FSC codes to include, one per line">{{ settings.fsc_filter }}</textarea>
+                                <div class="form-text">Only process RFQs with these FSC codes (leave empty to accept all)</div>
+                            </div>
+
+                            <!-- Packaging Type Filter -->
+                            <div class="col-md-6 mb-4">
+                                <label for="packagingFilter" class="form-label fw-bold">
+                                    <i class="fas fa-box me-2"></i>Packaging Type Filter
+                                </label>
+                                <textarea class="form-control" id="packagingFilter" rows="3" 
+                                          placeholder="Enter packaging types to include, one per line">{{ settings.packaging_filter }}</textarea>
+                                <div class="form-text">Only process RFQs with these packaging types (leave empty to accept all)</div>
+                            </div>
+
+                        </div>
+
+                        <div class="d-flex gap-3">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Save Filter Settings
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="resetToDefaults()">
+                                <i class="fas fa-undo me-2"></i>Reset to Defaults
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                
+                <!-- Filter Preview Panel -->
+                <div class="col-lg-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-light">
+                            <h6 class="card-title mb-0">
+                                <i class="fas fa-eye me-2 text-primary"></i>Filter Preview
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-info">
+                                <h6 class="alert-heading">Current Filter Criteria:</h6>
+                                <ul class="mb-0" id="filterPreview">
+                                    <li>Delivery Days: >= <span id="previewDeliveryDays">{{ settings.min_delivery_days }}</span></li>
+                                    <li>ISO Required: <span id="previewISO">{{ settings.iso_required }}</span></li>
+                                    <li>Sampling Required: <span id="previewSampling">{{ settings.sampling_required }}</span></li>
+                                    <li>Inspection Point: <span id="previewInspection">{{ settings.inspection_point }}</span></li>
+                                    <li>Manufacturers: <span id="previewManufacturers">
+                                        {% if settings.manufacturer_filter %}
+                                            {{ settings.manufacturer_filter.split('\n')|length }} configured
+                                        {% else %}
+                                            All accepted
+                                        {% endif %}
+                                    </span></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Automation Tab -->
+        <div class="tab-pane fade" id="automation" role="tabpanel" aria-labelledby="automation-tab">
+            <div class="row">
+                <div class="col-lg-8">
+                    <h5 class="mb-4">
+                        <i class="fas fa-robot me-2 text-primary"></i>Automation Settings
+                    </h5>
+                    <p class="text-muted mb-4">Configure automated workflows and business rules</p>
+                    
+                    <form id="automationForm">
+                        <!-- Auto-Processing Rules -->
+                        <div class="card border-0 shadow-sm mb-4">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-cogs me-2"></i>Auto-Processing Rules
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="checkbox" id="autoCreateOpportunities" 
+                                                   {% if settings.auto_create_opportunities %}checked{% endif %}>
+                                            <label class="form-check-label" for="autoCreateOpportunities">
+                                                <strong>Auto-create opportunities</strong>
+                                                <br><small class="text-muted">Automatically create opportunities from processed PDFs</small>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="checkbox" id="linkRelatedRecords" 
+                                                   {% if settings.link_related_records %}checked{% endif %}>
+                                            <label class="form-check-label" for="linkRelatedRecords">
+                                                <strong>Auto-link related records</strong>
+                                                <br><small class="text-muted">Link accounts, contacts, and products automatically</small>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="checkbox" id="moveProcessedFiles" 
+                                                   {% if settings.move_processed_files %}checked{% endif %}>
+                                            <label class="form-check-label" for="moveProcessedFiles">
+                                                <strong>Move processed files</strong>
+                                                <br><small class="text-muted">Move processed PDFs to Reviewed folder</small>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="checkbox" id="skipDuplicates" 
+                                                   {% if settings.skip_duplicates %}checked{% endif %}>
+                                            <label class="form-check-label" for="skipDuplicates">
+                                                <strong>Skip duplicates</strong>
+                                                <br><small class="text-muted">Skip duplicate opportunities (same quote number)</small>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Task Automation -->
+                        <div class="card border-0 shadow-sm mb-4">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-tasks me-2"></i>Task Automation
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="checkbox" id="autoCreateTasks">
+                                            <label class="form-check-label" for="autoCreateTasks">
+                                                <strong>Auto-create follow-up tasks</strong>
+                                                <br><small class="text-muted">Create tasks for opportunities requiring follow-up</small>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="checkbox" id="autoAssignTasks">
+                                            <label class="form-check-label" for="autoAssignTasks">
+                                                <strong>Auto-assign tasks</strong>
+                                                <br><small class="text-muted">Automatically assign tasks based on rules</small>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-3">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Save Automation Settings
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary">
+                                <i class="fas fa-test-tube me-2"></i>Test Automation
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                
+                <div class="col-lg-4">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">
+                                <i class="fas fa-chart-line me-2 text-primary"></i>Automation Stats
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="text-center mb-4">
+                                <h3 class="text-success mb-1">247</h3>
+                                <small class="text-muted">Tasks automated this month</small>
+                            </div>
+                            <div class="text-center mb-4">
+                                <h3 class="text-info mb-1">38</h3>
+                                <small class="text-muted">Hours saved</small>
+                            </div>
+                            <div class="text-center">
+                                <h3 class="text-primary mb-1">96%</h3>
+                                <small class="text-muted">Success rate</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Email Settings Tab -->
+        <div class="tab-pane fade" id="email" role="tabpanel" aria-labelledby="email-tab">
+            <div class="row">
+                <div class="col-lg-8">
+                    <h5 class="mb-4">
+                        <i class="fas fa-envelope me-2 text-primary"></i>Email Integration & Automation
+                    </h5>
+                    <p class="text-muted mb-4">Configure email server, RFQ automation, and workflow settings</p>
+                    
+                    <form id="emailForm">
+                        <!-- Email Configuration Methods -->
+                        <div class="card border-0 shadow-sm mb-4">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-cog me-2"></i>Email Configuration Methods
+                                </h6>
+                            </div>
+                            <div class="card-body p-0">
+                                <!-- Email Method Tabs -->
+                                <ul class="nav nav-tabs" id="emailMethodTabs" role="tablist">
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link active" id="smtp-tab" data-bs-toggle="tab" data-bs-target="#smtp-content" type="button" role="tab" aria-controls="smtp-content" aria-selected="true">
+                                            <i class="fas fa-server me-2"></i>SMTP
+                                        </button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" id="gmail-tab" data-bs-toggle="tab" data-bs-target="#gmail-content" type="button" role="tab" aria-controls="gmail-content" aria-selected="false">
+                                            <i class="fab fa-google me-2"></i>Gmail OAuth2
+                                        </button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" id="outlook-tab" data-bs-toggle="tab" data-bs-target="#outlook-content" type="button" role="tab" aria-controls="outlook-content" aria-selected="false">
+                                            <i class="fab fa-microsoft me-2"></i>Outlook OAuth2
+                                        </button>
+                                    </li>
+                                </ul>
+                                
+                                <!-- Email Method Tab Content -->
+                                <div class="tab-content" id="emailMethodTabContent">
+                                    <!-- SMTP Tab Content -->
+                                    <div class="tab-pane fade show active p-3" id="smtp-content" role="tabpanel" aria-labelledby="smtp-tab">
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <div>
+                                                <h6 class="mb-1">
+                                                    <i class="fas fa-server me-2"></i>SMTP Server Configuration
+                                                </h6>
+                                                <small class="text-muted">Basic email setup with username/password or app password</small>
+                                            </div>
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" id="smtpEnabled">
+                                                <label class="form-check-label" for="smtpEnabled">Enable Email</label>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="smtpHost" class="form-label fw-semibold">SMTP Host</label>
+                                                    <input type="text" class="form-control" id="smtpHost" placeholder="smtp.gmail.com">
+                                                    <div class="form-text">Your email provider's SMTP server</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="smtpPort" class="form-label fw-semibold">SMTP Port</label>
+                                                    <select class="form-select" id="smtpPort">
+                                                        <option value="587">587 (TLS - Recommended)</option>
+                                                        <option value="465">465 (SSL)</option>
+                                                        <option value="25">25 (Unsecured)</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="smtpUsername" class="form-label fw-semibold">Email Address</label>
+                                                    <input type="email" class="form-control" id="smtpUsername" placeholder="rfq@yourcompany.com">
+                                                    <div class="form-text">Your email address for sending RFQs</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="smtpPassword" class="form-label fw-semibold">Password/App Password</label>
+                                                    <input type="password" class="form-control" id="smtpPassword" placeholder="••••••••">
+                                                    <div class="form-text">Use app password for Gmail/Outlook</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="fromName" class="form-label fw-semibold">Sender Name</label>
+                                                    <input type="text" class="form-control" id="fromName" placeholder="CDE Prosperity DLA Team">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="replyToEmail" class="form-label fw-semibold">Reply-To Email</label>
+                                                    <input type="email" class="form-control" id="replyToEmail" placeholder="responses@yourcompany.com">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Gmail OAuth2 Tab Content -->
+                                    <div class="tab-pane fade p-3" id="gmail-content" role="tabpanel" aria-labelledby="gmail-tab">
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <div>
+                                                <h6 class="mb-1">
+                                                    <i class="fab fa-google me-2"></i>Gmail OAuth2 Configuration
+                                                </h6>
+                                                <small class="text-muted">Secure Gmail integration using Google Cloud Console OAuth2</small>
+                                            </div>
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" id="gmailOAuthEnabled">
+                                                <label class="form-check-label" for="gmailOAuthEnabled">Enable Gmail OAuth2</label>
+                                            </div>
+                                        </div>
+                                        <div class="alert alert-info">
+                                            <i class="fas fa-info-circle me-2"></i>
+                                            <strong>Setup Required:</strong> You need to configure OAuth2 credentials in Google Cloud Console first.
+                                            <a href="#" class="alert-link" onclick="showGmailSetupGuide()">View Setup Guide</a>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="gmailClientId" class="form-label fw-semibold">Client ID</label>
+                                                    <input type="text" class="form-control" id="gmailClientId" placeholder="your-client-id.googleusercontent.com">
+                                                    <div class="form-text">From Google Cloud Console</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="gmailClientSecret" class="form-label fw-semibold">Client Secret</label>
+                                                    <input type="password" class="form-control" id="gmailClientSecret" placeholder="••••••••">
+                                                    <div class="form-text">Keep this secret and secure</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-12">
+                                                <div class="mb-3">
+                                                    <label for="gmailRedirectUri" class="form-label fw-semibold">Redirect URI</label>
+                                                    <input type="text" class="form-control" id="gmailRedirectUri" value="http://localhost:5000/auth/gmail/callback" readonly>
+                                                    <div class="form-text">Add this URI to your Google Cloud Console project</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="gmailUserEmail" class="form-label fw-semibold">Gmail Account</label>
+                                                    <input type="email" class="form-control" id="gmailUserEmail" placeholder="your-email@gmail.com">
+                                                    <div class="form-text">Gmail account to send emails from</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label fw-semibold">OAuth2 Status</label>
+                                                    <div class="d-flex gap-2">
+                                                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="initiateGmailAuth()">
+                                                            <i class="fas fa-key me-1"></i>Authorize Gmail
+                                                        </button>
+                                                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="testGmailConnection()">
+                                                            <i class="fas fa-test-tube me-1"></i>Test Connection
+                                                        </button>
+                                                    </div>
+                                                    <div class="form-text" id="gmailAuthStatus">Not authorized</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Outlook OAuth2 Tab Content -->
+                                    <div class="tab-pane fade p-3" id="outlook-content" role="tabpanel" aria-labelledby="outlook-tab">
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <div>
+                                                <h6 class="mb-1">
+                                                    <i class="fab fa-microsoft me-2"></i>Outlook/Microsoft 365 OAuth2 Configuration
+                                                </h6>
+                                                <small class="text-muted">Secure Outlook integration using Microsoft Graph API</small>
+                                            </div>
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" id="outlookOAuthEnabled">
+                                                <label class="form-check-label" for="outlookOAuthEnabled">Enable Outlook OAuth2</label>
+                                            </div>
+                                        </div>
+                                        <div class="alert alert-info">
+                                            <i class="fas fa-info-circle me-2"></i>
+                                            <strong>Setup Required:</strong> You need to register an application in Microsoft Azure AD first.
+                                            <a href="#" class="alert-link" onclick="showOutlookSetupGuide()">View Setup Guide</a>
+                                        </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="outlookClientId" class="form-label fw-semibold">Application (Client) ID</label>
+                                            <input type="text" class="form-control" id="outlookClientId" placeholder="12345678-1234-1234-1234-123456789012">
+                                            <div class="form-text">From Azure AD App Registration</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="outlookClientSecret" class="form-label fw-semibold">Client Secret</label>
+                                            <input type="password" class="form-control" id="outlookClientSecret" placeholder="••••••••">
+                                            <div class="form-text">From Azure AD Client Secrets</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="outlookTenantId" class="form-label fw-semibold">Tenant ID</label>
+                                            <input type="text" class="form-control" id="outlookTenantId" placeholder="12345678-1234-1234-1234-123456789012">
+                                            <div class="form-text">Your organization's tenant ID</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="outlookRedirectUri" class="form-label fw-semibold">Redirect URI</label>
+                                            <input type="text" class="form-control" id="outlookRedirectUri" value="http://localhost:5000/auth/outlook/callback" readonly>
+                                            <div class="form-text">Add this URI to your Azure AD app</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="outlookUserEmail" class="form-label fw-semibold">Outlook Account</label>
+                                            <input type="email" class="form-control" id="outlookUserEmail" placeholder="your-email@yourcompany.com">
+                                            <div class="form-text">Microsoft 365 account to send emails from</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label fw-semibold">OAuth2 Status</label>
+                                            <div class="d-flex gap-2">
+                                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="initiateOutlookAuth()">
+                                                    <i class="fas fa-key me-1"></i>Authorize Outlook
+                                                </button>
+                                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="testOutlookConnection()">
+                                                    <i class="fas fa-test-tube me-1"></i>Test Connection
+                                                </button>
+                                            </div>
+                                            <div class="form-text" id="outlookAuthStatus">Not authorized</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        <!-- RFQ Automation Settings -->
+                        <div class="card border-0 shadow-sm mb-4">
+                            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-paper-plane me-2"></i>RFQ Automation Settings
+                                </h6>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="rfqAutomationEnabled">
+                                    <label class="form-check-label" for="rfqAutomationEnabled">Enable RFQ Automation</label>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <!-- Manual Review Section -->
+                                <div class="alert alert-warning mb-4">
+                                    <h6 class="alert-heading d-flex align-items-center">
+                                        <i class="fas fa-shield-alt me-2"></i>Review & Approval Controls
+                                    </h6>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input" type="checkbox" id="requireManualReview" checked>
+                                                <label class="form-check-label fw-semibold" for="requireManualReview">
+                                                    Require manual review before sending RFQs
+                                                </label>
+                                            </div>
+                                            <small class="text-muted">✅ Recommended for quality control</small>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input" type="checkbox" id="autoSendApproved">
+                                                <label class="form-check-label fw-semibold" for="autoSendApproved">
+                                                    Auto-send approved RFQs
+                                                </label>
+                                            </div>
+                                            <small class="text-muted">Send immediately after approval</small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="defaultPriority" class="form-label fw-semibold">Default RFQ Priority</label>
+                                            <select class="form-select" id="defaultPriority">
+                                                <option value="Low">Low Priority</option>
+                                                <option value="Normal" selected>Normal Priority</option>
+                                                <option value="High">High Priority</option>
+                                                <option value="Urgent">Urgent</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="quoteDeadlineDays" class="form-label fw-semibold">Quote Deadline (Days)</label>
+                                            <input type="number" class="form-control" id="quoteDeadlineDays" value="10" min="1" max="90">
+                                            <div class="form-text">Default deadline for vendor responses</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="maxDailySends" class="form-label fw-semibold">Max Daily Sends</label>
+                                            <input type="number" class="form-control" id="maxDailySends" value="50" min="1" max="1000">
+                                            <div class="form-text">Limit to prevent spam flags</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="followUpDelayDays" class="form-label fw-semibold">Follow-up Delay (Days)</label>
+                                            <input type="number" class="form-control" id="followUpDelayDays" value="3" min="1" max="30">
+                                            <div class="form-text">Days before sending follow-up</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Business Hours -->
+                                <div class="border rounded p-3 mb-3" style="background-color: #f8f9fa;">
+                                    <h6 class="mb-3">
+                                        <i class="fas fa-clock me-2"></i>Business Hours & Restrictions
+                                    </h6>
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input" type="checkbox" id="businessHoursOnly" checked>
+                                                <label class="form-check-label" for="businessHoursOnly">
+                                                    Send only during business hours
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input" type="checkbox" id="weekendSending">
+                                                <label class="form-check-label" for="weekendSending">
+                                                    Allow weekend sending
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label for="businessStartHour" class="form-label small">Start Hour</label>
+                                            <input type="number" class="form-control form-control-sm" id="businessStartHour" value="8" min="0" max="23">
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label for="businessEndHour" class="form-label small">End Hour</label>
+                                            <input type="number" class="form-control form-control-sm" id="businessEndHour" value="17" min="0" max="23">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Response Processing -->
+                        <div class="card border-0 shadow-sm mb-4">
+                            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-inbox me-2"></i>Response Processing & Tracking
+                                </h6>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="responseProcessingEnabled" checked>
+                                    <label class="form-check-label" for="responseProcessingEnabled">Enable Response Processing</label>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="checkbox" id="autoParseResponses" checked>
+                                            <label class="form-check-label" for="autoParseResponses">
+                                                <strong>Auto-parse email responses</strong>
+                                                <br><small class="text-muted">Extract quotes from vendor emails automatically</small>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="checkbox" id="requireQuoteReview" checked>
+                                            <label class="form-check-label" for="requireQuoteReview">
+                                                <strong>Require quote review</strong>
+                                                <br><small class="text-muted">Manual review before accepting quotes</small>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="checkbox" id="parsePdfAttachments" checked>
+                                            <label class="form-check-label" for="parsePdfAttachments">
+                                                <strong>Parse PDF attachments</strong>
+                                                <br><small class="text-muted">Extract data from PDF quotes</small>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="checkbox" id="createFollowUpTasks" checked>
+                                            <label class="form-check-label" for="createFollowUpTasks">
+                                                <strong>Create follow-up tasks</strong>
+                                                <br><small class="text-muted">Auto-create tasks for quote review</small>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Notifications -->
+                        <div class="card border-0 shadow-sm mb-4">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-bell me-2"></i>Notifications & Alerts
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="notificationEmail" class="form-label fw-semibold">Notification Email</label>
+                                            <input type="email" class="form-control" id="notificationEmail" placeholder="manager@yourcompany.com">
+                                            <div class="form-text">Email for system notifications</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="dailySummaryTime" class="form-label fw-semibold">Daily Summary Time</label>
+                                            <input type="time" class="form-control" id="dailySummaryTime" value="17:00">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="checkbox" id="notifyOnRfqSent" checked>
+                                            <label class="form-check-label" for="notifyOnRfqSent">
+                                                Notify when RFQ is sent
+                                            </label>
+                                        </div>
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="checkbox" id="notifyOnResponseReceived" checked>
+                                            <label class="form-check-label" for="notifyOnResponseReceived">
+                                                Notify when response received
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="checkbox" id="alertOnUrgentQuotes" checked>
+                                            <label class="form-check-label" for="alertOnUrgentQuotes">
+                                                Alert on urgent quotes
+                                            </label>
+                                        </div>
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="checkbox" id="sendDailyDigest">
+                                            <label class="form-check-label" for="sendDailyDigest">
+                                                Send daily activity digest
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-3">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Save Email Settings
+                            </button>
+                            <button type="button" class="btn btn-outline-primary" id="testConnection">
+                                <i class="fas fa-paper-plane me-2"></i>Test Connection
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" id="loadDefaults">
+                                <i class="fas fa-undo me-2"></i>Load Defaults
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                
+                <div class="col-lg-4">
+                    <!-- Email Status Card -->
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">
+                                <i class="fas fa-info-circle me-2 text-primary"></i>Email System Status
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="flex-shrink-0">
+                                    <div class="status-indicator bg-warning rounded-circle" id="connectionStatus"></div>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h6 class="mb-1">Connection Status</h6>
+                                    <small class="text-muted" id="connectionStatusText">Not configured</small>
+                                </div>
+                            </div>
+                            
+                            <div class="row text-center mb-4">
+                                <div class="col-6">
+                                    <h3 class="text-primary mb-1" id="emailsSentToday">0</h3>
+                                    <small class="text-muted">Sent Today</small>
+                                </div>
+                                <div class="col-6">
+                                    <h3 class="text-success mb-1" id="responsesReceived">0</h3>
+                                    <small class="text-muted">Responses</small>
+                                </div>
+                            </div>
+                            
+                            <div class="alert alert-info">
+                                <h6 class="alert-heading">Configuration Tips:</h6>
+                                <ul class="mb-0 small">
+                                    <li>Use app passwords for Gmail/Outlook</li>
+                                    <li>Enable manual review for quality control</li>
+                                    <li>Test connection before going live</li>
+                                    <li>Set reasonable daily send limits</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions Card -->
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">
+                                <i class="fas fa-bolt me-2 text-primary"></i>Quick Actions
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-sm btn-outline-primary" id="viewPendingRfqs">
+                                    <i class="fas fa-eye me-2"></i>View Pending RFQs
+                                </button>
+                                <button class="btn btn-sm btn-outline-success" id="viewResponses">
+                                    <i class="fas fa-inbox me-2"></i>View Responses
+                                </button>
+                                <button class="btn btn-sm btn-outline-info" id="emailLogs">
+                                    <i class="fas fa-history me-2"></i>Email Logs
+                                </button>
+                                <button class="btn btn-sm btn-outline-warning" id="emailTemplates">
+                                    <i class="fas fa-edit me-2"></i>Edit Templates
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle PDF Filter Settings Form
+    const settingsForm = document.getElementById('settingsForm');
+    if (settingsForm) {
+        settingsForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData.entries());
+            
+            // Show loading state
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
+            submitBtn.disabled = true;
+            
+            fetch('/api/settings', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert('success', 'Filter settings saved successfully!');
+                } else {
+                    showAlert('error', 'Error saving settings: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showAlert('error', 'Error saving settings. Please try again.');
+            })
+            .finally(() => {
+                // Restore button state
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            });
+        });
+    }
+    
+    // Handle Automation Settings Form
+    const automationForm = document.getElementById('automationForm');
+    if (automationForm) {
+        automationForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData.entries());
+            
+            // Show loading state
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
+            submitBtn.disabled = true;
+            
+            fetch('/api/settings/automation', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert('success', 'Automation settings saved successfully!');
+                } else {
+                    showAlert('error', 'Error saving automation settings: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showAlert('error', 'Error saving automation settings. Please try again.');
+            })
+            .finally(() => {
+                // Restore button state
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            });
+        });
+    }
+    
+    // Handle Email Settings Form
+    const emailForm = document.getElementById('emailForm');
+    if (emailForm) {
+        emailForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData.entries());
+            
+            // Show loading state
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
+            submitBtn.disabled = true;
+            
+            fetch('/api/settings/email', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert('success', 'Email settings saved successfully!');
+                } else {
+                    showAlert('error', 'Error saving email settings: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showAlert('error', 'Error saving email settings. Please try again.');
+            })
+            .finally(() => {
+                // Restore button state
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            });
+        });
+    }
+    
+    // Test Email Connection
+    const testConnectionBtn = document.getElementById('testConnection');
+    if (testConnectionBtn) {
+        testConnectionBtn.addEventListener('click', function() {
+            const originalText = this.innerHTML;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Testing...';
+            this.disabled = true;
+            
+            // Get current SMTP form data
+            const smtpData = {
+                smtp_configuration: {
+                    enabled: true,
+                    host: document.getElementById('smtpHost')?.value || '',
+                    port: parseInt(document.getElementById('smtpPort')?.value || '587'),
+                    username: document.getElementById('smtpUsername')?.value || '',
+                    password: document.getElementById('smtpPassword')?.value || '',
+                    use_tls: document.getElementById('smtpPort')?.value !== '465',
+                    from_name: document.getElementById('fromName')?.value || '',
+                    reply_to: document.getElementById('replyToEmail')?.value || ''
+                }
+            };
+            
+            // Validate required fields
+            if (!smtpData.smtp_configuration.host || !smtpData.smtp_configuration.username || !smtpData.smtp_configuration.password) {
+                showAlert('error', 'Please fill in SMTP Host, Email Address, and Password before testing');
+                this.innerHTML = originalText;
+                this.disabled = false;
+                return;
+            }
+            
+            fetch('/api/settings/email/test', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(smtpData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert('success', 'Email connection test successful!');
+                    // Update status indicator
+                    updateConnectionStatus('success', 'Connected');
+                } else {
+                    showAlert('error', 'Email connection test failed: ' + data.message);
+                    updateConnectionStatus('error', 'Connection failed');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showAlert('error', 'Error testing email connection. Please try again.');
+                updateConnectionStatus('error', 'Connection failed');
+            })
+            .finally(() => {
+                this.innerHTML = originalText;
+                this.disabled = false;
+            });
+        });
+    }
+    
+    // Update connection status indicator
+    function updateConnectionStatus(status, text) {
+        const statusIndicator = document.getElementById('connectionStatus');
+        const statusText = document.getElementById('connectionStatusText');
+        
+        if (statusIndicator && statusText) {
+            statusIndicator.className = 'status-indicator rounded-circle';
+            statusText.textContent = text;
+            
+            switch(status) {
+                case 'success':
+                    statusIndicator.classList.add('bg-success');
+                    break;
+                case 'error':
+                    statusIndicator.classList.add('bg-danger');
+                    break;
+                case 'warning':
+                    statusIndicator.classList.add('bg-warning');
+                    break;
+                default:
+                    statusIndicator.classList.add('bg-secondary');
+            }
+        }
+    }
+    
+    // Reset to Defaults function
+    window.resetToDefaults = function() {
+        if (confirm('Are you sure you want to reset all filter settings to defaults? This action cannot be undone.')) {
+            // Reset form fields to default values
+            document.getElementById('minDeliveryDays').value = '30';
+            document.getElementById('isoAny').checked = true;
+            document.getElementById('samplingAny').checked = true;
+            document.getElementById('inspectionAny').checked = true;
+            document.getElementById('manufacturerFilter').value = '';
+            document.getElementById('fscFilter').value = '';
+            document.getElementById('packagingFilter').value = '';
+            
+            showAlert('info', 'Form reset to default values. Click "Save Filter Settings" to apply changes.');
+        }
+    };
+    
+    // Alert function
+    function showAlert(type, message) {
+        // Remove any existing alerts
+        const existingAlert = document.querySelector('.alert-notification');
+        if (existingAlert) {
+            existingAlert.remove();
+        }
+        
+        // Create new alert
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show alert-notification`;
+        alertDiv.style.position = 'fixed';
+        alertDiv.style.top = '20px';
+        alertDiv.style.right = '20px';
+        alertDiv.style.zIndex = '9999';
+        alertDiv.style.minWidth = '300px';
+        
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
+        
+        document.body.appendChild(alertDiv);
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.remove();
+            }
+        }, 5000);
+    }
+});
+</script>
+{% endblock %}

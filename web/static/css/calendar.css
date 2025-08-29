@@ -1,0 +1,205 @@
+/* Calendar Styles */
+.calendar-tooltip {
+    position: absolute;
+    background: rgba(0, 0, 0, 0.9) !important;
+    color: white !important;
+    padding: 8px 12px !important;
+    border-radius: 4px !important;
+    font-size: 12px !important;
+    z-index: 1000 !important;
+    max-width: 250px !important;
+    pointer-events: none !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Calendar event styling */
+.fc-event {
+    border: none !important;
+    border-radius: 3px !important;
+    padding: 1px 4px !important;
+    font-size: 11px !important;
+    line-height: 1.2 !important;
+}
+
+.fc-event-title {
+    overflow: hidden !important;
+    white-space: nowrap !important;
+    text-overflow: ellipsis !important;
+}
+
+/* Calendar container */
+#dashboard-calendar {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.fc-toolbar-title {
+    font-size: 1.25rem !important;
+    font-weight: 600 !important;
+}
+
+.fc-button {
+    background-color: #6c757d !important;
+    border-color: #6c757d !important;
+    border-radius: 4px !important;
+    font-size: 0.875rem !important;
+    padding: 0.25rem 0.5rem !important;
+    cursor: pointer !important;
+    pointer-events: auto !important;
+}
+
+.fc-button:hover {
+    background-color: #5a6268 !important;
+    border-color: #545b62 !important;
+}
+
+.fc-button-primary:not(:disabled):active,
+.fc-button-primary:not(:disabled).fc-button-active {
+    background-color: #0d6efd !important;
+    border-color: #0d6efd !important;
+}
+
+/* Specific Today button styling */
+.fc-today-button {
+    background-color: #28a745 !important;
+    border-color: #28a745 !important;
+    color: white !important;
+    cursor: pointer !important;
+    pointer-events: auto !important;
+}
+
+.fc-today-button:hover {
+    background-color: #218838 !important;
+    border-color: #1e7e34 !important;
+}
+
+/* Upcoming events list */
+.bg-light-danger {
+    background-color: rgba(220, 53, 69, 0.1) !important;
+}
+
+.event-item:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+    transition: background-color 0.2s ease;
+}
+
+/* Priority badges */
+.badge {
+    font-size: 0.65em !important;
+}
+
+/* Calendar responsive */
+@media (max-width: 768px) {
+    .fc-toolbar {
+        flex-direction: column !important;
+        gap: 0.5rem !important;
+    }
+    
+    .fc-toolbar-chunk {
+        display: flex !important;
+        justify-content: center !important;
+    }
+    
+    .fc-button-group {
+        margin: 0 !important;
+    }
+    
+    #dashboard-calendar {
+        height: 300px !important;
+    }
+}
+
+/* Event type colors */
+.fc-event.opportunity-close {
+    background-color: #dc3545 !important;
+}
+
+.fc-event.opportunity-bid {
+    background-color: #28a745 !important;
+}
+
+.fc-event.task-due {
+    background-color: #ffc107 !important;
+    color: #000 !important;
+}
+
+.fc-event.task-work {
+    background-color: #17a2b8 !important;
+}
+
+.fc-event.project-start {
+    background-color: #28a745 !important;
+}
+
+.fc-event.project-due {
+    background-color: #fd7e14 !important;
+}
+
+.fc-event.interaction {
+    background-color: #6f42c1 !important;
+}
+
+.fc-event.rfq-close {
+    background-color: #20c997 !important;
+}
+
+.fc-event.rfq-open {
+    background-color: #17a2b8 !important;
+}
+
+/* Overdue styling */
+.fc-event.overdue {
+    background-color: #dc3545 !important;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+/* Calendar header improvements */
+.fc-toolbar {
+    margin-bottom: 1rem !important;
+}
+
+.fc-toolbar h2 {
+    margin: 0 !important;
+    color: #495057 !important;
+}
+
+/* Day grid improvements */
+.fc-daygrid-day {
+    border: 1px solid #e9ecef !important;
+}
+
+.fc-daygrid-day:hover {
+    background-color: rgba(0, 123, 255, 0.05) !important;
+}
+
+.fc-day-today {
+    background-color: rgba(0, 123, 255, 0.1) !important;
+}
+
+/* List view improvements */
+.fc-list-event {
+    border-left: 3px solid var(--fc-event-bg-color) !important;
+    padding-left: 10px !important;
+}
+
+.fc-list-event-title {
+    font-weight: 500 !important;
+}
+
+.fc-list-event-time {
+    color: #6c757d !important;
+    font-size: 0.875rem !important;
+}

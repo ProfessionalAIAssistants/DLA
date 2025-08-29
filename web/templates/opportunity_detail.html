@@ -1,0 +1,1222 @@
+{% extends "base.html" %}
+
+{% block title %}{{ opportunity.name }} - CDE Prosperity{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Stage Progress Bar -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h6 class="mb-0">Opportunity Stage Progress</h6>
+            <span class="badge bg-primary">{{ opportunity.stage or 'Prospecting' }}</span>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-12">
+                    <div class="progress-stacked" style="height: 30px;">
+                        {% set stages = ['Prospecting', 'Quote Requested', 'Quote Received', 'Submit Bid', 'Project Started'] %}
+                        {% set current_stage = opportunity.stage or 'Prospecting' %}
+                        {% set current_index = stages.index(current_stage) if current_stage in stages else 0 %}
+                        
+                        {% for stage in stages %}
+                            {% set stage_index = loop.index0 %}
+                            {% if stage_index <= current_index %}
+                                <div class="progress" role="progressbar" style="width: 20%">
+                                    <div class="progress-bar bg-success">{{ stage }}</div>
+                                </div>
+                            {% else %}
+                                <div class="progress" role="progressbar" style="width: 20%">
+                                    <div class="progress-bar bg-light text-dark">{{ stage }}</div>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-12">
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="changeStage('Prospecting')">
+                            <i class="fas fa-search me-1"></i>Prospecting
+                        </button>
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="changeStage('RFQ Requested')">
+                            <i class="fas fa-paper-plane me-1"></i>Quote Requested
+                        </button>
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="changeStage('RFQ Received')">
+                            <i class="fas fa-inbox me-1"></i>Quote Received
+                        </button>
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="changeStage('Submit Bid')">
+                            <i class="fas fa-file-contract me-1"></i>Submit Bid
+                        </button>
+                        <button type="button" class="btn btn-outline-success btn-sm" onclick="changeStage('Project Started')">
+                            <i class="fas fa-project-diagram me-1"></i>Project Started
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="display-6 fw-bold mb-2">{{ opportunity.name }}</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="/opportunities">Opportunities</a></li>
+                    <li class="breadcrumb-item active">{{ opportunity.name }}</li>
+                </ol>
+            </nav>
+        </div>
+        <div class="d-flex gap-2">
+            <!-- Test Button -->
+            <button type="button" class="btn btn-info btn-sm" onclick="alert('Basic JS works!')">Test JS</button>
+            
+            <button type="button" class="btn btn-primary" onclick="editOpportunity({{ opportunity.id }})">
+                <i class="fas fa-edit me-2"></i>Edit
+            </button>
+            <div class="dropdown">
+                <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <i class="fas fa-cog me-2"></i>Actions
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="#" onclick="advanceStage({{ opportunity.id }})">
+                        <i class="fas fa-arrow-right me-2"></i>Advance Stage
+                    </a></li>
+                    <li><a class="dropdown-item" href="#" onclick="requestRFQ({{ opportunity.id }})">
+                        <i class="fas fa-paper-plane me-2"></i>Request Quote from Vendors
+                    </a></li>
+                    <li><a class="dropdown-item" href="#" onclick="markWon({{ opportunity.id }})">
+                        <i class="fas fa-trophy me-2"></i>Mark as Won
+                    </a></li>
+                    <li><a class="dropdown-item" href="#" onclick="markLost({{ opportunity.id }})">
+                        <i class="fas fa-times me-2"></i>Mark as Lost
+                    </a></li>
+                    <li><a class="dropdown-item" href="#" onclick="markNoBid({{ opportunity.id }})">
+                        <i class="fas fa-ban me-2"></i>Mark No Bid
+                    </a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item" href="#" onclick="createProject({{ opportunity.id }})">
+                        <i class="fas fa-project-diagram me-2"></i>Create Project
+                    </a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item text-danger" href="#" onclick="deleteOpportunity({{ opportunity.id }})">
+                        <i class="fas fa-trash me-2"></i>Delete
+                    </a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Main Information -->
+        <div class="col-lg-8">
+            <!-- Opportunity Details Card -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-dollar-sign me-2"></i>Opportunity Details
+                    </h5>
+                    <span class="badge bg-{{ 'success' if opportunity.stage == 'Closed Won' else 'primary' if opportunity.stage == 'Qualification' else 'warning' }}">
+                        {{ opportunity.stage }}
+                    </span>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td class="fw-bold text-muted">Stage:</td>
+                                    <td>{{ opportunity.stage or 'Not set' }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold text-muted">State:</td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if opportunity.state == 'Won' else 'danger' if opportunity.state == 'Bid Lost' else 'warning' if opportunity.state in ['Past Due', 'No Bid'] else 'primary' }}">
+                                            {{ opportunity.state or 'Active' }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold text-muted">Bid Price:</td>
+                                    <td class="text-success fw-bold">${{ "{:,.2f}".format(opportunity.bid_price) if opportunity.bid_price else "Not set" }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold text-muted">Purchase Costs:</td>
+                                    <td class="text-info">${{ "{:,.2f}".format(opportunity.purchase_costs) if opportunity.purchase_costs else "Not set" }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold text-muted">Packaging & Shipping:</td>
+                                    <td class="text-info">${{ "{:,.2f}".format(opportunity.packaging_shipping) if opportunity.packaging_shipping else "Not set" }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold text-muted">Profit:</td>
+                                    <td class="text-success fw-bold">
+                                        {% if opportunity.bid_price and opportunity.purchase_costs and opportunity.packaging_shipping and opportunity.quantity %}
+                                            ${{ "{:,.2f}".format((opportunity.bid_price - opportunity.purchase_costs - opportunity.packaging_shipping) * opportunity.quantity) }}
+                                        {% else %}
+                                            Not calculated
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold text-muted">Bid Date:</td>
+                                    <td>{{ opportunity.bid_date | date if opportunity.bid_date else 'Not set' }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold text-muted">Close Date:</td>
+                                    <td>{{ opportunity.close_date | date if opportunity.close_date else 'Not set' }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td class="fw-bold text-muted">Quantity:</td>
+                                    <td>{{ opportunity.quantity or 'Not specified' }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold text-muted">Unit:</td>
+                                    <td>{{ opportunity.unit if opportunity.unit else 'Not specified' }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold text-muted">MFR:</td>
+                                    <td>{{ opportunity.mfr or 'Not specified' }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold text-muted">FOB:</td>
+                                    <td>{{ opportunity.fob or 'Not specified' }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold text-muted">Packaging Type:</td>
+                                    <td>{{ opportunity.packaging_type or 'Not specified' }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold text-muted">ISO:</td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if opportunity.iso == 'Yes' else 'secondary' }}">
+                                            {{ opportunity.iso or 'Not specified' }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold text-muted">Sampling:</td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if opportunity.sampling == 'Yes' else 'secondary' }}">
+                                            {{ opportunity.sampling or 'Not specified' }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold text-muted">Delivery Days:</td>
+                                    <td>
+                                        <span class="badge bg-info">
+                                            {{ opportunity.delivery_days or 'Not specified' }} {{ 'days' if opportunity.delivery_days else '' }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold text-muted">Estimated Amount:</td>
+                                    <td class="text-success fw-bold">
+                                        ${{ "{:,.2f}".format(opportunity.amount) if opportunity.amount else "Not specified" }}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold text-muted">Buyer:</td>
+                                    <td>{{ opportunity.buyer or 'Not specified' }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    {% if opportunity.description %}
+                    <div class="mt-3">
+                        <h6 class="fw-bold text-muted">Description:</h6>
+                        <p class="mb-0">{{ opportunity.description }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if opportunity.next_step %}
+                    <div class="mt-3">
+                        <h6 class="fw-bold text-muted">Next Step:</h6>
+                        <p class="mb-0">{{ opportunity.next_step }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Related Information -->
+            <div class="row">
+                {% if account %}
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">
+                                <i class="fas fa-building me-2"></i>Account
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <h6><a href="/account/{{ account.id }}" class="text-decoration-none">{{ account.name }}</a></h6>
+                            {% if account.type %}
+                            <p class="text-muted mb-1">{{ account.type }}</p>
+                            {% endif %}
+                            {% if account.billing_address %}
+                            <small class="text-muted">{{ account.billing_address }}</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if contact %}
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">
+                                <i class="fas fa-user me-2"></i>Contact
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <h6><a href="/contact/{{ contact.id }}" class="text-decoration-none">{{ contact.first_name }} {{ contact.last_name }}</a></h6>
+                            {% if contact.title %}
+                            <p class="text-muted mb-1">{{ contact.title }}</p>
+                            {% endif %}
+                            {% if contact.email %}
+                            <small class="text-muted"><i class="fas fa-envelope me-1"></i>{{ contact.email }}</small><br>
+                            {% endif %}
+                            {% if contact.phone %}
+                            <small class="text-muted"><i class="fas fa-phone me-1"></i>{{ contact.phone }}</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if product %}
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">
+                                <i class="fas fa-box me-2"></i>Product
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <h6>{{ product.name }}</h6>
+                            {% if product.nsn %}
+                            <p class="text-muted mb-1">NSN: {{ product.nsn }}</p>
+                            {% endif %}
+                            {% if product.unit_price %}
+                            <small class="text-muted">Unit Price: ${{ "{:,.2f}".format(product.unit_price) }}</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Recent Interactions -->
+            {% if interactions %}
+            <div class="card mt-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-comments me-2"></i>Recent Interactions
+                    </h5>
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="createInteraction({{ opportunity.id }})">
+                        <i class="fas fa-plus me-1"></i>Add Interaction
+                    </button>
+                </div>
+                <div class="card-body">
+                    {% for interaction in interactions %}
+                    <div class="border-bottom py-3 {% if loop.last %}border-0{% endif %}">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="mb-1">{{ interaction.subject }}</h6>
+                                <p class="text-muted mb-2">{{ interaction.description if interaction.description else 'No description provided' }}</p>
+                                <small class="text-muted">
+                                    <i class="fas fa-{{ 'phone' if interaction.type == 'Call' else 'envelope' if interaction.type == 'Email' else 'comment' }} me-1"></i>
+                                    {{ interaction.type }} - {{ interaction.interaction_date | date }}
+                                </small>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="editInteraction({{ interaction.id }})">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Vendor Email Automation -->
+            <div class="card mt-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-paper-plane me-2"></i>Vendor Quote Requests
+                    </h5>
+                    <button type="button" class="btn btn-sm btn-success" onclick="generateVendorEmails({{ opportunity.id }})">
+                        <i class="fas fa-plus me-1"></i>Generate RFQ Emails
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div id="vendorEmailsList">
+                        <div class="text-center py-3">
+                            <i class="fas fa-envelope fa-2x text-muted mb-2"></i>
+                            <p class="text-muted mb-3">No vendor emails generated yet</p>
+                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="generateVendorEmails({{ opportunity.id }})">
+                                <i class="fas fa-paper-plane me-1"></i>Start RFQ Process
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Email Templates Selector -->
+                    <div class="mt-3 border-top pt-3">
+                        <label class="form-label fw-bold small">Email Template:</label>
+                        <select id="emailTemplate" class="form-select form-select-sm">
+                            <option value="Standard RFQ Request">Standard RFQ Request</option>
+                            <option value="Urgent RFQ Request">Urgent RFQ Request</option>
+                        </select>
+                        <small class="text-muted">Choose template for auto-generated vendor emails</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Quick Stats -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-chart-line me-2"></i>Quick Stats
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="border-end">
+                                <h5 class="text-primary mb-0">{{ interactions|length if interactions else 0 }}</h5>
+                                <small class="text-muted">Interactions</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <h5 class="text-success mb-0">{{ opportunity.probability }}%</h5>
+                            <small class="text-muted">Probability</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Timeline -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-clock me-2"></i>Timeline
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-primary"></div>
+                            <div class="timeline-content">
+                                <h6 class="mb-1">Opportunity Created</h6>
+                                <small class="text-muted">{{ opportunity.created_date | date if opportunity.created_date else 'Unknown' }}</small>
+                            </div>
+                        </div>
+                        {% if opportunity.modified_date and opportunity.modified_date != opportunity.created_date %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-info"></div>
+                            <div class="timeline-content">
+                                <h6 class="mb-1">Last Modified</h6>
+                                <small class="text-muted">{{ opportunity.modified_date | date }}</small>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% if opportunity.close_date %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-{{ 'success' if opportunity.stage == 'Closed Won' else 'warning' }}"></div>
+                            <div class="timeline-content">
+                                <h6 class="mb-1">Expected Close</h6>
+                                <small class="text-muted">{{ opportunity.close_date | date }}</small>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Opportunity Modal -->
+<div class="modal fade" id="editOpportunityModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Opportunity</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editOpportunityForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editName" class="form-label">Name</label>
+                                <input type="text" class="form-control" id="editName" value="{{ opportunity.name }}" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editStage" class="form-label">Stage</label>
+                                <select class="form-select" id="editStage">
+                                    <option value="Prospecting" {{ 'selected' if opportunity.stage == 'Prospecting' }}>Prospecting</option>
+                                    <option value="RFQ Requested" {{ 'selected' if opportunity.stage == 'RFQ Requested' }}>Quote Requested</option>
+                                    <option value="RFQ Received" {{ 'selected' if opportunity.stage == 'RFQ Received' }}>Quote Received</option>
+                                    <option value="Submit Bid" {{ 'selected' if opportunity.stage == 'Submit Bid' }}>Submit Bid</option>
+                                    <option value="Project Started" {{ 'selected' if opportunity.stage == 'Project Started' }}>Project Started</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editState" class="form-label">State</label>
+                                <select class="form-select" id="editState">
+                                    <option value="Active" {{ 'selected' if opportunity.state == 'Active' }}>Active</option>
+                                    <option value="No Bid" {{ 'selected' if opportunity.state == 'No Bid' }}>No Bid</option>
+                                    <option value="Past Due" {{ 'selected' if opportunity.state == 'Past Due' }}>Past Due</option>
+                                    <option value="Bid Lost" {{ 'selected' if opportunity.state == 'Bid Lost' }}>Bid Lost</option>
+                                    <option value="Won" {{ 'selected' if opportunity.state == 'Won' }}>Won</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editBidPrice" class="form-label">Bid Price</label>
+                                <input type="number" class="form-control" id="editBidPrice" step="0.01" value="{{ opportunity.bid_price if opportunity.bid_price else '' }}">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editPurchaseCosts" class="form-label">Purchase Costs</label>
+                                <input type="number" class="form-control" id="editPurchaseCosts" step="0.01" value="{{ opportunity.purchase_costs if opportunity.purchase_costs else '' }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editPackagingShipping" class="form-label">Packaging & Shipping</label>
+                                <input type="number" class="form-control" id="editPackagingShipping" step="0.01" value="{{ opportunity.packaging_shipping if opportunity.packaging_shipping else '' }}">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editBidDate" class="form-label">Bid Date</label>
+                                <input type="date" class="form-control" id="editBidDate" value="{{ opportunity.bid_date if opportunity.bid_date else '' }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editCloseDate" class="form-label">Close Date</label>
+                                <input type="date" class="form-control" id="editCloseDate" value="{{ opportunity.close_date if opportunity.close_date else '' }}">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editQuantity" class="form-label">Quantity</label>
+                                <input type="number" class="form-control" id="editQuantity" value="{{ opportunity.quantity if opportunity.quantity else '' }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editUnit" class="form-label">Unit</label>
+                                <input type="text" class="form-control" id="editUnit" value="{{ opportunity.unit if opportunity.unit else '' }}">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editMfr" class="form-label">MFR</label>
+                                <input type="text" class="form-control" id="editMfr" value="{{ opportunity.mfr if opportunity.mfr else '' }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editFob" class="form-label">FOB</label>
+                                <select class="form-select" id="editFob">
+                                    <option value="Origin" {{ 'selected' if opportunity.fob == 'Origin' }}>Origin</option>
+                                    <option value="Destination" {{ 'selected' if opportunity.fob == 'Destination' }}>Destination</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editPackagingType" class="form-label">Packaging Type</label>
+                                <select class="form-select" id="editPackagingType">
+                                    <option value="MIL-STD-2073-1E" {{ 'selected' if opportunity.packaging_type == 'MIL-STD-2073-1E' }}>MIL-STD-2073-1E</option>
+                                    <option value="ASTM" {{ 'selected' if opportunity.packaging_type == 'ASTM' }}>ASTM</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editIso" class="form-label">ISO</label>
+                                <select class="form-select" id="editIso">
+                                    <option value="Yes" {{ 'selected' if opportunity.iso == 'Yes' }}>Yes</option>
+                                    <option value="No" {{ 'selected' if opportunity.iso == 'No' }}>No</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editSampling" class="form-label">Sampling</label>
+                                <select class="form-select" id="editSampling">
+                                    <option value="Yes" {{ 'selected' if opportunity.sampling == 'Yes' }}>Yes</option>
+                                    <option value="No" {{ 'selected' if opportunity.sampling == 'No' }}>No</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editBuyer" class="form-label">Buyer</label>
+                                <input type="text" class="form-control" id="editBuyer" value="{{ opportunity.buyer if opportunity.buyer else '' }}">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="editDescription" rows="3">{{ opportunity.description if opportunity.description else '' }}</textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveOpportunity()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline-item {
+    position: relative;
+    padding-bottom: 20px;
+}
+
+.timeline-item:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    left: -22px;
+    top: 15px;
+    width: 2px;
+    height: calc(100% - 10px);
+    background: #dee2e6;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -26px;
+    top: 5px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 0 0 1px #dee2e6;
+}
+
+.timeline-content h6 {
+    font-size: 0.9rem;
+    margin-bottom: 2px;
+}
+
+.timeline-content small {
+    font-size: 0.8rem;
+}
+</style>
+
+<script>
+// Global functions - available immediately when page loads
+console.log('JavaScript functions loaded');
+
+function changeStage(newStage) {
+    console.log('changeStage called with:', newStage);
+    const opportunityId = {{ opportunity.id }};
+    
+    fetch(`/api/opportunities/${opportunityId}`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ stage: newStage })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error updating stage: ' + (data.message || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error updating stage');
+    });
+}
+
+function editOpportunity(opportunityId) {
+    console.log('editOpportunity called with ID:', opportunityId);
+    // Populate the form with current values using safe escaping
+    document.getElementById('editName').value = {{ (opportunity.name or "") | tojson }};
+    document.getElementById('editStage').value = {{ (opportunity.stage or "Prospecting") | tojson }};
+    document.getElementById('editState').value = {{ (opportunity.state or "Active") | tojson }};
+    document.getElementById('editBidPrice').value = {{ (opportunity.bid_price or "") | tojson }};
+    document.getElementById('editPurchaseCosts').value = {{ (opportunity.purchase_costs or "") | tojson }};
+    document.getElementById('editPackagingShipping').value = {{ (opportunity.packaging_shipping or "") | tojson }};
+    document.getElementById('editBidDate').value = {{ (opportunity.bid_date or "") | tojson }};
+    document.getElementById('editCloseDate').value = {{ (opportunity.close_date or "") | tojson }};
+    document.getElementById('editQuantity').value = {{ (opportunity.quantity or "") | tojson }};
+    document.getElementById('editUnit').value = {{ (opportunity.unit or "") | tojson }};
+    document.getElementById('editMfr').value = {{ (opportunity.mfr or "") | tojson }};
+    document.getElementById('editFob').value = {{ (opportunity.fob or "Origin") | tojson }};
+    document.getElementById('editPackagingType').value = {{ (opportunity.packaging_type or "MIL-STD-2073-1E") | tojson }};
+    document.getElementById('editIso').value = {{ (opportunity.iso or "No") | tojson }};
+    document.getElementById('editSampling').value = {{ (opportunity.sampling or "No") | tojson }};
+    document.getElementById('editBuyer').value = {{ (opportunity.buyer or "") | tojson }};
+    document.getElementById('editDescription').value = {{ (opportunity.description or "") | tojson }};
+    
+    const modal = new bootstrap.Modal(document.getElementById('editOpportunityModal'));
+    modal.show();
+}
+
+function saveOpportunity() {
+    const opportunityId = {{ opportunity.id }};
+    const formData = {
+        name: document.getElementById('editName').value,
+        stage: document.getElementById('editStage').value,
+        state: document.getElementById('editState').value,
+        bid_price: parseFloat(document.getElementById('editBidPrice').value) || null,
+        purchase_costs: parseFloat(document.getElementById('editPurchaseCosts').value) || null,
+        packaging_shipping: parseFloat(document.getElementById('editPackagingShipping').value) || null,
+        bid_date: document.getElementById('editBidDate').value || null,
+        close_date: document.getElementById('editCloseDate').value || null,
+        quantity: parseFloat(document.getElementById('editQuantity').value) || null,
+        unit: document.getElementById('editUnit').value || null,
+        mfr: document.getElementById('editMfr').value || null,
+        fob: document.getElementById('editFob').value,
+        packaging_type: document.getElementById('editPackagingType').value,
+        iso: document.getElementById('editIso').value,
+        sampling: document.getElementById('editSampling').value,
+        buyer: document.getElementById('editBuyer').value || null,
+        description: document.getElementById('editDescription').value || null
+    };
+
+    // Calculate profit automatically if we have the necessary fields
+    if (formData.bid_price && formData.purchase_costs && formData.packaging_shipping && formData.quantity) {
+        formData.profit = (formData.bid_price - formData.purchase_costs - formData.packaging_shipping) * formData.quantity;
+    }
+
+    fetch(`/api/opportunities/${opportunityId}`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error updating opportunity: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error updating opportunity');
+    });
+}
+
+function advanceStage(opportunityId) {
+    console.log('advanceStage called');
+    // Get current stage and advance to next
+    const currentStage = '{{ opportunity.stage }}';
+    const stages = ['Prospecting', 'Quote Requested', 'Quote Received', 'Submit Bid', 'Project Started'];
+    const currentIndex = stages.indexOf(currentStage);
+    if (currentIndex < stages.length - 1) {
+        changeStage(stages[currentIndex + 1]);
+    } else {
+        alert('Already at the final stage');
+    }
+}
+
+function requestRFQ(opportunityId) {
+    console.log('requestQuote called');
+    changeStage('RFQ Requested');
+}
+
+function markWon(opportunityId) {
+    console.log('markWon called');
+    fetch(`/api/opportunities/${opportunityId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ state: 'Won' })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) location.reload();
+        else alert('Error: ' + data.message);
+    });
+}
+
+function markLost(opportunityId) {
+    console.log('markLost called');
+    fetch(`/api/opportunities/${opportunityId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ state: 'Lost' })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) location.reload();
+        else alert('Error: ' + data.message);
+    });
+}
+
+function markNoBid(opportunityId) {
+    console.log('markNoBid called');
+    fetch(`/api/opportunities/${opportunityId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ state: 'No Bid' })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) location.reload();
+        else alert('Error: ' + data.message);
+    });
+}
+
+function createProject(opportunityId) {
+    console.log('createProject called');
+    if (confirm('Create a new project from this opportunity?')) {
+        fetch(`/api/opportunities/${opportunityId}/create-project`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(`Project created successfully! Project ID: ${data.project_id}`);
+                location.reload();
+            } else {
+                alert('Error creating project: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error creating project. Please try again.');
+        });
+    }
+}
+
+function deleteOpportunity(opportunityId) {
+    console.log('deleteOpportunity called - requires confirmation');
+    if (confirm('Are you sure you want to delete this opportunity? This action cannot be undone.')) {
+        fetch(`/api/opportunities/${opportunityId}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Opportunity deleted successfully');
+                window.location.href = '/opportunities';
+            } else {
+                alert('Error: ' + data.message);
+            }
+        });
+    }
+}
+
+// ==================== VENDOR EMAIL AUTOMATION ====================
+
+function generateVendorEmails(opportunityId) {
+    console.log('generateVendorEmails called for opportunity:', opportunityId);
+    
+    // Show vendor selection modal
+    showVendorSelectionModal(opportunityId);
+}
+
+function showVendorSelectionModal(opportunityId) {
+    // Create modal for vendor selection
+    const modalHtml = `
+        <div class="modal fade" id="vendorSelectionModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="fas fa-users me-2"></i>Select Vendors for RFQ
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Email Template:</label>
+                            <select id="modalEmailTemplate" class="form-select">
+                                <option value="Standard RFQ Request">Standard RFQ Request</option>
+                                <option value="Urgent RFQ Request">Urgent RFQ Request</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Select Vendors:</label>
+                            <div id="vendorCheckboxes" class="border rounded p-3" style="max-height: 300px; overflow-y: auto;">
+                                <div class="text-center py-3">
+                                    <i class="fas fa-spinner fa-spin"></i> Loading vendors...
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info small">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Selected vendors will receive auto-generated RFQ emails with product details, quantities, and manufacturer information.
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-success" onclick="processVendorEmails(${opportunityId})">
+                            <i class="fas fa-paper-plane me-1"></i>Generate & Send RFQ Emails
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Add modal to page if not exists
+    if (!document.getElementById('vendorSelectionModal')) {
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+    }
+    
+    // Load vendors
+    loadVendorsForModal();
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('vendorSelectionModal'));
+    modal.show();
+}
+
+function loadVendorsForModal() {
+    fetch('/api/accounts?type=vendor')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayVendorCheckboxes(data.accounts);
+            } else {
+                document.getElementById('vendorCheckboxes').innerHTML = 
+                    '<div class="text-danger">Error loading vendors: ' + data.message + '</div>';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading vendors:', error);
+            document.getElementById('vendorCheckboxes').innerHTML = 
+                '<div class="text-danger">Error loading vendors. Please try again.</div>';
+        });
+}
+
+function displayVendorCheckboxes(vendors) {
+    const container = document.getElementById('vendorCheckboxes');
+    
+    if (!vendors || vendors.length === 0) {
+        container.innerHTML = '<div class="text-muted">No vendors found. Add vendors in the Accounts section first.</div>';
+        return;
+    }
+    
+    let html = '';
+    vendors.forEach(vendor => {
+        html += `
+            <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" value="${vendor.id}" id="vendor_${vendor.id}">
+                <label class="form-check-label" for="vendor_${vendor.id}">
+                    <strong>${vendor.name}</strong>
+                    ${vendor.city ? '<br><small class="text-muted">' + vendor.city + ', ' + (vendor.state || '') + '</small>' : ''}
+                </label>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+function processVendorEmails(opportunityId) {
+    const selectedVendors = [];
+    const checkboxes = document.querySelectorAll('#vendorCheckboxes input[type="checkbox"]:checked');
+    
+    checkboxes.forEach(cb => {
+        selectedVendors.push({
+            account_id: parseInt(cb.value),
+            contact_id: null // Will use primary contact
+        });
+    });
+    
+    if (selectedVendors.length === 0) {
+        alert('Please select at least one vendor.');
+        return;
+    }
+    
+    const template = document.getElementById('modalEmailTemplate').value;
+    
+    // Show loading state
+    const button = event.target;
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Generating emails...';
+    button.disabled = true;
+    
+    fetch(`/api/opportunities/${opportunityId}/generate-vendor-emails`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            vendors: selectedVendors,
+            template: template
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        button.innerHTML = originalText;
+        button.disabled = false;
+        
+        if (data.success) {
+            alert(`Successfully generated ${data.summary.success} RFQ emails!`);
+            bootstrap.Modal.getInstance(document.getElementById('vendorSelectionModal')).hide();
+            loadVendorEmailsList(opportunityId);
+        } else {
+            alert('Error generating emails: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        button.innerHTML = originalText;
+        button.disabled = false;
+        alert('Error generating emails. Please try again.');
+    });
+}
+
+function loadVendorEmailsList(opportunityId) {
+    fetch(`/api/opportunities/${opportunityId}/vendor-emails`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayVendorEmails(data.emails);
+            } else {
+                console.error('Error loading vendor emails:', data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error loading vendor emails:', error);
+        });
+}
+
+function displayVendorEmails(emails) {
+    const container = document.getElementById('vendorEmailsList');
+    
+    if (!emails || emails.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-3">
+                <i class="fas fa-envelope fa-2x text-muted mb-2"></i>
+                <p class="text-muted mb-3">No vendor emails generated yet</p>
+                <button type="button" class="btn btn-outline-primary btn-sm" onclick="generateVendorEmails(${opportunityId})">
+                    <i class="fas fa-paper-plane me-1"></i>Start RFQ Process
+                </button>
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '';
+    emails.forEach(email => {
+        const statusColor = {
+            'Draft': 'secondary',
+            'Sent': 'primary', 
+            'Responded': 'success',
+            'Error': 'danger'
+        }[email.status] || 'secondary';
+        
+        html += `
+            <div class="border rounded p-3 mb-2">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="flex-grow-1">
+                        <h6 class="mb-1">${email.vendor_name}</h6>
+                        <p class="text-muted mb-1 small">${email.subject}</p>
+                        <small class="text-muted">
+                            <i class="fas fa-clock me-1"></i>${new Date(email.created_date).toLocaleString()}
+                        </small>
+                    </div>
+                    <div class="text-end">
+                        <span class="badge bg-${statusColor} mb-2">${email.status}</span><br>
+                        <div class="btn-group btn-group-sm">
+                            <button class="btn btn-outline-primary" onclick="previewEmail('${email.rfq_email_id}')" title="Preview">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="btn btn-outline-success" onclick="markEmailSent(${email.id})" title="Mark as Sent">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+function previewEmail(rfqEmailId) {
+    // This would show a modal with the email content
+    alert('Email preview functionality - showing RFQ ID: ' + rfqEmailId);
+}
+
+function markEmailSent(emailId) {
+    if (confirm('Mark this email as sent?')) {
+        fetch(`/api/vendor-emails/${emailId}/mark-sent`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                tracking_id: `TRACK-${emailId}-${Date.now()}`
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Email marked as sent and interaction created!');
+                loadVendorEmailsList({{ opportunity.id }});
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error updating email status.');
+        });
+    }
+}
+
+function viewEmailTracking(emailId) {
+    fetch(`/api/vendor-emails/${emailId}/tracking`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showEmailTrackingModal(data.tracking);
+            } else {
+                alert('Error loading tracking data: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error loading tracking data.');
+        });
+}
+
+function showEmailTrackingModal(trackingData) {
+    const modalHtml = `
+        <div class="modal fade" id="emailTrackingModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="fas fa-chart-line me-2"></i>Email Tracking Details
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <strong>Email Status:</strong><br>
+                                <span class="badge bg-${trackingData.email_data.delivery_status === 'Sent' ? 'success' : 'warning'}">
+                                    ${trackingData.email_data.delivery_status || 'Pending'}
+                                </span>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Response Received:</strong><br>
+                                <span class="badge bg-${trackingData.email_data.response_received ? 'success' : 'secondary'}">
+                                    ${trackingData.email_data.response_received ? 'Yes' : 'No'}
+                                </span>
+                            </div>
+                        </div>
+                        
+                        ${trackingData.email_data.sent_date ? `
+                            <div class="mb-3">
+                                <strong>Sent Date:</strong> ${new Date(trackingData.email_data.sent_date).toLocaleString()}
+                            </div>
+                        ` : ''}
+                        
+                        ${trackingData.email_data.response_date ? `
+                            <div class="mb-3">
+                                <strong>Response Date:</strong> ${new Date(trackingData.email_data.response_date).toLocaleString()}
+                            </div>
+                        ` : ''}
+                        
+                        <h6>Tracking Events:</h6>
+                        <div class="list-group">
+                            ${trackingData.tracking_events.map(event => `
+                                <div class="list-group-item">
+                                    <div class="d-flex justify-content-between">
+                                        <strong>${event.event_type}</strong>
+                                        <small>${new Date(event.timestamp).toLocaleString()}</small>
+                                    </div>
+                                    <p class="mb-1">${event.details}</p>
+                                    <span class="badge bg-${event.success ? 'success' : 'danger'}">
+                                        ${event.success ? 'Success' : 'Failed'}
+                                    </span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remove existing modal if present
+    const existingModal = document.getElementById('emailTrackingModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Add modal to page
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('emailTrackingModal'));
+    modal.show();
+}
+
+// Load vendor emails when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    loadVendorEmailsList({{ opportunity.id }});
+});
+</script>
+{% endblock %}

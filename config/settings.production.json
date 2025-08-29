@@ -1,0 +1,38 @@
+{
+  "environment": "production",
+  "debug": false,
+  "secret_key": "CHANGE-THIS-IN-PRODUCTION",
+  "database": {
+    "type": "sqlite",
+    "path": "crm_database.db",
+    "backup_interval_hours": 6,
+    "max_connections": 20
+  },
+  "processing": {
+    "batch_size": 100,
+    "max_file_size_mb": 200,
+    "allowed_extensions": [".pdf", ".PDF"],
+    "auto_backup_after_processing": true
+  },
+  "logging": {
+    "level": "INFO",
+    "file": "crm_app.log",
+    "max_file_size_mb": 50,
+    "backup_count": 10
+  },
+  "security": {
+    "session_timeout_minutes": 30,
+    "max_login_attempts": 3,
+    "require_https": true
+  },
+  "email": {
+    "enabled": true,
+    "timeout_seconds": 60,
+    "max_retries": 5
+  },
+  "api": {
+    "rate_limit_per_minute": 1000,
+    "enable_cors": false,
+    "timeout_seconds": 60
+  }
+}
