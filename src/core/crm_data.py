@@ -12,7 +12,7 @@ class CRMData:
     def create_account(self, **kwargs):
         """Create a new account"""
         fields = ['name', 'type', 'summary', 'detail', 'website', 'email', 'location',
-                 'linkedin', 'parent_co', 'cage', 'image', 'video', 'is_active']
+                 'linkedin', 'parent_co', 'cage', 'image', 'video', 'is_active', 'billing_address']
         
         valid_fields = {k: v for k, v in kwargs.items() if k in fields and v is not None}
         
@@ -23,7 +23,8 @@ class CRMData:
         if 'is_active' not in valid_fields:
             valid_fields['is_active'] = True
         if 'created_date' not in valid_fields:
-            valid_fields['created_date'] = 'CURRENT_TIMESTAMP'
+            from datetime import datetime
+            valid_fields['created_date'] = datetime.now().isoformat()
         
         placeholders = ', '.join(['?' for _ in valid_fields])
         columns = ', '.join(valid_fields.keys())
@@ -69,7 +70,7 @@ class CRMData:
         """Update an existing account"""
         # Updated to match actual table schema
         fields = ['name', 'type', 'summary', 'detail', 'website', 'email', 'location', 
-                 'linkedin', 'parent_co', 'cage', 'image', 'video']
+                 'linkedin', 'parent_co', 'cage', 'image', 'video', 'billing_address']
         
         valid_fields = {k: v for k, v in kwargs.items() if k in fields and v is not None}
         
@@ -98,7 +99,7 @@ class CRMData:
         """Create a new contact"""
         fields = ['first_name', 'last_name', 'title', 'email', 'phone', 'mobile', 
                  'account_id', 'department', 'reports_to', 'lead_source', 'address', 
-                 'description', 'owner', 'is_active']
+                 'description', 'owner', 'is_active', 'buyer_code', 'fax']
         
         valid_fields = {k: v for k, v in kwargs.items() if k in fields and v is not None}
         
@@ -156,8 +157,13 @@ class CRMData:
                 query += " AND c.account_id = ?"
                 params.append(filters['account_id'])
             if filters.get('email'):
-                query += " AND c.email LIKE ?"
-                params.append(f"%{filters['email']}%")
+                # Check if this is an exact match request (used for duplicate detection)
+                if isinstance(filters['email'], str) and not filters['email'].startswith('%'):
+                    query += " AND c.email = ?"
+                    params.append(filters['email'])
+                else:
+                    query += " AND c.email LIKE ?"
+                    params.append(f"%{filters['email']}%")
         
         query += " ORDER BY c.first_name, c.last_name"
         if limit:
@@ -196,7 +202,7 @@ class CRMData:
         fields = ['first_name', 'last_name', 'name', 'title', 'email', 'phone', 'mobile', 
                  'account_id', 'department', 'reports_to', 'lead_source', 'address', 
                  'description', 'owner', 'quality', 'status', 'frequency_days', 
-                 'last_communication', 'next_communication']
+                 'last_communication', 'next_communication', 'buyer_code', 'fax']
         
         valid_fields = {k: v for k, v in kwargs.items() if k in fields and v is not None}
         
@@ -301,6 +307,12 @@ class CRMData:
         """Get specific product by ID"""
         query = "SELECT * FROM products WHERE id = ? AND is_active = 1"
         results = db.execute_query(query, [product_id])
+        return results[0] if results else None
+    
+    def get_product_by_nsn(self, nsn):
+        """Get specific product by NSN"""
+        query = "SELECT * FROM products WHERE nsn = ? AND is_active = 1"
+        results = db.execute_query(query, [nsn])
         return results[0] if results else None
     
     def update_product(self, product_id, **kwargs):
@@ -556,7 +568,8 @@ class CRMData:
                  'bid_date', 'close_date', 'quantity', 'unit', 'mfr', 'fob', 
                  'packaging_type', 'iso', 'sampling', 'days_aod', 'packaging_info',
                  'payment', 'buyer', 'skipped', 'document', 'product_id', 
-                 'contact_id', 'account_id', 'name', 'description', 'delivery_days', 'amount']
+                 'contact_id', 'account_id', 'name', 'description', 'delivery_days', 'amount',
+                 'payment_history', 'pdf_file_path']
         
         valid_fields = {k: v for k, v in kwargs.items() if k in fields and v is not None}
         
@@ -577,7 +590,8 @@ class CRMData:
             SELECT o.*, 
                    a.name as account_name, 
                    (c.first_name || ' ' || c.last_name) as contact_name, 
-                   p.name as product_name
+                   p.name as product_name,
+                   p.nsn as product_nsn
             FROM opportunities o
             LEFT JOIN accounts a ON o.account_id = a.id
             LEFT JOIN contacts c ON o.contact_id = c.id
@@ -602,6 +616,15 @@ class CRMData:
             if filters.get('account_id'):
                 query += " AND o.account_id = ?"
                 params.append(filters['account_id'])
+            if filters.get('contact_id'):
+                query += " AND o.contact_id = ?"
+                params.append(filters['contact_id'])
+            if filters.get('product_id'):
+                query += " AND o.product_id = ?"
+                params.append(filters['product_id'])
+            if filters.get('nsn'):
+                query += " AND p.nsn = ?"
+                params.append(filters['nsn'])
             if filters.get('search'):
                 query += " AND (o.name LIKE ? OR o.description LIKE ?)"
                 params.extend([f"%{filters['search']}%", f"%{filters['search']}%"])
@@ -699,7 +722,8 @@ class CRMData:
             SELECT o.*, 
                    a.name as account_name, 
                    (c.first_name || ' ' || c.last_name) as contact_name, 
-                   p.name as product_name
+                   p.name as product_name,
+                   p.nsn as product_nsn
             FROM opportunities o
             LEFT JOIN accounts a ON o.account_id = a.id
             LEFT JOIN contacts c ON o.contact_id = c.id
@@ -1041,7 +1065,7 @@ class CRMData:
         if 'title' in kwargs and kwargs['title']:
             kwargs['subject'] = kwargs['title']
         
-        valid_fields = {k: v for k, v in kwargs.items() if k in fields and v is not None}
+        valid_fields = {k: v for k, v in kwargs.items() if k in fields and (v is not None or k in ['parent_item_type', 'parent_item_id'])}
         
         if not valid_fields.get('subject'):
             raise ValueError("Task subject is required")
@@ -1052,9 +1076,11 @@ class CRMData:
         if 'priority' not in valid_fields:
             valid_fields['priority'] = 'Medium'
         if 'created_date' not in valid_fields:
-            valid_fields['created_date'] = 'CURRENT_TIMESTAMP'
-        if 'last_modified' not in valid_fields:
-            valid_fields['last_modified'] = 'CURRENT_TIMESTAMP'
+            from datetime import datetime
+            valid_fields['created_date'] = datetime.now().isoformat()
+        if 'modified_date' not in valid_fields:
+            from datetime import datetime
+            valid_fields['modified_date'] = datetime.now().isoformat()
         
         placeholders = ', '.join(['?' for _ in valid_fields])
         columns = ', '.join(valid_fields.keys())
@@ -1068,6 +1094,9 @@ class CRMData:
         params = []
         
         if filters:
+            if filters.get('id'):
+                query += " AND id = ?"
+                params.append(filters['id'])
             if filters.get('status'):
                 query += " AND status = ?"
                 params.append(filters['status'])
@@ -1092,7 +1121,53 @@ class CRMData:
         query = "UPDATE tasks SET status = 'Completed', completed_date = ?, modified_date = ? WHERE id = ?"
         return db.execute_update(query, [datetime.now(), datetime.now(), task_id])
     
-    # ==================== INTERACTIONS ====================
+    def get_opportunities_linked_to_task(self, task_id):
+        """Get opportunities that are linked to a specific task"""
+        # First, check if the task is directly linked to an opportunity
+        task = self.get_task_by_id(task_id)
+        if not task:
+            return []
+
+        opportunities = []
+        
+        # If task is directly linked to an opportunity
+        if task.get('parent_item_type') == 'Opportunity' and task.get('parent_item_id'):
+            opp = self.get_opportunity_by_id(task['parent_item_id'])
+            if opp:
+                opportunities.append(opp)
+        
+        # For processing tasks, also look for opportunities that reference this task
+        if 'processing' in task.get('subject', '').lower() or 'pdf' in task.get('subject', '').lower() or 'dibbs' in task.get('subject', '').lower():
+            # Look for opportunities that have reference tasks pointing to this task
+            ref_tasks_query = """
+                SELECT DISTINCT parent_item_id 
+                FROM tasks 
+                WHERE parent_item_type = 'Opportunity' 
+                AND description LIKE ?
+            """
+            ref_task_results = db.execute_query(ref_tasks_query, [f'%Master Task ID: {task_id}%'])
+            
+            for result in ref_task_results:
+                opp = self.get_opportunity_by_id(result['parent_item_id'])
+                if opp and opp not in opportunities:
+                    opportunities.append(opp)
+            
+            # Also extract opportunity IDs from the task description if it lists created opportunities
+            description = task.get('description', '')
+            if 'Created Opportunities:' in description:
+                # Extract opportunity IDs from the description
+                import re
+                # Look for patterns like "(ID: 123)" in the description
+                id_matches = re.findall(r'\(ID:\s*(\d+)\)', description)
+                for opp_id in id_matches:
+                    try:
+                        opp = self.get_opportunity_by_id(int(opp_id))
+                        if opp and opp not in opportunities:
+                            opportunities.append(opp)
+                    except (ValueError, TypeError):
+                        continue
+        
+        return opportunities    # ==================== INTERACTIONS ====================
     
     def create_interaction(self, **kwargs):
         """Create a new interaction"""
@@ -1689,32 +1764,6 @@ class CRMData:
 
     # ==================== TASKS ====================
     
-    def create_task(self, **kwargs):
-        """Create a new task"""
-        fields = ['subject', 'description', 'status', 'priority', 'type', 'due_date',
-                 'assigned_to', 'related_to_type', 'related_to_id']
-        
-        # Handle title -> subject mapping FIRST
-        if 'title' in kwargs and kwargs['title']:
-            kwargs['subject'] = kwargs['title']
-        
-        valid_fields = {k: v for k, v in kwargs.items() if k in fields and v is not None}
-        
-        if not valid_fields.get('subject'):
-            raise ValueError("Task subject is required")
-        
-        # Set defaults
-        if 'status' not in valid_fields:
-            valid_fields['status'] = 'Not Started'
-        if 'priority' not in valid_fields:
-            valid_fields['priority'] = 'Normal'
-        
-        placeholders = ', '.join(['?' for _ in valid_fields])
-        columns = ', '.join(valid_fields.keys())
-        
-        query = f"INSERT INTO tasks ({columns}) VALUES ({placeholders})"
-        return db.execute_update(query, list(valid_fields.values()))
-    
     def get_tasks(self, filters=None, limit=None):
         """Get tasks with optional filters and calculated fields"""
         base_query = """
@@ -1750,11 +1799,11 @@ class CRMData:
                 if filters['due_date_range'] == 'overdue':
                     base_query += " AND t.due_date < date('now') AND t.status != 'Completed'"
                 elif filters['due_date_range'] == 'today':
-                    base_query += " AND t.due_date = date('now')"
+                    base_query += " AND t.due_date = date('now') AND t.status != 'Completed'"
                 elif filters['due_date_range'] == 'this_week':
-                    base_query += " AND t.due_date BETWEEN date('now') AND date('now', '+7 days')"
+                    base_query += " AND t.due_date BETWEEN date('now') AND date('now', '+7 days') AND t.status != 'Completed'"
                 elif filters['due_date_range'] == 'next_week':
-                    base_query += " AND t.due_date BETWEEN date('now', '+7 days') AND date('now', '+14 days')"
+                    base_query += " AND t.due_date BETWEEN date('now', '+7 days') AND date('now', '+14 days') AND t.status != 'Completed'"
             if filters.get('parent_item_type'):
                 base_query += " AND t.parent_item_type = ?"
                 params.append(filters['parent_item_type'])
@@ -2056,7 +2105,7 @@ class CRMData:
             SUM(CASE WHEN priority = 'Medium' THEN 1 ELSE 0 END) as medium_priority,
             SUM(CASE WHEN priority = 'Low' THEN 1 ELSE 0 END) as low_priority,
             SUM(CASE WHEN due_date < date('now') AND status != 'Completed' THEN 1 ELSE 0 END) as overdue,
-            SUM(CASE WHEN due_date = date('now') THEN 1 ELSE 0 END) as due_today,
+            SUM(CASE WHEN due_date = date('now') AND status != 'Completed' THEN 1 ELSE 0 END) as due_today,
             SUM(CASE WHEN due_date BETWEEN date('now', '+1 day') AND date('now', '+7 days') THEN 1 ELSE 0 END) as due_this_week,
             SUM(CASE WHEN due_date IS NULL AND status IN ('Not Started', 'In Progress') THEN 1 ELSE 0 END) as needs_scheduling
         FROM tasks
@@ -2539,6 +2588,109 @@ class CRMData:
             'progress': project['progress_percentage'],
             'status': project['status']
         }
+    
+    # ==================== QPL (Qualified Products List) ====================
+    
+    def get_qpl_manufacturers_for_product(self, product_id):
+        """Get all QPL manufacturers for a specific product"""
+        query = """
+            SELECT pm.*, a.name as manufacturer_name, a.cage as cage_code
+            FROM product_manufacturers pm
+            JOIN accounts a ON pm.account_id = a.id
+            WHERE pm.product_id = ? AND pm.is_active = 1 AND a.type = 'QPL'
+            ORDER BY a.name
+        """
+        return db.execute_query(query, [product_id])
+    
+    def get_qpl_products_for_manufacturer(self, account_id):
+        """Get all QPL products for a specific manufacturer/account"""
+        query = """
+            SELECT pm.*, p.nsn, p.name as product_name, p.description
+            FROM product_manufacturers pm
+            JOIN products p ON pm.product_id = p.id
+            WHERE pm.account_id = ? AND pm.is_active = 1
+            ORDER BY p.nsn
+        """
+        return db.execute_query(query, [account_id])
+    
+    def get_qpl_entry_by_id(self, qpl_id):
+        """Get specific QPL entry"""
+        query = """
+            SELECT pm.*, p.nsn, p.name as product_name, p.description,
+                   a.name as manufacturer_name, a.cage as cage_code
+            FROM product_manufacturers pm
+            JOIN products p ON pm.product_id = p.id
+            JOIN accounts a ON pm.account_id = a.id
+            WHERE pm.id = ?
+        """
+        results = db.execute_query(query, [qpl_id])
+        return results[0] if results else None
+    
+    def search_qpl_entries(self, search_term):
+        """Search QPL entries by NSN, manufacturer, or part number"""
+        query = """
+            SELECT pm.*, p.nsn, p.name as product_name, p.description,
+                   a.name as manufacturer_name, a.cage as cage_code
+            FROM product_manufacturers pm
+            JOIN products p ON pm.product_id = p.id
+            JOIN accounts a ON pm.account_id = a.id
+            WHERE pm.is_active = 1 AND (
+                p.nsn LIKE ? OR 
+                a.name LIKE ? OR 
+                pm.part_number LIKE ? OR
+                a.cage LIKE ?
+            )
+            ORDER BY p.nsn, a.name
+        """
+        search_pattern = f"%{search_term}%"
+        return db.execute_query(query, [search_pattern, search_pattern, search_pattern, search_pattern])
+    
+    def get_qpl_summary_stats(self):
+        """Get QPL summary statistics"""
+        stats = {}
+        
+        # Total QPL entries
+        result = db.execute_query("SELECT COUNT(*) as count FROM product_manufacturers WHERE is_active = 1")
+        stats['total_qpl_entries'] = result[0]['count'] if result else 0
+        
+        # Total QPL manufacturers
+        result = db.execute_query("SELECT COUNT(DISTINCT account_id) as count FROM product_manufacturers WHERE is_active = 1")
+        stats['total_manufacturers'] = result[0]['count'] if result else 0
+        
+        # Total products with QPL
+        result = db.execute_query("SELECT COUNT(DISTINCT product_id) as count FROM product_manufacturers WHERE is_active = 1")
+        stats['total_products_with_qpl'] = result[0]['count'] if result else 0
+        
+        # Products without QPL
+        result = db.execute_query("""
+            SELECT COUNT(*) as count FROM products p 
+            WHERE p.id NOT IN (SELECT DISTINCT product_id FROM product_manufacturers WHERE is_active = 1)
+            AND p.is_active = 1
+        """)
+        stats['products_without_qpl'] = result[0]['count'] if result else 0
+        
+        return stats
+    
+    def get_accounts_by_ids(self, account_ids):
+        """Get accounts by list of IDs"""
+        if not account_ids:
+            return []
+        
+        placeholders = ','.join(['?' for _ in account_ids])
+        query = f"""
+            SELECT id, name, type, cage, address, city, state, zip_code, 
+                   phone, email, website, parent_co
+            FROM accounts 
+            WHERE id IN ({placeholders}) AND is_active = 1
+            ORDER BY name
+        """
+        return db.execute_query(query, account_ids)
+    
+    def get_quotes_for_product(self, product_id, nsn=None):
+        """Get quotes related to a product"""
+        # For now, return empty list since quotes table exists but may not have product relations
+        # This can be enhanced based on your quote-to-product relationship structure
+        return []
 
 # Initialize data access layer
 crm_data = CRMData()

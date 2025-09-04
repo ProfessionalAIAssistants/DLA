@@ -31,10 +31,11 @@ class DashboardCalendar:
         Get calendar events for the specified date range
         Returns events in FullCalendar format
         """
+        # Expand date range to show more historical and future events
         if not start_date:
-            start_date = datetime.now() - timedelta(days=30)
+            start_date = datetime.now() - timedelta(days=365)  # Show 1 year back
         if not end_date:
-            end_date = datetime.now() + timedelta(days=60)
+            end_date = datetime.now() + timedelta(days=365)    # Show 1 year ahead
             
         events = []
         
@@ -73,14 +74,20 @@ class DashboardCalendar:
                 try:
                     close_date = datetime.fromisoformat(opp['close_date'].replace('Z', '+00:00'))
                     if start_date <= close_date <= end_date:
-                        # Color based on stage
-                        stage = opp.get('stage', '').lower()
-                        if 'won' in stage:
-                            color = '#28a745'  # Green
-                        elif 'lost' in stage:
-                            color = '#dc3545'  # Red
+                        # Color based on stage and state
+                        stage = (opp.get('stage') or '').lower()
+                        state = (opp.get('state') or '').lower()
+                        
+                        if 'won' in state or 'won' in stage:
+                            color = '#28a745'  # Green for won
+                        elif 'lost' in state or 'lost' in stage:
+                            color = '#dc3545'  # Red for lost
+                        elif 'no bid' in state:
+                            color = '#6c757d'  # Gray for no bid
+                        elif close_date < datetime.now():
+                            color = '#ffc107'  # Yellow for past due
                         else:
-                            color = '#fd7e14'  # Orange
+                            color = '#fd7e14'  # Orange for active
                         
                         events.append({
                             'id': f"opportunity_{opp['id']}",

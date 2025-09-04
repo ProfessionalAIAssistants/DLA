@@ -1,0 +1,789 @@
+{% extends "base.html" %}
+
+{% block title %}{{ product.name }} - Product Details{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="display-6 fw-bold mb-2">{{ product.name }}</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="/products">Products</a></li>
+                    <li class="breadcrumb-item active">{{ product.nsn or product.name }}</li>
+                </ol>    if ($('#vendorsTable').length) {
+        $('#vendorsTable').DataTable({
+            pageLength: 10,
+            responsive: true,
+            order: [[0, 'asc']], // Sort by vendor name
+            language: {
+                search: "Search vendors:",
+                lengthMenu: "Show _MENU_ vendors per page",
+                info: "Showing _START_ to _END_ of _TOTAL_ vendors",
+                emptyTable: "No vendors found for this product"
+            },
+            columnDefs: [
+                { orderable: false, targets: 5 } // Disable sorting on Actions column (Vendor=0, Type=1, CAGE=2, Location=3, Contact=4, Actions=5)
+            ]
+        });
+    }
+    
+    if ($('#opportunitiesTable').length) {
+        $('#opportunitiesTable').DataTable({
+            pageLength: 10,
+            responsive: true,
+            order: [[3, 'desc']], // Sort by close date descending
+            language: {
+                search: "Search opportunities:",
+                lengthMenu: "Show _MENU_ opportunities per page",
+                info: "Showing _START_ to _END_ of _TOTAL_ opportunities",
+                emptyTable: "No opportunities found for this product"
+            },
+            columnDefs: [
+                { orderable: false, targets: 4 } // Disable sorting on Actions column (Request=0, Stage=1, Amount=2, Close Date=3, Actions=4)
+            ]
+        });
+    }
+    
+    if ($('#quotesTable').length) {
+        $('#quotesTable').DataTable({
+            pageLength: 10,
+            responsive: true,
+            order: [[0, 'asc']], // Sort by quote number
+            language: {
+                search: "Search quotes:",
+                lengthMenu: "Show _MENU_ quotes per page",
+                info: "Showing _START_ to _END_ of _TOTAL_ quotes",
+                emptyTable: "No quotes found for this product"
+            },
+            columnDefs: [
+                { orderable: false, targets: 5 } // Disable sorting on Actions column (Quote#=0, Vendor=1, Amount=2, Lead Time=3, Status=4, Actions=5)
+            ]
+        });
+    }nav>
+        </div>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-primary" onclick="editProduct({{ product.id }})">
+                <i class="fas fa-edit me-2"></i>Edit
+            </button>
+            <div class="dropdown">
+                <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <i class="fas fa-cog me-2"></i>Actions
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="#" onclick="addQPLManufacturer({{ product.id }})">
+                        <i class="fas fa-plus me-2"></i>Add QPL Manufacturer
+                    </a></li>
+                    <li><a class="dropdown-item" href="#" onclick="exportQPLData({{ product.id }})">
+                        <i class="fas fa-download me-2"></i>Export QPL Data
+                    </a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item text-danger" href="#" onclick="deleteProduct({{ product.id }})">
+                        <i class="fas fa-trash me-2"></i>Delete
+                    </a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Main Product Information -->
+        <div class="col-lg-8">
+            <!-- Product Details Card -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-box me-2"></i>Product Information
+                    </h5>
+                    <span class="badge bg-{{ 'success' if product.is_active else 'secondary' }} fs-6">
+                        {{ 'Active' if product.is_active else 'Inactive' }}
+                    </span>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold text-muted small">PRODUCT</label>
+                                <div class="p-2 bg-light rounded">
+                                    <code class="text-primary fs-5">{{ product.nsn or 'Not Assigned' }}</code>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label fw-bold text-muted small">FSC</label>
+                                <div class="p-2 bg-light rounded">
+                                    {{ product.fsc or 'Not Assigned' }}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold text-muted small">PRODUCT DESCRIPTION</label>
+                                <div class="p-2 bg-light rounded">
+                                    {{ product.description or 'Not Assigned' }}
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label fw-bold text-muted small">NOTES</label>
+                                <div class="p-2 bg-light rounded">
+                                    {{ product.notes or 'Not Assigned' }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- QPL Manufacturers -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-industry me-2"></i>QPL Manufacturers
+                        <span class="badge bg-primary ms-2">{{ qpl_manufacturers|length }}</span>
+                    </h5>
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="addQPLManufacturer({{ product.id }})">
+                        <i class="fas fa-plus me-1"></i>Add Manufacturer
+                    </button>
+                </div>
+                <div class="card-body">
+                    {% if qpl_manufacturers %}
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="qplManufacturersTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Manufacturer</th>
+                                    <th>CAGE Code</th>
+                                    <th>Part Number</th>
+                                    <th>Added</th>
+                                    <th class="text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for qpl in qpl_manufacturers %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-3">
+                                                <i class="fas fa-industry text-primary"></i>
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold">{{ qpl.manufacturer_name }}</div>
+                                                <small class="text-muted">
+                                                    <a href="/account/{{ qpl.account_id }}" class="text-decoration-none">
+                                                        View Account Details
+                                                    </a>
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <code class="bg-secondary bg-opacity-10 p-1 rounded">{{ qpl.cage_code }}</code>
+                                    </td>
+                                    <td>
+                                        <span class="fw-bold text-primary">{{ qpl.part_number }}</span>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">{{ qpl.created_date | date }}</small>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="btn-group btn-group-sm">
+                                            <button type="button" class="btn btn-outline-secondary" 
+                                                    onclick="editQPLEntry({{ qpl.id }})" title="Edit">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-outline-danger" 
+                                                    onclick="deleteQPLEntry({{ qpl.id }})" title="Remove">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-industry fa-3x text-muted mb-3"></i>
+                        <h6 class="text-muted">No QPL Manufacturers</h6>
+                        <p class="text-muted small">No manufacturers have been approved for this product yet.</p>
+                        <button type="button" class="btn btn-outline-primary" onclick="addQPLManufacturer({{ product.id }})">
+                            <i class="fas fa-plus me-1"></i>Add First Manufacturer
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Vendors Section -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-store me-2"></i>Vendors
+                        <span class="badge bg-secondary ms-2">{{ vendors|length }}</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if vendors %}
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="vendorsTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Vendor Name</th>
+                                    <th>Type</th>
+                                    <th>CAGE Code</th>
+                                    <th>Location</th>
+                                    <th>Contact</th>
+                                    <th class="text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for vendor in vendors %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar avatar-sm bg-success rounded-circle me-2">
+                                                <span class="text-white small">{{ vendor.name[0] if vendor.name else 'V' }}</span>
+                                            </div>
+                                            <strong>{{ vendor.name }}</strong>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">{{ vendor.type or 'Vendor' }}</span>
+                                    </td>
+                                    <td>
+                                        <code class="text-primary">{{ vendor.cage or 'N/A' }}</code>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">
+                                            {% if vendor.city and vendor.state %}
+                                                {{ vendor.city }}, {{ vendor.state }}
+                                            {% elif vendor.city %}
+                                                {{ vendor.city }}
+                                            {% elif vendor.state %}
+                                                {{ vendor.state }}
+                                            {% else %}
+                                                N/A
+                                            {% endif %}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        {% if vendor.phone %}
+                                            <small class="text-muted">{{ vendor.phone }}</small>
+                                        {% elif vendor.email %}
+                                            <small class="text-muted">{{ vendor.email }}</small>
+                                        {% else %}
+                                            <small class="text-muted">N/A</small>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        <a href="/account/{{ vendor.id }}" class="btn btn-outline-primary btn-sm" title="View Vendor">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-store fa-3x text-muted mb-3"></i>
+                        <h6 class="text-muted">No Vendors</h6>
+                        <p class="text-muted small">No vendor information available from QPL manufacturers.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Opportunities Table -->
+            {% if opportunities %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-handshake me-2"></i>Opportunities Table
+                        <span class="badge bg-info ms-2">{{ opportunities|length }}</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover" id="opportunitiesTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Request #</th>
+                                    <th>Stage</th>
+                                    <th>Amount</th>
+                                    <th>Close Date</th>
+                                    <th class="text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for opp in opportunities %}
+                                <tr>
+                                    <td>
+                                        <a href="/opportunity/{{ opp.id }}" class="text-decoration-none">
+                                            {{ opp.name }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary">{{ opp.stage }}</span>
+                                    </td>
+                                    <td>
+                                        {% if opp.amount %}
+                                        <span class="text-success fw-bold">${{ "{:,.0f}".format(opp.amount) }}</span>
+                                        {% else %}
+                                        <span class="text-muted">TBD</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if opp.close_date %}
+                                        {{ opp.close_date | date }}
+                                        {% else %}
+                                        <span class="text-muted">Not set</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        <a href="/opportunity/{{ opp.id }}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Payment Histories -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-credit-card me-2"></i>Payment Histories
+                        <span class="badge bg-success ms-2">{{ opportunities|length if opportunities else 0 }}</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if opportunities %}
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="paymentHistoriesTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Opportunity</th>
+                                    <th>Stage</th>
+                                    <th>Amount</th>
+                                    <th>Close Date</th>
+                                    <th>Status</th>
+                                    <th class="text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for opp in opportunities %}
+                                <tr>
+                                    <td>
+                                        <a href="/opportunity/{{ opp.id }}" class="text-decoration-none">
+                                            {{ opp.name }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{% if opp.stage == 'Closed Won' %}success{% elif opp.stage == 'Closed Lost' %}danger{% elif opp.stage == 'Proposal' %}warning{% else %}primary{% endif %}">
+                                            {{ opp.stage or 'Unknown' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if opp.amount %}
+                                            <strong class="text-success">${{ "%.2f"|format(opp.amount) }}</strong>
+                                        {% else %}
+                                            <span class="text-muted">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if opp.close_date %}
+                                            <small class="text-muted">
+                                                {{ opp.close_date.strftime('%m/%d/%Y') if opp.close_date is not string else opp.close_date[:10] }}
+                                            </small>
+                                        {% else %}
+                                            <span class="text-muted">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{% if opp.stage == 'Closed Won' %}success{% elif opp.stage == 'Closed Lost' %}danger{% else %}secondary{% endif %}">
+                                            {% if opp.stage == 'Closed Won' %}Paid{% elif opp.stage == 'Closed Lost' %}Not Paid{% else %}Pending{% endif %}
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        <a href="/opportunity/{{ opp.id }}" class="btn btn-outline-primary btn-sm" title="View">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-credit-card fa-3x text-muted mb-3"></i>
+                        <h6 class="text-muted">No Payment History</h6>
+                        <p class="text-muted small">No payment information available from opportunities.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Quotes Table -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-file-invoice-dollar me-2"></i>Quotes Table
+                        <span class="badge bg-warning ms-2">{{ quotes|length if quotes else 0 }}</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if quotes %}
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="quotesTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Quote #</th>
+                                    <th>Vendor</th>
+                                    <th>Amount</th>
+                                    <th>Lead Time</th>
+                                    <th>Status</th>
+                                    <th class="text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for quote in quotes %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ quote.quote_number or 'N/A' }}</strong>
+                                    </td>
+                                    <td>
+                                        {% if quote.vendor_name %}
+                                            {{ quote.vendor_name }}
+                                        {% else %}
+                                            <span class="text-muted">Unknown Vendor</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if quote.quote_amount %}
+                                            <strong class="text-success">${{ "%.2f"|format(quote.quote_amount) }}</strong>
+                                        {% else %}
+                                            <span class="text-muted">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="text-muted">{{ quote.lead_time or 'N/A' }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{% if quote.status == 'Accepted' %}success{% elif quote.status == 'Rejected' %}danger{% else %}secondary{% endif %}">
+                                            {{ quote.status or 'Pending' }}
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        <a href="/quote/{{ quote.id }}" class="btn btn-outline-primary btn-sm" title="View Quote">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-file-invoice-dollar fa-3x text-muted mb-3"></i>
+                        <h6 class="text-muted">No Quotes</h6>
+                        <p class="text-muted small">No quotes are linked to this product yet.</p>
+                        <button type="button" class="btn btn-outline-primary" onclick="addQuote()">
+                            <i class="fas fa-plus me-1"></i>Request Quote
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Quick Stats -->
+            <div class="card mb-4 border-0 shadow-lg" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3) !important;">
+                <div class="card-header border-0 bg-transparent">
+                    <h6 class="card-title mb-0 text-white fw-bold" style="text-shadow: 0 1px 3px rgba(0,0,0,0.3);">
+                        <i class="fas fa-chart-bar me-2"></i>Quick Stats
+                    </h6>
+                </div>
+                <div class="card-body text-white">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="border-end border-white border-opacity-30 pe-3">
+                                <div class="bg-white bg-opacity-25 rounded-circle d-inline-flex align-items-center justify-content-center mb-2 shadow-sm" style="width: 55px; height: 55px;">
+                                    <i class="fas fa-industry text-white fs-5"></i>
+                                </div>
+                                <h4 class="text-white mb-1 fw-bold" style="text-shadow: 0 1px 3px rgba(0,0,0,0.4);">{{ qpl_manufacturers|length }}</h4>
+                                <small class="text-white fw-medium" style="text-shadow: 0 1px 2px rgba(0,0,0,0.3);">QPL Manufacturers</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="ps-3">
+                                <div class="bg-white bg-opacity-25 rounded-circle d-inline-flex align-items-center justify-content-center mb-2 shadow-sm" style="width: 55px; height: 55px;">
+                                    <i class="fas fa-handshake text-white fs-5"></i>
+                                </div>
+                                <h4 class="text-white mb-1 fw-bold" style="text-shadow: 0 1px 3px rgba(0,0,0,0.4);">{{ opportunities|length if opportunities else 0 }}</h4>
+                                <small class="text-white fw-medium" style="text-shadow: 0 1px 2px rgba(0,0,0,0.3);">Opportunities</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pricing Information -->
+            {% if product.unit_price or product.cost_price or product.list_price %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-dollar-sign me-2"></i>Pricing Information
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if product.list_price %}
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-muted">List Price:</span>
+                        <span class="fw-bold">${{ "{:,.2f}".format(product.list_price) }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    {% if product.unit_price %}
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-muted">Unit Price:</span>
+                        <span class="fw-bold text-success">${{ "{:,.2f}".format(product.unit_price) }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    {% if product.cost_price %}
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="text-muted">Cost Price:</span>
+                        <span class="fw-bold text-warning">${{ "{:,.2f}".format(product.cost_price) }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Activity Timeline -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-clock me-2"></i>Recent Activity
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-primary"></div>
+                            <div class="timeline-content">
+                                <small class="text-muted">{{ product.created_date | date }}</small>
+                                <div>Product created</div>
+                            </div>
+                        </div>
+                        
+                        {% if product.modified_date and product.modified_date != product.created_date %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-info"></div>
+                            <div class="timeline-content">
+                                <small class="text-muted">{{ product.modified_date | date }}</small>
+                                <div>Product updated</div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% for qpl in qpl_manufacturers[:3] %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-success"></div>
+                            <div class="timeline-content">
+                                <small class="text-muted">{{ qpl.created_date | date }}</small>
+                                <div>QPL entry added: {{ qpl.manufacturer_name }}</div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- DataTables CSS -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+
+<!-- jQuery and DataTables JS -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+
+<style>
+.timeline {
+    position: relative;
+    padding-left: 2rem;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 1.5rem;
+}
+
+.timeline-item:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    left: -1.5rem;
+    top: 1rem;
+    width: 2px;
+    height: calc(100% + 0.5rem);
+    background: #e9ecef;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -1.75rem;
+    top: 0.25rem;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+}
+
+.timeline-content {
+    font-size: 0.875rem;
+}
+</style>
+
+<script>
+function editProduct(productId) {
+    // Navigate to edit product page
+    window.location.href = '/products/' + productId + '?edit=true';
+}
+
+function deleteProduct(productId) {
+    if (confirm('Are you sure you want to delete this product? This action cannot be undone.')) {
+        fetch('/api/products/' + productId, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.href = '/products';
+            } else {
+                alert('Failed to delete product: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to delete product');
+        });
+    }
+}
+
+function addQPLManufacturer(productId) {
+    // TODO: Implement QPL manufacturer addition modal
+    alert('QPL Manufacturer addition will be implemented');
+}
+
+function editQPLEntry(qplId) {
+    // TODO: Implement QPL entry editing
+    alert('QPL Entry editing will be implemented');
+}
+
+function deleteQPLEntry(qplId) {
+    if (confirm('Are you sure you want to remove this QPL entry?')) {
+        fetch('/api/qpl-entries/' + qplId, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Failed to remove QPL entry: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to remove QPL entry');
+        });
+    }
+}
+
+function exportQPLData(productId) {
+    window.open('/api/products/' + productId + '/qpl-export', '_blank');
+}
+
+function addQuote() {
+    alert('Quote request functionality will be implemented based on your requirements');
+}
+
+// Initialize DataTables
+$(document).ready(function() {
+    if ($('#qplManufacturersTable').length) {
+        $('#qplManufacturersTable').DataTable({
+            pageLength: 10,
+            responsive: true,
+            order: [[0, 'asc']], // Sort by manufacturer name
+            language: {
+                search: "Search manufacturers:",
+                lengthMenu: "Show _MENU_ manufacturers per page",
+                info: "Showing _START_ to _END_ of _TOTAL_ manufacturers",
+                emptyTable: "No QPL manufacturers found for this product"
+            },
+            columnDefs: [
+                { orderable: false, targets: 4 } // Disable sorting on Actions column (0-based: Manufacturer=0, CAGE=1, Part=2, Added=3, Actions=4)
+            ]
+        });
+    }
+    
+    if ($('#vendorsTable').length) {
+        $('#vendorsTable').DataTable({
+            pageLength: 10,
+            responsive: true,
+            order: [[0, 'asc']], // Sort by manufacturer name
+            language: {
+                search: "Search vendors:",
+                lengthMenu: "Show _MENU_ vendors per page",
+                info: "Showing _START_ to _END_ of _TOTAL_ vendors",
+                emptyTable: "No vendor information available"
+            },
+            columnDefs: [
+                { orderable: false, targets: 5 } // Disable sorting on Actions column
+            ]
+        });
+    }
+    
+    if ($('#paymentHistoriesTable').length) {
+        $('#paymentHistoriesTable').DataTable({
+            pageLength: 10,
+            responsive: true,
+            order: [[3, 'desc']], // Sort by close date descending
+            language: {
+                search: "Search payment history:",
+                lengthMenu: "Show _MENU_ payments per page",
+                info: "Showing _START_ to _END_ of _TOTAL_ payment records",
+                emptyTable: "No payment history available"
+            },
+            columnDefs: [
+                { orderable: false, targets: 5 } // Disable sorting on Actions column
+            ]
+        });
+    }
+});
+</script>
+{% endblock %}

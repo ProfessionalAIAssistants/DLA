@@ -398,18 +398,61 @@ function editContact(contactId) {
                 return;
             }
             
-            // Populate edit modal fields
-            document.getElementById('editName').value = contact.name || '';
-            document.getElementById('editQuality').value = contact.quality || '';
-            document.getElementById('editEmail').value = contact.email || '';
-            document.getElementById('editPhone').value = contact.phone || '';
-            document.getElementById('editTitle').value = contact.title || '';
-            document.getElementById('editDepartment').value = contact.department || '';
-            document.getElementById('editAccountId').value = contact.account_id || '';
-            document.getElementById('editStatus').value = contact.status || '';
-            document.getElementById('editNextCommunication').value = contact.next_communication || '';
-            document.getElementById('editFrequencyDays').value = contact.frequency_days || '';
-            document.getElementById('editDescription').value = contact.description || '';
+            // Populate edit modal fields - using correct field names from database
+            const nameField = document.getElementById('editName');
+            if (nameField) {
+                nameField.value = `${contact.first_name || ''} ${contact.last_name || ''}`.trim();
+            }
+            
+            const qualityField = document.getElementById('editQuality');
+            if (qualityField) {
+                qualityField.value = contact.quality || '';
+            }
+            
+            const emailField = document.getElementById('editEmail');
+            if (emailField) {
+                emailField.value = contact.email || '';
+            }
+            
+            const phoneField = document.getElementById('editPhone');
+            if (phoneField) {
+                phoneField.value = contact.phone || '';
+            }
+            
+            const titleField = document.getElementById('editTitle');
+            if (titleField) {
+                titleField.value = contact.title || '';
+            }
+            
+            const faxField = document.getElementById('editFax');
+            if (faxField) {
+                faxField.value = contact.fax || '';
+            }
+            
+            const accountField = document.getElementById('editAccountId');
+            if (accountField) {
+                accountField.value = contact.account_id || '';
+            }
+            
+            const statusField = document.getElementById('editStatus');
+            if (statusField) {
+                statusField.value = contact.is_active ? 'Active' : 'Inactive';
+            }
+            
+            const nextCommField = document.getElementById('editNextCommunication');
+            if (nextCommField) {
+                nextCommField.value = contact.next_communication || '';
+            }
+            
+            const frequencyField = document.getElementById('editFrequencyDays');
+            if (frequencyField) {
+                frequencyField.value = contact.frequency_days || '';
+            }
+            
+            const descField = document.getElementById('editDescription');
+            if (descField) {
+                descField.value = contact.description || '';
+            }
             
             // Store contact ID for form submission
             document.getElementById('editContactForm').dataset.contactId = contactId;

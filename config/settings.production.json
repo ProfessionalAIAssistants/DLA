@@ -16,7 +16,7 @@
   },
   "logging": {
     "level": "INFO",
-    "file": "crm_app.log",
+    "file": "logs/crm_app.log",
     "max_file_size_mb": 50,
     "backup_count": 10
   },

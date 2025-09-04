@@ -406,55 +406,39 @@
 </div>
 
 <script>
-// Load data for dropdowns when modal opens
-document.getElementById('addQuoteModal').addEventListener('show.bs.modal', function () {
-    loadProducts();
-    loadAccounts();
-    loadOpportunities();
-});
-
-// Handle account change to load related contacts
-document.getElementById('accountId').addEventListener('change', function() {
-    const accountId = this.value;
-    loadContacts(accountId);
-});
-
-// Handle form submission
-document.getElementById('addQuoteForm').addEventListener('submit', function(e) {
-    e.preventDefault();
+// Define loadContacts function first
+function loadContacts(accountId) {
+    console.log('Loading contacts for account:', accountId);
     
-    const formData = new FormData(this);
-    const rfqData = Object.fromEntries(formData.entries());
+    const select = document.getElementById('contactId');
+    if (!select) {
+        console.error('Could not find contactId element!');
+        return;
+    }
     
-    // Convert empty strings to null for optional fields
-    if (!rfqData.contact_id) rfqData.contact_id = null;
-    if (!rfqData.opportunity_id) rfqData.opportunity_id = null;
-    if (!rfqData.delivery_days) rfqData.delivery_days = null;
-    if (!rfqData.notes) rfqData.notes = null;
+    select.innerHTML = '<option value="">Select Contact</option>';
     
-    fetch('/api/rfqs', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(rfqData)
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-        return response.json();
-    })
-    .then(data => {
-        alert('RFQ created successfully!');
-        bootstrap.Modal.getInstance(document.getElementById('addQuoteModal')).hide();
-        location.reload(); // Refresh the page to show new RFQ
+    if (!accountId) {
+        console.log('No account selected, contacts cleared');
+        return;
+    }
+    
+    fetch(`/api/contacts?account_id=${accountId}`)
+    .then(response => response.json())
+    .then(contacts => {
+        console.log('Contacts loaded:', contacts.length);
+        contacts.forEach(contact => {
+            const option = document.createElement('option');
+            option.value = contact.id;
+            option.textContent = contact.name || `${contact.first_name} ${contact.last_name}`;
+            select.appendChild(option);
+        });
     })
     .catch(error => {
-        console.error('Error:', error);
-        alert('Error creating RFQ. Please try again.');
+        console.error('Error loading contacts:', error);
+        alert('Failed to load contacts for the selected account.');
     });
-});
+}
 
 function loadProducts() {
     fetch('/api/products')
@@ -473,38 +457,30 @@ function loadProducts() {
 }
 
 function loadAccounts() {
+    console.log('Loading accounts...');
     fetch('/api/accounts')
     .then(response => response.json())
-    .then(accounts => {
-        const select = document.getElementById('accountId');
-        select.innerHTML = '<option value="">Select Account</option>';
-        accounts.forEach(account => {
-            const option = document.createElement('option');
-            option.value = account.id;
-            option.textContent = account.name;
-            select.appendChild(option);
-        });
+    .then(data => {
+        console.log('Accounts response:', data);
+        if (data.success && data.accounts) {
+            console.log('Accounts loaded:', data.accounts.length);
+            const select = document.getElementById('accountId');
+            select.innerHTML = '<option value="">Select Account</option>';
+            data.accounts.forEach(account => {
+                const option = document.createElement('option');
+                option.value = account.id;
+                option.textContent = account.name;
+                select.appendChild(option);
+            });
+        } else {
+            console.error('Failed to load accounts:', data.message || 'Unknown error');
+            alert('Failed to load accounts: ' + (data.message || 'Unknown error'));
+        }
     })
-    .catch(error => console.error('Error loading accounts:', error));
-}
-
-function loadContacts(accountId) {
-    const select = document.getElementById('contactId');
-    select.innerHTML = '<option value="">Select Contact</option>';
-    
-    if (!accountId) return;
-    
-    fetch(`/api/contacts?account_id=${accountId}`)
-    .then(response => response.json())
-    .then(contacts => {
-        contacts.forEach(contact => {
-            const option = document.createElement('option');
-            option.value = contact.id;
-            option.textContent = contact.name || `${contact.first_name} ${contact.last_name}`;
-            select.appendChild(option);
-        });
-    })
-    .catch(error => console.error('Error loading contacts:', error));
+    .catch(error => {
+        console.error('Error loading accounts:', error);
+        alert('Failed to load accounts. Please refresh the page.');
+    });
 }
 
 function loadOpportunities() {
@@ -589,16 +565,105 @@ function deleteQuote(quoteId, productName) {
     }
 }
 
+// Handle account change function (global scope)
+function handleAccountChange() {
+    const accountId = this.value;
+    console.log('Account changed to:', accountId);
+    loadContacts(accountId);
+}
+
 // Add event listeners when page loads
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, setting up event listeners...');
+    
+    // Load data for dropdowns when modal opens
+    const addQuoteModal = document.getElementById('addQuoteModal');
+    if (addQuoteModal) {
+        addQuoteModal.addEventListener('show.bs.modal', function () {
+            console.log('Modal opening, loading data...');
+            
+            // Load dropdown data when modal opens
+            loadProducts();
+            loadAccounts();
+            loadOpportunities();
+            
+            // Set up account change listener each time modal opens
+            const accountSelect = document.getElementById('accountId');
+            if (accountSelect) {
+                // Remove any existing listeners to avoid duplicates
+                accountSelect.removeEventListener('change', handleAccountChange);
+                accountSelect.addEventListener('change', handleAccountChange);
+                console.log('Account change listener set up');
+            } else {
+                console.error('Could not find accountId element in modal');
+            }
+        });
+    } else {
+        console.error('Could not find addQuoteModal element');
+    }
+
+    // Also set up account change listener on page load as backup
+    const accountSelect = document.getElementById('accountId');
+    if (accountSelect) {
+        accountSelect.addEventListener('change', handleAccountChange);
+        console.log('Initial account change listener set up');
+    } else {
+        console.error('Could not find accountId element on page load');
+    }
+
+    // Handle form submission
+    const addQuoteForm = document.getElementById('addQuoteForm');
+    if (addQuoteForm) {
+        addQuoteForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const rfqData = Object.fromEntries(formData.entries());
+            
+            // Convert empty strings to null for optional fields
+            if (!rfqData.contact_id) rfqData.contact_id = null;
+            if (!rfqData.opportunity_id) rfqData.opportunity_id = null;
+            if (!rfqData.delivery_days) rfqData.delivery_days = null;
+            if (!rfqData.notes) rfqData.notes = null;
+            
+            fetch('/api/rfqs', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(rfqData)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                alert('RFQ created successfully!');
+                bootstrap.Modal.getInstance(document.getElementById('addQuoteModal')).hide();
+                location.reload(); // Refresh the page to show new RFQ
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error creating RFQ. Please try again.');
+            });
+        });
+    }
+
     // Make filter form submit use JavaScript
     const filterForm = document.querySelector('form');
-    if (filterForm) {
+    if (filterForm && filterForm.id !== 'addQuoteForm') {
         filterForm.addEventListener('submit', function(e) {
             e.preventDefault();
             applyFilters();
         });
     }
 });
+
+// Make functions globally accessible for testing
+window.testJS = testJS;
+window.loadAccounts = loadAccounts;
+window.loadContacts = loadContacts;
 </script>
 {% endblock %}

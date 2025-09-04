@@ -482,39 +482,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // View and Edit Product Functions
     window.viewProduct = function(nsn) {
-        // Fetch product details and show in modal
-        fetch(`/api/products/${nsn}`)
-            .then(response => response.json())
-            .then(product => {
-                if (product.error) {
-                    alert('Error: ' + product.error);
-                    return;
-                }
-                
-                // Populate view modal fields
-                document.getElementById('viewNSN').textContent = product.nsn || 'N/A';
-                document.getElementById('viewFSC').textContent = product.fsc || 'N/A';
-                document.getElementById('viewCategory').textContent = product.category || product.name || 'N/A';
-                document.getElementById('viewCreatedDate').textContent = product.created_date ? product.created_date.substring(0, 10) : 'N/A';
-                document.getElementById('viewManufacturer').textContent = product.manufacturer || 'N/A';
-                document.getElementById('viewDescription').textContent = product.description || 'N/A';
-                document.getElementById('viewUnitPrice').textContent = product.unit_price ? '$' + product.unit_price : 'N/A';
-                document.getElementById('viewCostPrice').textContent = product.cost_price ? '$' + product.cost_price : 'N/A';
-                document.getElementById('viewListPrice').textContent = product.list_price ? '$' + product.list_price : 'N/A';
-                
-                // Store NSN for edit functionality
-                window.currentProductNSN = nsn;
-                
-                // Load related information
-                loadProductRelationships(nsn, 'view');
-                
-                // Show the modal
-                new bootstrap.Modal(document.getElementById('viewProductModal')).show();
-            })
-            .catch(error => {
-                console.error('Error fetching product:', error);
-                alert('Error loading product details. Please try again.');
-            });
+        // Navigate to dedicated product detail page
+        window.location.href = `/products/${nsn}`;
     };
     
     window.editProduct = function(nsn) {

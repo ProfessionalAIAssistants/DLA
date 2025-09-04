@@ -1,0 +1,114 @@
+{
+  "processing_start": "2025-09-03T13:09:25.713208",
+  "processing_end": "2025-09-03T13:09:25.713212",
+  "filter_settings": {
+    "min_delivery_days": 30,
+    "iso_required": "ANY",
+    "sampling_required": "ANY",
+    "inspection_point": "ANY",
+    "manufacturer_filters": [],
+    "auto_process": true,
+    "manufacturer_filter": "",
+    "fsc_filter": "",
+    "packaging_filter": "",
+    "auto_create_opportunities": true,
+    "link_related_records": true,
+    "move_processed_files": true,
+    "skip_duplicates": true
+  },
+  "total_files": 1,
+  "processed_files": [
+    {
+      "filename": "SPE7M424T236A.PDF",
+      "rfq_data": {
+        "request_number": "SPE7M4-24-T-236A",
+        "nsn": "5331010071611",
+        "quantity": "303",
+        "unit": "EA",
+        "mfr": "IAW BASIC SPEC NR MIL-DTL-25988/1B REVISION NR B   DTD 06/29/2021 PART PIECE NUMBER: M25988/1-261 IAW REFERENCE SPEC NR MIL-DTL-25988D REVISION NR D   DTD 01/21/2021 PART PIECE NUMBER:",
+        "delivery_days": "166",
+        "fob": "ORIGIN",
+        "packaging_type": "MIL-STD-2073-1E",
+        "iso": "NO",
+        "sampling": "NO",
+        "inspection_point": "DESTINATION",
+        "buyer": "Anthony Galluch",
+        "email": "FMDF_3355@dla.mil",
+        "product_description": "O-RING                                   ",
+        "close_date": "JUN 27, 2024",
+        "open_date": "JUN 17, 2024",
+        "purchase_number": "7008033214",
+        "fsc": "5331",
+        "packaging": "MIL-STD-2073-1E \nQUP:001  PRES MTHD:33  CLNG/DRY:0  PRESV MAT:00 \nWRAP MAT:00  CUSH/DUNN MAT:00  CUSH/DUNN THKNESS:0 \nUNIT CONT:BE  OPI:M \nINTRMDTE CONT:D3  INTRMDTE CONT QTY:AAA \nPACK CODE:U \nMARKING SHALL BE IN ACCORDANCE WITH MIL-STD-129. \nSPECIAL MARKING CODE:00 -00 No special marking ",
+        "office": "DLA LAND AND MARITIME ",
+        "division": "FLUID HANDLING DIVISION ",
+        "address": "PO BOX 3990  COLUMBUS OH  43218-3990 ",
+        "buyer_code": "PMCM42P",
+        "telephone": "614-692-5265",
+        "fax": "614-693-1551",
+        "buyer_info": "DLA LAND AND MARITIME \nFLUID HANDLING DIVISION \nPO BOX 3990 \nCOLUMBUS OH  43218-3990 \nUSA \nName: Anthony Galluch Buyer Code:PMCM42P Tel: 614-692-5265 Fax: 614-693-1551 \nEmail: FMDF_3355@dla.mil",
+        "payment_history": "910@ $4.55 on 20240123\n410@ $3.40 on 20231017\n1013@ $3.71 on 20230119\n65@ $2.28 on 20190412\n44@ $2.28 on 20190215\n44@ $2.28 on 20190117\n64@ $2.28 on 20181221\n67@ $2.28 on 20181115\n23@ $2.28 on 20180913\n219@ $2.28 on 20180821\n24@ $2.28 on 20180615\n23@ $2.28 on 20180517\n152@ $2.28 on 20180511\n339@ $2.28 on 20180511\n89@ $2.28 on 20180212\n164@ $2.27 on 20170815\n129@ $2.27 on 20170815\n62@ $2.27 on 20170508\n203@ $2.27 on 20160404\n319@ $2.27 on 20150505",
+        "skipped": false
+      },
+      "opportunity_id": 1,
+      "status": "processed",
+      "created_records": 3,
+      "updated_records": 0,
+      "records_detail": [
+        "Opportunity: SPE7M4-24-T-236A",
+        "Contact: Anthony Galluch",
+        "Product: NSN 5331010071611"
+      ]
+    }
+  ],
+  "skipped_files": [],
+  "error_files": [],
+  "summary": {
+    "files_processed": 1,
+    "opportunities_created": 1,
+    "contacts_created": 1,
+    "contacts_updated": 0,
+    "accounts_created": 0,
+    "accounts_updated": 0,
+    "products_created": 1,
+    "tasks_created": 0,
+    "files_skipped": 0,
+    "errors": 0
+  },
+  "created_records": {
+    "opportunities": [
+      {
+        "id": 1,
+        "request_number": "SPE7M4-24-T-236A",
+        "nsn": "5331010071611"
+      }
+    ],
+    "contacts": [
+      {
+        "id": 1,
+        "name": "Anthony Galluch",
+        "email": "FMDF_3355@dla.mil",
+        "buyer_code": "PMCM42P"
+      }
+    ],
+    "accounts": [],
+    "products": [
+      {
+        "id": 1,
+        "nsn": "5331010071611",
+        "name": "Product for NSN 5331010071611"
+      }
+    ],
+    "tasks": []
+  },
+  "updated_records": {
+    "contacts": [],
+    "accounts": []
+  },
+  "detailed_report": "DIBBs CRM Processing Report - 2025-09-03 13:09:25\n============================================================\nProcessing: SPE7M424T236A.PDF\n  \u2713 Automated - Created opportunity 1\n\nProcessing Summary:\n  Files Processed: 1\n  Opportunities Created: 1\n  Contacts Created: 1\n    \u2022 Anthony Galluch (FMDF_3355@dla.mil)\n  Products Created: 1\n    \u2022 Product for NSN 5331010071611 (NSN: 5331010071611)\n  Files Skipped: 0\n  Errors: 0\n\nCreated Opportunities:\n  \u2022 SPE7M4-24-T-236A (ID: 1) - NSN: 5331010071611\n\nFilter Settings Applied:\n  Min Delivery Days: 30\n  ISO Required: ANY\n  Sampling Required: ANY\n  Inspection Point: ANY\n  Manufacturer Filters: []",
+  "processed": 1,
+  "created": 1,
+  "updated": 0,
+  "skipped": 0,
+  "errors": []
+}

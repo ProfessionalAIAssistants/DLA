@@ -409,10 +409,13 @@ function deleteAccount(accountId, accountName) {
             }
         })
         .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.json();
+            return response.json().then(data => {
+                if (response.ok) {
+                    return data;
+                } else {
+                    throw new Error(data.error || data.message || 'Failed to delete account');
+                }
+            });
         })
         .then(data => {
             alert('Account deleted successfully!');
@@ -420,7 +423,7 @@ function deleteAccount(accountId, accountName) {
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Error deleting account. Please try again.');
+            alert('Error deleting account: ' + error.message);
         });
     }
 }

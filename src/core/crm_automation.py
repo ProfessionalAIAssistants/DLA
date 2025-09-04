@@ -130,29 +130,48 @@ class CRMAutomation:
         return True
     
     def match_or_create_account(self, dibbs_data):
-        """Match existing account or create new one based on buyer office"""
+        """Match existing account or create new one based on buyer office using intelligent matching"""
         
         office = dibbs_data.get('office', '')
         division = dibbs_data.get('division', '')
+        address = dibbs_data.get('address', '')
         
         if not office:
             office = "Unknown Government Agency"
         
-        # Try to find existing account
+        # Use intelligent account matcher to respect parent-child relationships
+        try:
+            # Import the intelligent account matcher
+            import sys
+            from pathlib import Path
+            root_dir = Path(__file__).parent.parent.parent
+            sys.path.insert(0, str(root_dir))
+            from intelligent_account_matcher import intelligent_account_matcher
+            
+            print(f"[CRM Automation] Using intelligent account matcher for Office='{office}', Division='{division}'")
+            account_id = intelligent_account_matcher.smart_account_match(office, division, address)
+            
+            if account_id:
+                print(f"[CRM Automation] Intelligent matcher returned account ID: {account_id}")
+                return account_id
+            else:
+                print(f"[CRM Automation] Intelligent matcher failed, falling back to legacy logic")
+        except Exception as e:
+            print(f"[CRM Automation] Failed to use intelligent matcher: {e}, falling back to legacy logic")
+        
+        # Fallback to original logic if intelligent matcher fails
         existing_accounts = crm_data.get_accounts({'name': office})
         
         if existing_accounts:
             return existing_accounts[0]['id']
         
-        # Create new account
+        # Create new account as last resort
         account_data = {
             'name': office,
-            'account_type': 'Customer',
-            'account_source': 'DIBBs',
-            'industry': 'Government',
-            'billing_address': dibbs_data.get('address', ''),
-            'description': f"Division: {division}",
-            'owner': 'System'
+            'type': 'Customer',  # Use correct field name
+            'summary': f"Government Agency - {office}",
+            'billing_address': address,
+            'is_active': True
         }
         
         return crm_data.create_account(**account_data)

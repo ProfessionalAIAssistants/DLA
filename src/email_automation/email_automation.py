@@ -93,58 +93,24 @@ class EmailAutomation:
             {
                 'name': 'Standard RFQ Request',
                 'type': 'RFQ',
-                'subject_template': 'RFQ {request_number} - {product_name} (Qty: {quantity})',
-                'body_template': """Dear {vendor_contact_name},
+                'subject_template': 'RFQ for {nsn} - {product_name} (Qty: {quantity})',
+                'body_template': """Dear Sir/Madam,
 
 We hope this message finds you well. We are reaching out to request a quote for the following item:
 
 **REQUEST DETAILS:**
-• Request Number: {request_number}
-• Product: {product_name}
-• Manufacturer: {manufacturer}
-• Part Number: {part_number}
-• NSN: {nsn}
-• Quantity: {quantity}
-• Delivery Location: {delivery_address}
+Supplier: {manufacturer}
+P/N: {part_number}
+Quantity: {quantity}
+NSN: {nsn}
 
-**SPECIFICATIONS:**
-{product_description}
-
-**DELIVERY REQUIREMENTS:**
-• Required Delivery Date: {required_delivery_date}
-• FOB Terms: {fob_terms}
-• ISO Certification Required: {iso_required}
-
-**QUOTE REQUIREMENTS:**
-Please provide your best pricing and include the following in your response:
-• Unit price and total price
-• Lead time for delivery
-• Shipping costs (if applicable)
-• Payment terms
-• Product availability confirmation
-• Any applicable certifications
-
-**SUBMISSION DETAILS:**
-• Quote Deadline: {quote_deadline}
-• Contact: {buyer_name}
-• Email: {buyer_email}
-• Phone: {buyer_phone}
-
-Please respond with your quote by the deadline specified above. If you have any questions or need additional information, please don't hesitate to contact us.
+Please reply to this email with your quote. If you have any questions or need additional information, please don't hesitate to contact us.
 
 Thank you for your time and consideration.
 
 Best regards,
-{buyer_name}
-{buyer_title}
-{company_name}
-{buyer_email}
-{buyer_phone}
-
----
-This is an automated request generated from our CRM system.
-Reference ID: {rfq_email_id}""",
-                'variables': 'request_number,product_name,manufacturer,part_number,nsn,quantity,delivery_address,product_description,required_delivery_date,fob_terms,iso_required,quote_deadline,buyer_name,buyer_email,buyer_phone,buyer_title,company_name,vendor_contact_name,rfq_email_id'
+{buyer_name}""",
+                'variables': 'nsn,product_name,manufacturer,part_number,quantity,buyer_name'
             },
             {
                 'name': 'Urgent RFQ Request',
@@ -271,11 +237,33 @@ Reference ID: {rfq_email_id}""",
         rfq_email_id = f"RFQ-{opportunity_id}-{vendor_account_id}-{datetime.now().strftime('%Y%m%d%H%M%S')}"
         
         # Prepare template variables
+        # Extract manufacturer and part number from mfr field if available
+        mfr_text = opportunity['manufacturer'] if opportunity['manufacturer'] else opportunity['mfr'] if opportunity['mfr'] else ''
+        
+        # Try to extract part number from mfr field (format: "MANUFACTURER P/N PARTNUMBER")
+        part_number = 'TBD'
+        manufacturer = 'TBD'
+        
+        if mfr_text:
+            if 'P/N' in mfr_text:
+                parts = mfr_text.split('P/N')
+                if len(parts) >= 2:
+                    manufacturer = parts[0].strip()
+                    part_number = parts[1].strip()
+                else:
+                    manufacturer = mfr_text
+            else:
+                manufacturer = mfr_text
+        
+        # Use explicit part_number field if available
+        if opportunity.get('part_number'):
+            part_number = opportunity['part_number']
+        
         variables = {
             'request_number': f"RFQ-{opportunity['id']}-{datetime.now().strftime('%Y%m%d')}",
             'product_name': opportunity['product_name'] if opportunity['product_name'] else 'Product Name Not Available',
-            'manufacturer': opportunity['manufacturer'] if opportunity['manufacturer'] else opportunity['mfr'] if opportunity['mfr'] else 'TBD',
-            'part_number': opportunity['part_number'] if opportunity['part_number'] else 'TBD',
+            'manufacturer': manufacturer,
+            'part_number': part_number,
             'nsn': opportunity['nsn'] if opportunity['nsn'] else 'TBD',
             'quantity': opportunity['quantity'] if opportunity['quantity'] else 1,
             'delivery_address': 'DLA Distribution Center (Address to be provided)',
@@ -478,6 +466,28 @@ Reference ID: {rfq_email_id}""",
             'vendor_name': vendor_account['name'],
             'template_name': template_name
         }
+    
+    def get_vendor_email_content(self, email_id: str) -> Dict:
+        """Get the content of a specific vendor email for preview"""
+        conn = sqlite3.connect(self.db_path)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT ve.*, a.name as vendor_name, c.first_name, c.last_name, c.email as vendor_email
+            FROM vendor_rfq_emails ve
+            LEFT JOIN accounts a ON ve.vendor_account_id = a.id
+            LEFT JOIN contacts c ON ve.vendor_contact_id = c.id
+            WHERE ve.rfq_email_id = ?
+        """, (email_id,))
+        
+        row = cursor.fetchone()
+        conn.close()
+        
+        if row:
+            return dict(row)
+        else:
+            return None
 
 # Global instance
 email_automation = EmailAutomation()

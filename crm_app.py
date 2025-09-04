@@ -313,7 +313,7 @@ def get_email_status():
                     connection_status = 'configured'
         
         # Get email statistics from database
-        conn = sqlite3.connect('crm.db')
+        conn = sqlite3.connect(str(config_manager.get_database_path()))
         cursor = conn.cursor()
         
         # Emails sent today
@@ -526,11 +526,308 @@ def account_detail(account_id):
     opportunities = crm_data.get_opportunities({'account_id': account_id})
     interactions = crm_data.get_interactions({'account_id': account_id})
     
+    # Get QPL products if this account is a manufacturer
+    qpl_products = crm_data.get_qpl_products_for_manufacturer(account_id)
+    
     return render_template('account_detail.html', 
                          account=account, 
                          contacts=contacts, 
                          opportunities=opportunities, 
-                         interactions=interactions)
+                         interactions=interactions,
+                         qpl_products=qpl_products)
+
+@app.route('/qpls')
+def qpls():
+    """QPLs list view with pagination"""
+    search = request.args.get('search', '')
+    cage_code = request.args.get('cage_code', '')
+    nsn = request.args.get('nsn', '')
+    page = int(request.args.get('page', 1))
+    
+    # Build filters
+    filters = {}
+    if search:
+        filters['manufacturer_name'] = search
+    if cage_code:
+        filters['cage_code'] = cage_code
+    if nsn:
+        filters['nsn'] = nsn
+    
+    # Get QPLs with related data
+    qpls_list = get_qpls_with_details(filters)
+    pagination = paginate_results(qpls_list, page)
+    
+    # Get products and accounts for modals
+    products_list = crm_data.get_products()
+    accounts_list = crm_data.get_accounts()
+    
+    return render_template('qpls.html', 
+                         qpls=pagination['items'], 
+                         pagination=pagination,
+                         search=search, 
+                         cage_code=cage_code,
+                         nsn=nsn,
+                         products=products_list,
+                         accounts=accounts_list)
+
+@app.route('/qpl/<int:qpl_id>')
+def qpl_detail(qpl_id):
+    """QPL detail view"""
+    try:
+        query = """
+            SELECT pm.id, pm.manufacturer_name, pm.cage_code, pm.part_number, 
+                   pm.is_active, pm.created_date, pm.modified_date, pm.product_id, pm.account_id,
+                   p.name as product_name, p.nsn,
+                   a.name as account_name
+            FROM product_manufacturers pm
+            LEFT JOIN products p ON pm.product_id = p.id
+            LEFT JOIN accounts a ON pm.account_id = a.id
+            WHERE pm.id = ?
+        """
+        
+        result = crm_data.execute_query(query, [qpl_id])
+        
+        if not result:
+            flash('QPL not found', 'error')
+            return redirect(url_for('qpls'))
+        
+        qpl_data = result[0]
+        qpl = {
+            'id': qpl_data['id'],
+            'manufacturer_name': qpl_data['manufacturer_name'],
+            'cage_code': qpl_data['cage_code'],
+            'part_number': qpl_data['part_number'],
+            'is_active': qpl_data['is_active'],
+            'created_date': datetime.fromisoformat(qpl_data['created_date']) if qpl_data['created_date'] else None,
+            'modified_date': datetime.fromisoformat(qpl_data['modified_date']) if qpl_data['modified_date'] else None,
+            'product_id': qpl_data['product_id'],
+            'account_id': qpl_data['account_id'],
+            'product_name': qpl_data['product_name'],
+            'nsn': qpl_data['nsn'],
+            'account_name': qpl_data['account_name']
+        }
+        
+        # Get products and accounts for edit modal
+        products_list = crm_data.get_products()
+        accounts_list = crm_data.get_accounts()
+        
+        return render_template('qpl_detail.html', 
+                             qpl=qpl,
+                             products=products_list,
+                             accounts=accounts_list)
+                             
+    except Exception as e:
+        app.logger.error(f"Error loading QPL {qpl_id}: {e}")
+        flash('Error loading QPL', 'error')
+        return redirect(url_for('qpls'))
+
+def get_qpls_with_details(filters=None):
+    """Get QPLs with related product and account information"""
+    try:
+        # Base query with joins
+        query = """
+            SELECT pm.id, pm.manufacturer_name, pm.cage_code, pm.part_number, 
+                   pm.is_active, pm.created_date, pm.product_id, pm.account_id,
+                   p.name as product_name, p.nsn,
+                   a.name as account_name
+            FROM product_manufacturers pm
+            LEFT JOIN products p ON pm.product_id = p.id
+            LEFT JOIN accounts a ON pm.account_id = a.id
+        """
+        
+        conditions = []
+        params = []
+        
+        if filters:
+            if filters.get('manufacturer_name'):
+                conditions.append("pm.manufacturer_name LIKE ?")
+                params.append(f"%{filters['manufacturer_name']}%")
+            if filters.get('cage_code'):
+                conditions.append("pm.cage_code LIKE ?")
+                params.append(f"%{filters['cage_code']}%")
+            if filters.get('nsn'):
+                conditions.append("p.nsn LIKE ?")
+                params.append(f"%{filters['nsn']}%")
+        
+        if conditions:
+            query += " WHERE " + " AND ".join(conditions)
+        
+        query += " ORDER BY pm.manufacturer_name, pm.created_date DESC"
+        
+        results = crm_data.execute_query(query, params)
+        
+        # Convert to objects for template
+        qpls = []
+        for row in results:
+            qpl = {
+                'id': row['id'],
+                'manufacturer_name': row['manufacturer_name'],
+                'cage_code': row['cage_code'],
+                'part_number': row['part_number'],
+                'is_active': row['is_active'],
+                'created_date': datetime.fromisoformat(row['created_date']) if row['created_date'] else None,
+                'product_id': row['product_id'],
+                'account_id': row['account_id'],
+                'product_name': row['product_name'],
+                'nsn': row['nsn'],
+                'account_name': row['account_name']
+            }
+            qpls.append(qpl)
+        
+        return qpls
+        
+    except Exception as e:
+        app.logger.error(f"Error getting QPLs: {e}")
+        return []
+
+@app.route('/create_qpl', methods=['POST'])
+def create_qpl():
+    """Create a new QPL"""
+    try:
+        manufacturer_name = request.form.get('manufacturer_name')
+        cage_code = request.form.get('cage_code')
+        part_number = request.form.get('part_number')
+        product_id = request.form.get('product_id')
+        account_id = request.form.get('account_id')
+        is_active = 'is_active' in request.form
+        
+        if not manufacturer_name:
+            flash('Manufacturer name is required', 'error')
+            return redirect(url_for('qpls'))
+        
+        # Create the QPL
+        qpl_data = {
+            'manufacturer_name': manufacturer_name,
+            'cage_code': cage_code if cage_code else None,
+            'part_number': part_number if part_number else None,
+            'product_id': int(product_id) if product_id else None,
+            'account_id': int(account_id) if account_id else None,
+            'is_active': is_active,
+            'created_date': datetime.now().isoformat(),
+            'modified_date': datetime.now().isoformat()
+        }
+        
+        result = create_qpl_record(qpl_data)
+        
+        if result:
+            flash(f'QPL for {manufacturer_name} created successfully', 'success')
+        else:
+            flash('Error creating QPL', 'error')
+            
+    except Exception as e:
+        app.logger.error(f"Error creating QPL: {e}")
+        flash('Error creating QPL', 'error')
+    
+    return redirect(url_for('qpls'))
+
+def create_qpl_record(qpl_data):
+    """Create a QPL record in the database"""
+    try:
+        query = """
+            INSERT INTO product_manufacturers 
+            (manufacturer_name, cage_code, part_number, product_id, account_id, 
+             is_active, created_date, modified_date)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """
+        
+        params = [
+            qpl_data['manufacturer_name'],
+            qpl_data['cage_code'],
+            qpl_data['part_number'],
+            qpl_data['product_id'],
+            qpl_data['account_id'],
+            qpl_data['is_active'],
+            qpl_data['created_date'],
+            qpl_data['modified_date']
+        ]
+        
+        return crm_data.execute_query(query, params, fetch=False)
+        
+    except Exception as e:
+        app.logger.error(f"Error creating QPL record: {e}")
+        return False
+
+@app.route('/api/qpl/<int:qpl_id>')
+def get_qpl_api(qpl_id):
+    """Get QPL data for editing"""
+    try:
+        query = """
+            SELECT id, manufacturer_name, cage_code, part_number, 
+                   product_id, account_id, is_active
+            FROM product_manufacturers 
+            WHERE id = ?
+        """
+        
+        result = crm_data.execute_query(query, [qpl_id])
+        
+        if result:
+            qpl = result[0]
+            return jsonify({
+                'success': True,
+                'qpl': {
+                    'id': qpl['id'],
+                    'manufacturer_name': qpl['manufacturer_name'],
+                    'cage_code': qpl['cage_code'],
+                    'part_number': qpl['part_number'],
+                    'product_id': qpl['product_id'],
+                    'account_id': qpl['account_id'],
+                    'is_active': qpl['is_active']
+                }
+            })
+        else:
+            return jsonify({'success': False, 'message': 'QPL not found'})
+            
+    except Exception as e:
+        app.logger.error(f"Error getting QPL {qpl_id}: {e}")
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/api/qpl/<int:qpl_id>', methods=['PUT'])
+def update_qpl_api(qpl_id):
+    """Update QPL data"""
+    try:
+        data = request.get_json()
+        
+        query = """
+            UPDATE product_manufacturers 
+            SET manufacturer_name = ?, cage_code = ?, part_number = ?, 
+                product_id = ?, account_id = ?, is_active = ?, modified_date = ?
+            WHERE id = ?
+        """
+        
+        params = [
+            data.get('manufacturer_name'),
+            data.get('cage_code'),
+            data.get('part_number'),
+            data.get('product_id'),
+            data.get('account_id'),
+            data.get('is_active', False),
+            datetime.now().isoformat(),
+            qpl_id
+        ]
+        
+        result = crm_data.execute_query(query, params, fetch=False)
+        
+        if result:
+            return jsonify({'success': True, 'message': 'QPL updated successfully'})
+        else:
+            return jsonify({'success': False, 'message': 'Failed to update QPL'})
+            
+    except Exception as e:
+        app.logger.error(f"Error updating QPL {qpl_id}: {e}")
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/api/qpl/<int:qpl_id>', methods=['DELETE'])
+def delete_qpl_api(qpl_id):
+    """Delete QPL"""
+    try:
+        query = "DELETE FROM product_manufacturers WHERE id = ?"
+        result = crm_data.execute_update(query, [qpl_id])
+        
+        return jsonify({'success': True, 'message': 'QPL deleted successfully'})
+            
+    except Exception as e:
+        app.logger.error(f"Error deleting QPL {qpl_id}: {e}")
+        return jsonify({'success': False, 'message': str(e)})
 
 @app.route('/contacts')
 def contacts():
@@ -650,12 +947,16 @@ def opportunity_detail(opportunity_id):
     # Get related interactions
     interactions = crm_data.get_interactions({'opportunity_id': opportunity_id})
     
+    # Get opportunity-specific tasks
+    opportunity_tasks = crm_data.get_tasks({'parent_item_type': 'Opportunity', 'parent_item_id': opportunity_id})
+    
     return render_template('opportunity_detail.html', 
                          opportunity=opportunity,
                          account=account,
                          contact=contact,
                          product=product,
-                         interactions=interactions)
+                         interactions=interactions,
+                         opportunity_tasks=opportunity_tasks)
 
 # ==================== OPPORTUNITIES API ROUTES ====================
 
@@ -673,7 +974,7 @@ def create_opportunity_api():
         # Convert numeric fields
         numeric_fields = ['bid_price', 'purchase_costs', 'packaging_shipping', 'quantity', 'days_aod']
         for field in numeric_fields:
-            if field in data and data[field]:
+            if field in data and data[field] is not None:
                 try:
                     data[field] = float(data[field]) if field != 'quantity' and field != 'days_aod' else int(data[field])
                 except ValueError:
@@ -722,7 +1023,7 @@ def update_opportunity_api(opportunity_id):
         # Convert numeric fields
         numeric_fields = ['bid_price', 'purchase_costs', 'packaging_shipping', 'quantity', 'days_aod']
         for field in numeric_fields:
-            if field in data and data[field]:
+            if field in data and data[field] is not None:
                 try:
                     data[field] = float(data[field]) if field != 'quantity' and field != 'days_aod' else int(data[field])
                 except ValueError:
@@ -1002,6 +1303,96 @@ def tasks():
                          owner=owner,
                          search=search)
 
+# ==================== PDF FILE ROUTES ====================
+
+@app.route('/download-pdf/<int:opportunity_id>')
+def download_pdf(opportunity_id):
+    """Download PDF file associated with an opportunity"""
+    from flask import send_file, abort
+    import os
+    
+    try:
+        opportunity = crm_data.get_opportunity_by_id(opportunity_id)
+        if not opportunity:
+            return render_template('error.html', error='Opportunity not found'), 404
+        
+        pdf_file_path = opportunity.get('pdf_file_path')
+        if not pdf_file_path:
+            return render_template('error.html', error='No PDF file is associated with this opportunity. The PDF may have been processed but not saved to the database.'), 404
+        
+        # Get the filename
+        filename = os.path.basename(pdf_file_path)
+        
+        # Check multiple possible locations
+        possible_paths = [
+            pdf_file_path,  # Original path
+            os.path.join('data', 'processed', 'Reviewed', filename),  # Reviewed folder
+            os.path.join('data', 'processed', 'Automation', filename),  # Automation folder
+            os.path.join('data', 'output', filename),  # Output folder
+            os.path.join('data', 'upload', filename),  # Upload root
+        ]
+        
+        actual_path = None
+        for path in possible_paths:
+            if os.path.exists(path):
+                actual_path = path
+                break
+        
+        if not actual_path:
+            return render_template('error.html', 
+                error=f'PDF file "{filename}" not found. Checked locations: {", ".join(possible_paths)}. The file may have been moved or deleted.'), 404
+        
+        return send_file(actual_path, as_attachment=True, download_name=filename)
+        
+    except Exception as e:
+        app.logger.error(f"Error downloading PDF for opportunity {opportunity_id}: {str(e)}")
+        return render_template('error.html', error=f'Error accessing PDF file: {str(e)}'), 500
+
+@app.route('/view-pdf/<int:opportunity_id>')
+def view_pdf(opportunity_id):
+    """View PDF file associated with an opportunity in browser"""
+    from flask import send_file, abort
+    import os
+    
+    try:
+        opportunity = crm_data.get_opportunity_by_id(opportunity_id)
+        if not opportunity:
+            return render_template('error.html', error='Opportunity not found'), 404
+        
+        pdf_file_path = opportunity.get('pdf_file_path')
+        if not pdf_file_path:
+            return render_template('error.html', error='No PDF file is associated with this opportunity. The PDF may have been processed but not saved to the database.'), 404
+        
+        # Get the filename
+        filename = os.path.basename(pdf_file_path)
+        
+        # Check multiple possible locations
+        possible_paths = [
+            pdf_file_path,  # Original path
+            os.path.join('data', 'processed', 'Reviewed', filename),  # Reviewed folder
+            os.path.join('data', 'processed', 'Automation', filename),  # Automation folder
+            os.path.join('data', 'output', filename),  # Output folder
+            os.path.join('data', 'upload', filename),  # Upload root
+        ]
+        
+        actual_path = None
+        for path in possible_paths:
+            if os.path.exists(path):
+                actual_path = path
+                break
+        
+        if not actual_path:
+            return render_template('error.html', 
+                error=f'PDF file "{filename}" not found. Checked locations: {", ".join(possible_paths)}. The file may have been moved or deleted.'), 404
+        
+        return send_file(actual_path, as_attachment=False, download_name=filename, mimetype='application/pdf')
+        
+    except Exception as e:
+        app.logger.error(f"Error viewing PDF for opportunity {opportunity_id}: {str(e)}")
+        return render_template('error.html', error=f'Error accessing PDF file: {str(e)}'), 500
+
+# ==================== PRODUCTS ROUTES ====================
+
 @app.route('/products')
 def products():
     """Products list view with pagination"""
@@ -1028,6 +1419,49 @@ def products():
                          search=search, 
                          category=category,
                          fsc=fsc)
+
+@app.route('/products/<product_identifier>')
+def product_detail(product_identifier):
+    """Product detail page with QPL information"""
+    try:
+        # Try to get product by NSN first, then by ID
+        product = None
+        if product_identifier.isdigit():
+            # If it's all digits, try ID first, then NSN
+            product = crm_data.get_product_by_id(int(product_identifier))
+            if not product:
+                product = crm_data.get_product_by_nsn(product_identifier)
+        else:
+            # If it contains non-digits, treat as NSN
+            product = crm_data.get_product_by_nsn(product_identifier)
+        
+        if not product:
+            return render_template('error.html', error='Product not found'), 404
+        
+        # Get QPL manufacturers for this product
+        qpl_manufacturers = crm_data.get_qpl_manufacturers_for_product(product['id'])
+        
+        # Get vendors (accounts associated with QPL entries)
+        vendors = []
+        qpl_account_ids = [qpl['account_id'] for qpl in qpl_manufacturers if qpl.get('account_id')]
+        if qpl_account_ids:
+            vendors = crm_data.get_accounts_by_ids(qpl_account_ids)
+        
+        # Get related opportunities by NSN to ensure correct matching
+        opportunities = crm_data.get_opportunities({'nsn': product['nsn']}) if product.get('nsn') else []
+        
+        # Get quotes related to this product (via NSN or opportunities)
+        quotes = crm_data.get_quotes_for_product(product['id'], product.get('nsn'))
+        
+        return render_template('product_detail.html',
+                             product=product,
+                             qpl_manufacturers=qpl_manufacturers,
+                             vendors=vendors,
+                             opportunities=opportunities,
+                             quotes=quotes)
+                             
+    except Exception as e:
+        return render_template('error.html', error=str(e))
 
 @app.route('/api/products/<nsn>')
 def api_get_product(nsn):
@@ -1385,8 +1819,9 @@ def create_task_api():
         if 'time_taken' in task_data and task_data['time_taken']:
             task_data['time_taken'] = int(task_data['time_taken'])
             
-        # Remove empty values
-        task_data = {k: v for k, v in task_data.items() if v}
+        # Remove empty values but preserve parent_item fields
+        important_fields = ['parent_item_type', 'parent_item_id']
+        task_data = {k: v for k, v in task_data.items() if v or k in important_fields}
         
         task_id = crm_data.create_task(**task_data)
         return jsonify({'success': True, 'task_id': task_id, 'message': 'Task created'})
@@ -1447,34 +1882,18 @@ def task_detail(task_id):
         if not task:
             return render_template('error.html', error='Task not found'), 404
         
-        # Get related opportunities if this is a processing task
-        opportunities = []
+        # Get related opportunities using the new method
+        opportunities = crm_data.get_opportunities_linked_to_task(task_id)
         processing_report = ""
         
-        if 'processing' in task.get('subject', '').lower() or 'pdf' in task.get('subject', '').lower():
-            # For processing tasks, get opportunities created around the same time
-            if task.get('created_date'):
-                # Get opportunities created on the same day as the task
-        # datetime already imported at top of file
-                try:
-                    task_date = datetime.strptime(task['created_date'][:10], '%Y-%m-%d')
-                    # Get opportunities from the task creation date
-                    date_str = task_date.strftime('%Y-%m-%d')
-                    opportunities = crm_data.get_opportunities_by_date(date_str)
-                except:
-                    # Fallback to today's opportunities
-        # datetime already imported at top of file
-                    today = date.today().strftime('%Y-%m-%d')
-                    opportunities = crm_data.get_opportunities_by_date(today)
-            
-            # Extract processing report from task description if available
-            if task.get('description'):
-                desc = task['description']
-                if 'PROCESSING REPORT:' in desc:
-                    parts = desc.split('PROCESSING REPORT:')
-                    if len(parts) > 1:
-                        processing_report = parts[1].split('REPORT ID:')[0].strip()
-            
+        # Extract processing report from task description if available
+        if task.get('description'):
+            desc = task['description']
+            if 'PROCESSING REPORT:' in desc:
+                parts = desc.split('PROCESSING REPORT:')
+                if len(parts) > 1:
+                    processing_report = parts[1].split('REPORT ID:')[0].strip()
+        
         edit_mode = request.args.get('edit') == 'true'
         
         return render_template('task_detail.html', 
@@ -2326,63 +2745,48 @@ def load_pdfs():
         # datetime already imported at top of file
         report_id = datetime.now().strftime("%Y%m%d_%H%M%S")
         
-        # Auto-create review task for successful processing
+        # Auto-create single review task for successful processing
         if results['processed'] > 0:
             try:
                 # Create task due today
                 today = datetime.now().strftime("%Y-%m-%d")
+                process_date = datetime.now().strftime("%B %d, %Y")
                 
-                # Get created opportunities for linking
+                # Get created opportunities for summary
                 created_opportunities = []
                 if 'created_opportunities' in results and results['created_opportunities']:
                     created_opportunities = results['created_opportunities']
                 
-                # Build detailed task description with processing results
-                task_description = f"""PDF Processing completed on {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+                # Simple, clean task description with NSN and proper formatting  
+                task_description = f"""Please review all new opportunities
 
-PROCESSING RESULTS:
-• Files Processed: {results['processed']}
-• Opportunities Created: {results['created']}
-• Records Updated: {results['updated']}
-• Files Skipped: {results.get('skipped', 0)}
-• Errors: {len(results['errors'])}
-
-REQUIRED ACTIONS:
-1. Review Processing Report:
-   - Detailed processing report is displayed below
-   - Check for any errors or issues
-   - Verify all PDFs were processed correctly
-
-2. Examine New Opportunities:
-   - Review newly created opportunities in the table below
-   - Verify opportunity details and stages
-   - Assign to appropriate team members
-
-3. Follow-up Actions:
-   - Update opportunity stages as needed
-   - Create quotes for qualified opportunities
-   - Schedule follow-up interactions
-
-PROCESSING REPORT:
+Processing Report:
 {results.get('detailed_report', 'No detailed report available')}
 
-REPORT ID: {report_id}
-"""
-                
-                # Create the task with enhanced information
+Created Opportunities:
+{chr(10).join([f"• {opp.get('request_number', 'Unknown')} (ID: {opp.get('id', 'N/A')}) - NSN: {opp.get('nsn', 'N/A')}" for opp in created_opportunities]) if created_opportunities else 'None'}"""
+
+                # Create ONE comprehensive review task with specific title format
                 task_id = crm_data.create_task(
-                    subject=f"Review PDF Processing Results - {results['processed']} files processed",
+                    subject=f"DIBBs PDF review {process_date}",
                     description=task_description,
                     status="Not Started",
                     priority="High",
                     type="Follow-up",
                     due_date=today,
-                    assigned_to="System Generated",
-                    # Store additional data for display
-                    processing_report=results.get('detailed_report', ''),
-                    report_id=report_id,
-                    created_opportunities=created_opportunities
+                    work_date=today,  # Set work date to today
+                    assigned_to="System Generated"
                 )
+                
+                # Track task creation in results
+                if 'created_tasks' not in results:
+                    results['created_tasks'] = []
+                results['created_tasks'].append({
+                    'id': task_id,
+                    'subject': f"DIBBs PDF review {process_date}",
+                    'type': 'PDF Processing Review',
+                    'created_opportunities': created_opportunities
+                })
                 
                 app.logger.info(f"Auto-created review task {task_id} for PDF processing results")
                 
@@ -2394,7 +2798,7 @@ REPORT ID: {report_id}
             'success': True,
             'processed': results['processed'],
             'created': results['created'],
-            'updated': results['updated'],
+            'updated': len(results.get('updated_contacts', [])) + len(results.get('updated_accounts', [])),
             'skipped': results.get('skipped', 0),
             'errors': results['errors'],
             'report_id': report_id,
@@ -2645,18 +3049,40 @@ def processing_reports():
                 with open(report_file, 'r') as f:
                     report_data = json.load(f)
                 
-                # Extract summary info for listing
+                # Extract summary info for listing - handle both new and legacy formats
+                summary = report_data.get('summary', {})
+                
+                # For new format reports, use the summary data
+                if summary:
+                    processed_count = summary.get('files_processed', 0)
+                    created_count = summary.get('opportunities_created', 0)
+                    skipped_count = summary.get('files_skipped', 0)
+                    errors_count = summary.get('errors', 0)
+                    # For updated records, count from processed files or use fallback
+                    updated_count = 0
+                    if 'updated_records' in report_data:
+                        for record_type, records in report_data['updated_records'].items():
+                            updated_count += len(records) if isinstance(records, list) else records
+                else:
+                    # Legacy format fallback
+                    processed_count = len(report_data.get('processed_files', []))
+                    created_count = len([f for f in report_data.get('processed_files', []) if f.get('status') == 'processed'])
+                    skipped_count = len(report_data.get('skipped_files', []))
+                    errors_count = len(report_data.get('error_files', []))
+                    updated_count = 0
+                
                 report_files.append({
                     'filename': report_file.name,
                     'timestamp': report_data.get('processing_start', ''),
-                    'processed': report_data.get('processed', 0),
-                    'created': report_data.get('created', 0),
-                    'updated': report_data.get('updated', 0),
-                    'skipped': report_data.get('skipped', 0),
-                    'errors': len(report_data.get('errors', []))
+                    'processed': processed_count,
+                    'created': created_count,
+                    'updated': updated_count,
+                    'skipped': skipped_count,
+                    'errors': errors_count
                 })
             except Exception as e:
                 print(f"Error reading report {report_file}: {e}")
+                continue
     
     return render_template('processing_reports.html', reports=report_files, stats=stats)
 
@@ -2675,9 +3101,195 @@ def view_processing_report(filename):
         with open(report_file, 'r') as f:
             report_data = json.load(f)
         
+        # Ensure compatibility with template expectations
+        # Handle both old and new report formats
+        if 'created_records' not in report_data:
+            # Create empty structure for old reports that don't have detailed tracking
+            report_data['created_records'] = {}
+            report_data['updated_records'] = {}
+            
+            # If we have summary data, use it to populate basic structure
+            if 'summary' in report_data:
+                summary = report_data['summary']
+                opportunities_created = summary.get('opportunities_created', 0)
+                if opportunities_created > 0:
+                    report_data['created_records']['opportunities'] = []
+                    # Try to get opportunity IDs from processed files
+                    for file_data in report_data.get('processed_files', []):
+                        if 'opportunity_id' in file_data:
+                            report_data['created_records']['opportunities'].append({
+                                'id': file_data['opportunity_id'],
+                                'name': file_data.get('rfq_data', {}).get('request_number', 'Unknown'),
+                                'amount': None,
+                                'created_from': file_data.get('filename', 'Unknown')
+                            })
+        
+        # Handle file-level created_records for processed files
+        for file_data in report_data.get('processed_files', []):
+            if 'created_records' not in file_data:
+                file_data['created_records'] = 1 if file_data.get('status') == 'processed' else 0
+            if 'updated_records' not in file_data:
+                file_data['updated_records'] = 0
+        
+        # Handle skipped files
+        for file_data in report_data.get('skipped_files', []):
+            if 'created_records' not in file_data:
+                file_data['created_records'] = 0
+            if 'updated_records' not in file_data:
+                file_data['updated_records'] = 0
+        
         return render_template('processing_report_detail.html', report=report_data, filename=filename)
     except Exception as e:
         return f"Error loading report: {e}", 500
+
+@app.route('/api/processing-report/<filename>/opportunities')
+def get_processing_report_opportunities(filename):
+    """Get opportunities created by a specific processing report"""
+    import json
+    from pathlib import Path
+    
+    try:
+        page = int(request.args.get('page', 1))
+        per_page = 10
+        
+        report_file = config_manager.get_output_dir() / filename
+        
+        if not report_file.exists():
+            return jsonify({'error': 'Report not found'}), 404
+        
+        with open(report_file, 'r') as f:
+            report_data = json.load(f)
+        
+        # Get opportunity IDs from the report
+        opportunity_ids = []
+        
+        # From processed files
+        for file_data in report_data.get('processed_files', []):
+            if 'opportunity_id' in file_data:
+                opportunity_ids.append(file_data['opportunity_id'])
+        
+        # From created records structure
+        if 'created_records' in report_data and 'opportunities' in report_data['created_records']:
+            for opp in report_data['created_records']['opportunities']:
+                if 'id' in opp and opp['id'] not in opportunity_ids:
+                    opportunity_ids.append(opp['id'])
+        
+        if not opportunity_ids:
+            return jsonify({
+                'opportunities': [],
+                'total': 0,
+                'page': page,
+                'per_page': per_page,
+                'total_pages': 0
+            })
+        
+        # Get opportunities from database with pagination
+        opportunities_query = f"""
+            SELECT id, name, stage, amount, created_date, description, mfr, quantity, unit, 
+                   delivery_days, owner
+            FROM opportunities 
+            WHERE id IN ({','.join(['?' for _ in opportunity_ids])})
+            ORDER BY created_date DESC
+            LIMIT ? OFFSET ?
+        """
+        
+        offset = (page - 1) * per_page
+        params = opportunity_ids + [per_page, offset]
+        
+        opportunities = crm_data.execute_query(opportunities_query, params)
+        
+        # Get total count
+        count_query = f"""
+            SELECT COUNT(*) as total 
+            FROM opportunities 
+            WHERE id IN ({','.join(['?' for _ in opportunity_ids])})
+        """
+        total_result = crm_data.execute_query(count_query, opportunity_ids)
+        total = total_result[0]['total'] if total_result else 0
+        
+        total_pages = (total + per_page - 1) // per_page
+        
+        # Format opportunities for frontend
+        formatted_opportunities = []
+        for opp in opportunities:
+            # Extract NSN from description if present
+            nsn = None
+            description = opp.get('description', '')
+            if description and 'NSN:' in description:
+                nsn_part = description.split('NSN:')[1].strip().split()[0]
+                nsn = nsn_part if nsn_part else None
+            
+            formatted_opportunities.append({
+                'id': opp['id'],
+                'name': opp['name'] or f"RFQ-{opp['id']}",
+                'stage': opp['stage'] or 'Prospecting',
+                'amount': opp['amount'],
+                'created_at': opp['created_date'],
+                'nsn': nsn,
+                'assigned_to': opp.get('owner')
+            })
+        
+        return jsonify({
+            'opportunities': formatted_opportunities,
+            'total': total,
+            'page': page,
+            'per_page': per_page,
+            'total_pages': total_pages
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/processing-report/opportunities/<int:opportunity_id>', methods=['PUT'])
+def update_processing_report_opportunity(opportunity_id):
+    """Update an opportunity from processing report"""
+    try:
+        data = request.get_json()
+        
+        # Validate required fields
+        if not data.get('name'):
+            return jsonify({'error': 'Name is required'}), 400
+        
+        # Update opportunity
+        update_data = {
+            'name': data.get('name'),
+            'stage': data.get('stage'),
+            'amount': data.get('amount'),
+            'assigned_to': data.get('assigned_to')
+        }
+        
+        # Remove None values
+        update_data = {k: v for k, v in update_data.items() if v is not None}
+        
+        result = crm_data.update_opportunity(opportunity_id, **update_data)
+        
+        if result:
+            return jsonify({'success': True, 'message': 'Opportunity updated successfully'})
+        else:
+            return jsonify({'error': 'Failed to update opportunity'}), 500
+            
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/processing-report/opportunities/<int:opportunity_id>', methods=['DELETE'])
+def delete_processing_report_opportunity(opportunity_id):
+    """Delete an opportunity from processing report"""
+    try:
+        # Check if opportunity exists
+        opportunity = crm_data.get_opportunity_by_id(opportunity_id)
+        if not opportunity:
+            return jsonify({'error': 'Opportunity not found'}), 404
+        
+        # Delete opportunity (this should cascade to related records)
+        result = crm_data.delete_opportunity(opportunity_id)
+        
+        if result:
+            return jsonify({'success': True, 'message': 'Opportunity deleted successfully'})
+        else:
+            return jsonify({'error': 'Failed to delete opportunity'}), 500
+            
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/latest-processing-report')
 def get_latest_processing_report():
@@ -2818,6 +3430,20 @@ def generate_single_vendor_email_api(opportunity_id):
         return jsonify({'success': False, 'message': str(e)})
 
 # Enhanced Email Automation Endpoints
+@app.route('/api/vendor-emails/<email_id>', methods=['GET'])
+def get_vendor_email_content(email_id):
+    """Get vendor email content for preview"""
+    try:
+        email_content = email_automation.get_vendor_email_content(email_id)
+        
+        if email_content:
+            return jsonify({'success': True, 'email': email_content})
+        else:
+            return jsonify({'success': False, 'message': 'Email not found'})
+            
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
 @app.route('/api/vendor-emails/<int:email_id>/mark-sent', methods=['POST'])
 def mark_vendor_email_sent(email_id):
     """Mark vendor email as sent with enhanced tracking"""
@@ -2979,6 +3605,159 @@ def api_complete_task(task_id):
             'success': False,
             'message': str(e)
         }), 500
+
+# ==================== QPL API ROUTES ====================
+
+@app.route('/api/qpl-entries/<int:qpl_id>', methods=['DELETE'])
+def delete_qpl_entry(qpl_id):
+    """Delete a QPL entry"""
+    try:
+        query = "DELETE FROM product_manufacturers WHERE id = ?"
+        result = crm_data.execute_update(query, (qpl_id,))
+        
+        return jsonify({'success': True, 'message': 'QPL entry removed successfully'})
+            
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/products/<int:product_id>/qpl-manufacturers')
+def get_product_qpl_manufacturers(product_id):
+    """Get QPL manufacturers for a product"""
+    try:
+        manufacturers = crm_data.get_qpl_manufacturers_for_product(product_id)
+        return jsonify({'success': True, 'manufacturers': manufacturers})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/accounts/<int:account_id>/qpl-products')
+def get_account_qpl_products(account_id):
+    """Get QPL products for a manufacturer/account"""
+    try:
+        products = crm_data.get_qpl_products_for_manufacturer(account_id)
+        return jsonify({'success': True, 'products': products})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/qpl/search')
+def search_qpl_entries():
+    """Search QPL entries"""
+    try:
+        search_term = request.args.get('q', '')
+        if not search_term:
+            return jsonify({'success': False, 'error': 'Search term required'})
+            
+        entries = crm_data.search_qpl_entries(search_term)
+        return jsonify({'success': True, 'entries': entries})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/qpl/stats')
+def get_qpl_stats():
+    """Get QPL summary statistics"""
+    try:
+        stats = crm_data.get_qpl_summary_stats()
+        return jsonify({'success': True, 'stats': stats})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/products/<int:product_id>/qpl-export')
+def export_product_qpl_data(product_id):
+    """Export QPL data for a product as CSV"""
+    try:
+        import csv
+        import io
+        from flask import make_response
+        
+        # Get product and QPL data
+        product = crm_data.get_product_by_id(product_id)
+        if not product:
+            return jsonify({'error': 'Product not found'}), 404
+            
+        qpl_manufacturers = crm_data.get_qpl_manufacturers_for_product(product_id)
+        
+        # Create CSV content
+        output = io.StringIO()
+        writer = csv.writer(output)
+        
+        # Write header
+        writer.writerow(['NSN', 'Product Name', 'Manufacturer', 'CAGE Code', 'Part Number', 'Date Added'])
+        
+        # Write data
+        for qpl in qpl_manufacturers:
+            writer.writerow([
+                product['nsn'] or '',
+                product['name'] or '',
+                qpl['manufacturer_name'] or '',
+                qpl['cage_code'] or '',
+                qpl['part_number'] or '',
+                qpl['created_date'] or ''
+            ])
+        
+        # Create response
+        response = make_response(output.getvalue())
+        response.headers['Content-Type'] = 'text/csv'
+        response.headers['Content-Disposition'] = f'attachment; filename=qpl_data_{product["nsn"] or product_id}.csv'
+        
+        return response
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/clear-all-reports', methods=['POST'])
+def clear_all_reports():
+    """Clear all processing reports"""
+    try:
+        output_dir = config_manager.get_output_dir()
+        if not output_dir.exists():
+            return jsonify({'success': True, 'message': 'No reports to clear'})
+        
+        # Count reports before deletion
+        report_files = list(output_dir.glob("pdf_processing_report_*.json"))
+        count = len(report_files)
+        
+        # Delete all report files
+        for report_file in report_files:
+            try:
+                report_file.unlink()
+            except Exception as e:
+                print(f"Error deleting report {report_file.name}: {e}")
+        
+        return jsonify({
+            'success': True, 
+            'message': f'Successfully cleared {count} processing reports'
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/delete-report/<filename>', methods=['DELETE'])
+def delete_report(filename):
+    """Delete a specific processing report"""
+    try:
+        # Validate filename to prevent path traversal attacks
+        if '..' in filename or '/' in filename or '\\' in filename:
+            return jsonify({'success': False, 'error': 'Invalid filename'})
+        
+        output_dir = config_manager.get_output_dir()
+        report_file = output_dir / filename
+        
+        if not report_file.exists():
+            return jsonify({'success': False, 'error': 'Report not found'})
+        
+        # Ensure it's actually a processing report file
+        if not filename.startswith('pdf_processing_report_') or not filename.endswith('.json'):
+            return jsonify({'success': False, 'error': 'Invalid report file'})
+        
+        # Delete the file
+        report_file.unlink()
+        
+        return jsonify({
+            'success': True, 
+            'message': f'Successfully deleted report: {filename}'
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/favicon.ico')
 def favicon():

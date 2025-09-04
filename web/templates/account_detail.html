@@ -20,6 +20,10 @@
                 <i class="fas fa-plus me-1"></i>
                 Add Contact
             </button>
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteAccount({{ account.id }})">
+                <i class="fas fa-trash me-1"></i>
+                Delete Account
+            </button>
         </div>
         <a href="{{ url_for('accounts') }}" class="btn btn-sm btn-outline-secondary">
             <i class="fas fa-arrow-left me-1"></i>
@@ -167,9 +171,17 @@
                                 </td>
                                 <td>{{ contact.phone or 'N/A' }}</td>
                                 <td>
-                                    <a href="{{ url_for('contact_detail', contact_id=contact.id) }}" class="btn btn-sm btn-outline-primary">
-                                        <i class="fas fa-eye"></i>
-                                    </a>
+                                    <div class="btn-group" role="group">
+                                        <a href="{{ url_for('contact_detail', contact_id=contact.id) }}" class="btn btn-sm btn-outline-primary" title="View Details">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <button class="btn btn-sm btn-outline-danger delete-contact-btn" 
+                                                data-contact-id="{{ contact.id }}" 
+                                                data-contact-name="{{ contact.first_name }} {{ contact.last_name }}" 
+                                                title="Delete Contact">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                             {% endfor %}
@@ -196,13 +208,75 @@
                 <h5 class="card-title mb-0">
                     <i class="fas fa-certificate me-2"></i>QPL Qualifications
                 </h5>
+                {% if qpl_products %}
+                <small class="text-muted">{{ qpl_products|length }} qualified products</small>
+                {% endif %}
             </div>
             <div class="card-body">
+                {% if qpl_products %}
+                <div class="table-responsive">
+                    <table class="table table-striped" id="qplTable">
+                        <thead>
+                            <tr>
+                                <th>NSN</th>
+                                <th>Product Name</th>
+                                <th>Description</th>
+                                <th>CAGE Code</th>
+                                <th>Date Added</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for product in qpl_products %}
+                            <tr>
+                                <td>
+                                    <span class="badge bg-primary">{{ product.nsn or 'N/A' }}</span>
+                                </td>
+                                <td>
+                                    <strong>{{ product.product_name or 'N/A' }}</strong>
+                                </td>
+                                <td>
+                                    <span class="text-muted">{{ product.description or 'No description' }}</span>
+                                </td>
+                                <td>
+                                    {% if product.cage_code %}
+                                    <span class="badge bg-info">{{ product.cage_code }}</span>
+                                    {% else %}
+                                    <span class="text-muted">N/A</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if product.created_date %}
+                                    <small class="text-muted">{{ product.created_date.strftime('%Y-%m-%d') if product.created_date else 'N/A' }}</small>
+                                    {% else %}
+                                    <small class="text-muted">N/A</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <button type="button" class="btn btn-outline-primary btn-sm" 
+                                                title="View Product Details">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-outline-danger btn-sm" 
+                                                onclick="deleteQPLEntry({{ product.id }})"
+                                                title="Remove from QPL">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
                 <div class="text-center py-4">
                     <i class="fas fa-certificate fa-2x text-muted mb-3"></i>
                     <h6 class="text-muted">No QPL Data</h6>
-                    <p class="text-muted">QPL qualifications will be displayed here when available.</p>
+                    <p class="text-muted">This manufacturer is not currently qualified for any products.</p>
                 </div>
+                {% endif %}
             </div>
         </div>
         {% endif %}
@@ -304,5 +378,112 @@
         </div>
     </div>
 </div>
+
+<script>
+// Handle contact deletion
+document.addEventListener('DOMContentLoaded', function() {
+    // Add event listeners to delete buttons
+    document.querySelectorAll('.delete-contact-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const contactId = this.dataset.contactId;
+            const contactName = this.dataset.contactName;
+            deleteContact(contactId, contactName);
+        });
+    });
+});
+
+function deleteContact(contactId, contactName) {
+    if (confirm(`Are you sure you want to delete contact "${contactName}"? This action cannot be undone.`)) {
+        fetch(`/api/contacts/${contactId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                // Try to parse error message from response
+                return response.json().then(data => {
+                    throw new Error(data.error || 'Failed to delete contact');
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Show success message
+            alert('Contact deleted successfully');
+            // Reload the page to update the contacts list
+            window.location.reload();
+        })
+        .catch(error => {
+            console.error('Error deleting contact:', error);
+            alert(`Error deleting contact: ${error.message}`);
+        });
+    }
+}
+
+function deleteAccount(accountId) {
+    if (confirm('Are you sure you want to delete this account? This will also delete all associated contacts and data. This action cannot be undone.')) {
+        fetch('/api/accounts/' + accountId, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Account deleted successfully!');
+                window.location.href = '/accounts';
+            } else {
+                alert('Failed to delete account: ' + (data.error || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to delete account');
+        });
+    }
+}
+
+function deleteQPLEntry(qplId) {
+    if (confirm('Are you sure you want to remove this product from the QPL? This action cannot be undone.')) {
+        fetch('/api/qpl/' + qplId, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('QPL entry removed successfully!');
+                window.location.reload();
+            } else {
+                alert('Failed to remove QPL entry: ' + (data.error || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to remove QPL entry');
+        });
+    }
+}
+
+// Initialize DataTables
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize QPL table if it exists
+    if (document.getElementById('qplTable')) {
+        $('#qplTable').DataTable({
+            responsive: true,
+            pageLength: 10,
+            order: [[0, 'asc']], // Sort by NSN
+            columnDefs: [
+                { orderable: false, targets: [5] } // Disable sorting for Actions column
+            ]
+        });
+    }
+});
+</script>
 
 {% endblock %}

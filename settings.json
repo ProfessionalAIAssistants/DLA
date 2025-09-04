@@ -1,9 +1,0 @@
-{
-  "min_delivery_days": 50,
-  "iso_required": "ANY",
-  "sampling_required": "ANY",
-  "inspection_point": "ANY",
-  "manufacturer_filters": [],
-  "isoRequired": "ANY",
-  "samplingRequired": "ANY"
-}

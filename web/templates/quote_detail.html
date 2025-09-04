@@ -14,9 +14,14 @@
             <a href="{{ url_for('quotes') }}" class="btn btn-outline-secondary me-2">
                 <i class="fas fa-arrow-left me-2"></i>Back to Quotes
             </a>
-            <button class="btn btn-primary" onclick="editQuote({{ quote.id }})">
-                <i class="fas fa-edit me-2"></i>Edit Quote
-            </button>
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="editQuote({{ quote.id }})">
+                    <i class="fas fa-edit me-2"></i>Edit Quote
+                </button>
+                <button class="btn btn-outline-danger" onclick="deleteQuote({{ quote.id }})">
+                    <i class="fas fa-trash me-2"></i>Delete Quote
+                </button>
+            </div>
         </div>
     </div>
 
@@ -752,5 +757,29 @@ document.getElementById('editQuoteForm').addEventListener('submit', function(e) 
         alert('Error updating Quote. Please try again.');
     });
 });
+
+function deleteQuote(quoteId) {
+    if (confirm('Are you sure you want to delete this quote? This action cannot be undone.')) {
+        fetch('/api/quotes/' + quoteId, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Quote deleted successfully!');
+                window.location.href = '/quotes';
+            } else {
+                alert('Failed to delete quote: ' + (data.error || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to delete quote');
+        });
+    }
+}
 </script>
 {% endblock %}

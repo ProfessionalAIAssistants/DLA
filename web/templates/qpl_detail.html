@@ -1,0 +1,390 @@
+{% extends "base.html" %}
+
+{% block title %}{{ qpl.manufacturer_name }} - QPL Detail{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-certificate text-primary me-2"></i>
+        {{ qpl.manufacturer_name }}
+        {% if qpl.cage_code %}
+            <small class="text-muted">(CAGE: {{ qpl.cage_code }})</small>
+        {% endif %}
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <a href="{{ url_for('qpls') }}" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i>
+                Back to QPLs
+            </a>
+            <button type="button" class="btn btn-sm btn-primary" onclick="editQpl({{ qpl.id }})">
+                <i class="fas fa-edit me-1"></i>
+                Edit QPL
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- QPL Information -->
+<div class="row">
+    <div class="col-lg-8">
+        <!-- Basic Information Card -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-info-circle text-primary me-2"></i>
+                    Basic Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Manufacturer Name</label>
+                            <div class="fw-bold">{{ qpl.manufacturer_name }}</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-muted">CAGE Code</label>
+                            <div>
+                                {% if qpl.cage_code %}
+                                    <code class="text-primary">{{ qpl.cage_code }}</code>
+                                {% else %}
+                                    <span class="text-muted">Not specified</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Part Number</label>
+                            <div>
+                                {% if qpl.part_number %}
+                                    <code class="text-dark">{{ qpl.part_number }}</code>
+                                {% else %}
+                                    <span class="text-muted">Not specified</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Status</label>
+                            <div>
+                                {% if qpl.is_active %}
+                                    <span class="badge bg-success">Active</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Inactive</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Created</label>
+                            <div>{{ qpl.created_date.strftime('%B %d, %Y at %I:%M %p') if qpl.created_date else 'N/A' }}</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Last Modified</label>
+                            <div>{{ qpl.modified_date.strftime('%B %d, %Y at %I:%M %p') if qpl.modified_date else 'N/A' }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Associated Product Card -->
+        {% if qpl.product_name or qpl.nsn %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-box text-info me-2"></i>
+                    Associated Product
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="d-flex align-items-center">
+                            <div class="me-3">
+                                <i class="fas fa-box fa-2x text-info"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-1">
+                                    {% if qpl.product_id %}
+                                        <a href="{{ url_for('product_detail', product_identifier=qpl.product_id) }}" class="text-decoration-none">
+                                            {{ qpl.product_name }}
+                                        </a>
+                                    {% else %}
+                                        {{ qpl.product_name }}
+                                    {% endif %}
+                                </h6>
+                                {% if qpl.nsn %}
+                                    <div class="text-muted">
+                                        <strong>NSN:</strong> <code class="text-info">{{ qpl.nsn }}</code>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        {% if qpl.product_id %}
+                            <a href="{{ url_for('product_detail', product_identifier=qpl.product_id) }}" class="btn btn-sm btn-outline-info">
+                                <i class="fas fa-external-link-alt me-1"></i>
+                                View Product
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Associated Account Card -->
+        {% if qpl.account_name %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-building text-success me-2"></i>
+                    Associated Account
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="d-flex align-items-center">
+                            <div class="me-3">
+                                <i class="fas fa-building fa-2x text-success"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-1">
+                                    {% if qpl.account_id %}
+                                        <a href="{{ url_for('account_detail', id=qpl.account_id) }}" class="text-decoration-none">
+                                            {{ qpl.account_name }}
+                                        </a>
+                                    {% else %}
+                                        {{ qpl.account_name }}
+                                    {% endif %}
+                                </h6>
+                                <div class="text-muted">Supplier Account</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        {% if qpl.account_id %}
+                            <a href="{{ url_for('account_detail', id=qpl.account_id) }}" class="btn btn-sm btn-outline-success">
+                                <i class="fas fa-external-link-alt me-1"></i>
+                                View Account
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+        <!-- Quick Actions Card -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="fas fa-bolt text-warning me-2"></i>
+                    Quick Actions
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="editQpl({{ qpl.id }})">
+                        <i class="fas fa-edit me-2"></i>
+                        Edit QPL Details
+                    </button>
+                    {% if qpl.product_id %}
+                    <a href="{{ url_for('product_detail', product_identifier=qpl.product_id) }}" class="btn btn-outline-info btn-sm">
+                        <i class="fas fa-box me-2"></i>
+                        View Product Details
+                    </a>
+                    {% endif %}
+                    {% if qpl.account_id %}
+                    <a href="{{ url_for('account_detail', id=qpl.account_id) }}" class="btn btn-outline-success btn-sm">
+                        <i class="fas fa-building me-2"></i>
+                        View Account Details
+                    </a>
+                    {% endif %}
+                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="deleteQpl({{ qpl.id }}, '{{ qpl.manufacturer_name }}')">
+                        <i class="fas fa-trash me-2"></i>
+                        Delete QPL
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Related Information Card -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="fas fa-link text-secondary me-2"></i>
+                    Related Information
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="small">
+                    <div class="mb-2">
+                        <strong>QPL ID:</strong> {{ qpl.id }}
+                    </div>
+                    {% if qpl.product_id %}
+                    <div class="mb-2">
+                        <strong>Product ID:</strong> {{ qpl.product_id }}
+                    </div>
+                    {% endif %}
+                    {% if qpl.account_id %}
+                    <div class="mb-2">
+                        <strong>Account ID:</strong> {{ qpl.account_id }}
+                    </div>
+                    {% endif %}
+                    <div class="mb-2">
+                        <strong>Status:</strong> 
+                        {% if qpl.is_active %}
+                            <span class="text-success">Active</span>
+                        {% else %}
+                            <span class="text-muted">Inactive</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit QPL Modal -->
+<div class="modal fade" id="editQplModal" tabindex="-1" aria-labelledby="editQplModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editQplModalLabel">Edit QPL</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="editQplForm">
+                <input type="hidden" id="edit_qpl_id" name="qpl_id" value="{{ qpl.id }}">
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="edit_manufacturer_name" class="form-label">Manufacturer Name *</label>
+                            <input type="text" class="form-control" id="edit_manufacturer_name" name="manufacturer_name" value="{{ qpl.manufacturer_name }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="edit_cage_code" class="form-label">CAGE Code</label>
+                            <input type="text" class="form-control" id="edit_cage_code" name="cage_code" value="{{ qpl.cage_code or '' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="edit_part_number" class="form-label">Part Number</label>
+                            <input type="text" class="form-control" id="edit_part_number" name="part_number" value="{{ qpl.part_number or '' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="edit_product_id" class="form-label">Product</label>
+                            <select class="form-select" id="edit_product_id" name="product_id">
+                                <option value="">Select Product (Optional)</option>
+                                {% for product in products %}
+                                <option value="{{ product.id }}" {% if product.id == qpl.product_id %}selected{% endif %}>
+                                    {{ product.name }} ({{ product.nsn or 'No NSN' }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="edit_account_id" class="form-label">Account</label>
+                            <select class="form-select" id="edit_account_id" name="account_id">
+                                <option value="">Select Account (Optional)</option>
+                                {% for account in accounts %}
+                                <option value="{{ account.id }}" {% if account.id == qpl.account_id %}selected{% endif %}>
+                                    {{ account.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check mt-4">
+                                <input class="form-check-input" type="checkbox" id="edit_is_active" name="is_active" {% if qpl.is_active %}checked{% endif %}>
+                                <label class="form-check-label" for="edit_is_active">
+                                    Active QPL
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveQplChanges()">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function editQpl(qplId) {
+    // The form is already populated from the template
+    // Just show the modal
+    const modal = new bootstrap.Modal(document.getElementById('editQplModal'));
+    modal.show();
+}
+
+function saveQplChanges() {
+    const formData = new FormData(document.getElementById('editQplForm'));
+    const qplId = formData.get('qpl_id');
+    
+    // Convert form data to JSON
+    const data = {
+        manufacturer_name: formData.get('manufacturer_name'),
+        cage_code: formData.get('cage_code'),
+        part_number: formData.get('part_number'),
+        product_id: formData.get('product_id') || null,
+        account_id: formData.get('account_id') || null,
+        is_active: formData.has('is_active')
+    };
+    
+    fetch(`/api/qpl/${qplId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Close modal and reload page
+            const modal = bootstrap.Modal.getInstance(document.getElementById('editQplModal'));
+            modal.hide();
+            location.reload();
+        } else {
+            alert('Error updating QPL: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error updating QPL');
+    });
+}
+
+function deleteQpl(qplId, manufacturerName) {
+    if (confirm(`Are you sure you want to delete the QPL for "${manufacturerName}"?`)) {
+        fetch(`/api/qpl/${qplId}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Redirect to QPLs list after successful deletion
+                window.location.href = '/qpls';
+            } else {
+                alert('Error deleting QPL: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error deleting QPL');
+        });
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,189 @@
+{
+  "processing_start": "2025-09-03T12:30:59.545606",
+  "processing_end": "2025-09-03T12:30:59.545618",
+  "filter_settings": {
+    "min_delivery_days": 30,
+    "iso_required": "ANY",
+    "sampling_required": "ANY",
+    "inspection_point": "ANY",
+    "manufacturer_filters": [],
+    "auto_process": true,
+    "manufacturer_filter": "",
+    "fsc_filter": "",
+    "packaging_filter": "",
+    "auto_create_opportunities": true,
+    "link_related_records": true,
+    "move_processed_files": true,
+    "skip_duplicates": true
+  },
+  "total_files": 3,
+  "processed_files": [
+    {
+      "filename": "SPE7M424T236A.PDF",
+      "rfq_data": {
+        "request_number": "SPE7M4-24-T-236A",
+        "nsn": "5331010071611",
+        "quantity": "303",
+        "unit": "EA",
+        "mfr": "IAW BASIC SPEC NR MIL-DTL-25988/1B REVISION NR B   DTD 06/29/2021 PART PIECE NUMBER: M25988/1-261 IAW REFERENCE SPEC NR MIL-DTL-25988D REVISION NR D   DTD 01/21/2021 PART PIECE NUMBER:",
+        "delivery_days": "166",
+        "fob": "ORIGIN",
+        "packaging_type": "MIL-STD-2073-1E",
+        "iso": "NO",
+        "sampling": "NO",
+        "inspection_point": "DESTINATION",
+        "buyer": "Anthony Galluch",
+        "email": "FMDF_3355@dla.mil",
+        "product_description": "O-RING                                   ",
+        "close_date": "JUN 27, 2024",
+        "open_date": "JUN 17, 2024",
+        "purchase_number": "7008033214",
+        "fsc": "5331",
+        "packaging": "MIL-STD-2073-1E \nQUP:001  PRES MTHD:33  CLNG/DRY:0  PRESV MAT:00 \nWRAP MAT:00  CUSH/DUNN MAT:00  CUSH/DUNN THKNESS:0 \nUNIT CONT:BE  OPI:M \nINTRMDTE CONT:D3  INTRMDTE CONT QTY:AAA \nPACK CODE:U \nMARKING SHALL BE IN ACCORDANCE WITH MIL-STD-129. \nSPECIAL MARKING CODE:00 -00 No special marking ",
+        "office": "DLA LAND AND MARITIME ",
+        "division": "FLUID HANDLING DIVISION ",
+        "address": "PO BOX 3990  COLUMBUS OH  43218-3990 ",
+        "buyer_code": "PMCM42P",
+        "telephone": "614-692-5265",
+        "fax": "614-693-1551",
+        "buyer_info": "DLA LAND AND MARITIME \nFLUID HANDLING DIVISION \nPO BOX 3990 \nCOLUMBUS OH  43218-3990 \nUSA \nName: Anthony Galluch Buyer Code:PMCM42P Tel: 614-692-5265 Fax: 614-693-1551 \nEmail: FMDF_3355@dla.mil",
+        "payment_history": "910@ $4.55 on 20240123\n410@ $3.40 on 20231017\n1013@ $3.71 on 20230119\n65@ $2.28 on 20190412\n44@ $2.28 on 20190215\n44@ $2.28 on 20190117\n64@ $2.28 on 20181221\n67@ $2.28 on 20181115\n23@ $2.28 on 20180913\n219@ $2.28 on 20180821\n24@ $2.28 on 20180615\n23@ $2.28 on 20180517\n152@ $2.28 on 20180511\n339@ $2.28 on 20180511\n89@ $2.28 on 20180212\n164@ $2.27 on 20170815\n129@ $2.27 on 20170815\n62@ $2.27 on 20170508\n203@ $2.27 on 20160404\n319@ $2.27 on 20150505",
+        "skipped": false
+      },
+      "opportunity_id": 68,
+      "status": "processed",
+      "created_records": 1,
+      "updated_records": 0,
+      "records_detail": [
+        "Opportunity: SPE7M4-24-T-236A"
+      ]
+    },
+    {
+      "filename": "SPE4A124T2840.PDF",
+      "rfq_data": {
+        "request_number": "SPE4A1-24-T-2840",
+        "nsn": "5331011267254",
+        "quantity": "417",
+        "unit": "EA",
+        "mfr": "MOOG INC 94697 P/N 080-04273-185",
+        "delivery_days": "164",
+        "fob": "ORIGIN",
+        "packaging_type": "MIL-STD-1916",
+        "iso": "YES",
+        "sampling": "YES",
+        "inspection_point": "DESTINATION",
+        "buyer": "Scott Brunner",
+        "email": "Scott.Brunner@dla.mil",
+        "product_description": "O-RING                                   ",
+        "close_date": "MAR 28, 2024",
+        "open_date": "MAR 21, 2024",
+        "purchase_number": "7006804239",
+        "fsc": "5331",
+        "packaging": "MIL-STD-2073-1E \nQUP:001  PRES MTHD:33  CLNG/DRY:1  PRESV MAT:00 \nWRAP MAT:00  CUSH/DUNN MAT:00  CUSH/DUNN THKNESS:0 \nUNIT CONT:BE  OPI:M \nINTRMDTE CONT:E5  INTRMDTE CONT QTY:AAA \nPACK CODE:U \nMARKING SHALL BE IN ACCORDANCE WITH MIL-STD-129. \nSPECIAL MARKING CODE:00 -00 No special marking ",
+        "office": "DLA AVIATION ",
+        "division": "AVIATION SUPPLY CHAIN ",
+        "address": "6090 STRATHMORE  ROAD  RICHMOND VA  23237 ",
+        "buyer_code": "DSB0035",
+        "telephone": "804-279-5901",
+        "fax": "N/A",
+        "buyer_info": "DLA AVIATION \nAVIATION SUPPLY CHAIN \n6090 STRATHMORE  ROAD \nRICHMOND VA  23237 \nUSA \nName: Scott Brunner Buyer Code:DSB0035 Tel: 804-279-5901  \nEmail: Scott.Brunner@dla.mil",
+        "payment_history": "897@ $1.79 on 20200401\n882@ $5.15 on 20150730\n734@ $4.32 on 20100630\n567@ $4.32 on 20100603\n250@ $4.09 on 20090223\n250@ $4.09 on 20080721\n430@ $3.70 on 20051110\n665@ $3.84 on 20020726\n220@ $3.82 on 20011218\n30@ $3.81 on 20011025\n35@ $12.95 on 20010917\n100@ $3.82 on 19990205\n64@ $4.95 on 19980731\n148@ $1.40 on 19881121\n69@ $2.31 on 19830719",
+        "skipped": false
+      },
+      "opportunity_id": 69,
+      "status": "processed",
+      "created_records": 1,
+      "updated_records": 0,
+      "records_detail": [
+        "Opportunity: SPE4A1-24-T-2840"
+      ]
+    },
+    {
+      "filename": "SPE4A123T3230.PDF",
+      "rfq_data": {
+        "request_number": "SPE4A1-23-T-3230",
+        "nsn": "5331012715779",
+        "quantity": "1021",
+        "unit": "EA",
+        "mfr": "MOOG INC 94697 P/N 58532-012",
+        "delivery_days": "171",
+        "fob": "ORIGIN",
+        "packaging_type": "MIL-STD-130N(1)",
+        "iso": "NO",
+        "sampling": "YES",
+        "inspection_point": "DESTINATION",
+        "buyer": "Scott Brunner",
+        "email": "Scott.Brunner@dla.mil",
+        "product_description": "O-RING                                   ",
+        "close_date": "SEP 27, 2023",
+        "open_date": "SEP 20, 2023",
+        "purchase_number": "7004589335",
+        "fsc": "",
+        "packaging": "MIL-STD-2073-1E \nQUP:001  PRES MTHD:33  CLNG/DRY:1  PRESV MAT:00 \nWRAP MAT:00  CUSH/DUNN MAT:00  CUSH/DUNN THKNESS:0 \nUNIT CONT:BE  OPI:M \nINTRMDTE CONT:E5  INTRMDTE CONT QTY:AAA \nPACK CODE:U \nMARKING SHALL BE IN ACCORDANCE WITH MIL-STD-129. \nSPECIAL MARKING CODE:00 -00 No special marking ",
+        "office": "DLA AVIATION ",
+        "division": "AVIATION SUPPLY CHAIN ",
+        "address": "6090 STRATHMORE  ROAD  RICHMOND VA  23237 ",
+        "buyer_code": "DSB0035",
+        "telephone": "804-279-5901",
+        "fax": "N/A",
+        "buyer_info": "DLA AVIATION \nAVIATION SUPPLY CHAIN \n6090 STRATHMORE  ROAD \nRICHMOND VA  23237 \nUSA \nName: Scott Brunner Buyer Code:DSB0035 Tel: 804-279-5901  \nEmail: Scott.Brunner@dla.mil",
+        "payment_history": "",
+        "skipped": false
+      },
+      "opportunity_id": 70,
+      "status": "processed",
+      "created_records": 1,
+      "updated_records": 0,
+      "records_detail": [
+        "Opportunity: SPE4A1-23-T-3230"
+      ]
+    }
+  ],
+  "skipped_files": [],
+  "error_files": [],
+  "summary": {
+    "files_processed": 3,
+    "opportunities_created": 3,
+    "contacts_created": 0,
+    "contacts_updated": 0,
+    "accounts_created": 0,
+    "accounts_updated": 0,
+    "products_created": 0,
+    "tasks_created": 0,
+    "files_skipped": 0,
+    "errors": 0
+  },
+  "created_records": {
+    "opportunities": [
+      {
+        "id": 68,
+        "request_number": "SPE7M4-24-T-236A",
+        "nsn": "5331010071611"
+      },
+      {
+        "id": 69,
+        "request_number": "SPE4A1-24-T-2840",
+        "nsn": "5331011267254"
+      },
+      {
+        "id": 70,
+        "request_number": "SPE4A1-23-T-3230",
+        "nsn": "5331012715779"
+      }
+    ],
+    "contacts": [],
+    "accounts": [],
+    "products": [],
+    "tasks": []
+  },
+  "updated_records": {
+    "contacts": [],
+    "accounts": []
+  },
+  "detailed_report": "DIBBs CRM Processing Report - 2025-09-03 12:30:58\n============================================================\nProcessing: SPE7M424T236A.PDF\n  \u2713 Automated - Created opportunity 68\nProcessing: SPE4A124T2840.PDF\n  \u2713 Automated - Created opportunity 69\nProcessing: SPE4A123T3230.PDF\n  \u2713 Automated - Created opportunity 70\n\nProcessing Summary:\n  Files Processed: 3\n  Opportunities Created: 3\n  Files Skipped: 0\n  Errors: 0\n\nCreated Opportunities:\n  \u2022 SPE7M4-24-T-236A (ID: 68) - NSN: 5331010071611\n  \u2022 SPE4A1-24-T-2840 (ID: 69) - NSN: 5331011267254\n  \u2022 SPE4A1-23-T-3230 (ID: 70) - NSN: 5331012715779\n\nFilter Settings Applied:\n  Min Delivery Days: 30\n  ISO Required: ANY\n  Sampling Required: ANY\n  Inspection Point: ANY\n  Manufacturer Filters: []",
+  "processed": 3,
+  "created": 3,
+  "updated": 0,
+  "skipped": 0,
+  "errors": []
+}
