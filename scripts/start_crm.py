@@ -46,7 +46,7 @@ FILE STRUCTURE:
 ├── data/                       # Data storage
 │   ├── crm.db                 # SQLite database
 │   ├── input/To Process/      # Input PDF folder
-│   ├── output/Output/         # CSV output folder
+│   ├── output/                 # CSV and JSON output files
 │   └── processed/             # Processed files
 ├── scripts/                    # Utility scripts
 └── docs/                       # Documentation

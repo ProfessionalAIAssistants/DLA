@@ -77,11 +77,11 @@
                         </div>
                         <div class="mb-3">
                             <label class="form-label text-muted">Created</label>
-                            <div>{{ qpl.created_date.strftime('%B %d, %Y at %I:%M %p') if qpl.created_date else 'N/A' }}</div>
+                            <div>{{ qpl.created_date if qpl.created_date else 'N/A' }}</div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label text-muted">Last Modified</label>
-                            <div>{{ qpl.modified_date.strftime('%B %d, %Y at %I:%M %p') if qpl.modified_date else 'N/A' }}</div>
+                            <div>{{ qpl.modified_date if qpl.modified_date else 'N/A' }}</div>
                         </div>
                     </div>
                 </div>
@@ -89,7 +89,7 @@
         </div>
 
         <!-- Associated Product Card -->
-        {% if qpl.product_name or qpl.nsn %}
+        {% if qpl.name or qpl.nsn %}
         <div class="card mb-4">
             <div class="card-header">
                 <h5 class="card-title mb-0">
@@ -108,10 +108,10 @@
                                 <h6 class="mb-1">
                                     {% if qpl.product_id %}
                                         <a href="{{ url_for('product_detail', product_identifier=qpl.product_id) }}" class="text-decoration-none">
-                                            {{ qpl.product_name }}
+                                            {{ qpl.name }}
                                         </a>
                                     {% else %}
-                                        {{ qpl.product_name }}
+                                        {{ qpl.name }}
                                     {% endif %}
                                 </h6>
                                 {% if qpl.nsn %}
@@ -154,7 +154,7 @@
                             <div>
                                 <h6 class="mb-1">
                                     {% if qpl.account_id %}
-                                        <a href="{{ url_for('account_detail', id=qpl.account_id) }}" class="text-decoration-none">
+                                        <a href="{{ url_for('account_detail', account_id=qpl.account_id) }}" class="text-decoration-none">
                                             {{ qpl.account_name }}
                                         </a>
                                     {% else %}
@@ -167,7 +167,7 @@
                     </div>
                     <div class="col-md-4 text-end">
                         {% if qpl.account_id %}
-                            <a href="{{ url_for('account_detail', id=qpl.account_id) }}" class="btn btn-sm btn-outline-success">
+                            <a href="{{ url_for('account_detail', account_id=qpl.account_id) }}" class="btn btn-sm btn-outline-success">
                                 <i class="fas fa-external-link-alt me-1"></i>
                                 View Account
                             </a>
@@ -202,7 +202,7 @@
                     </a>
                     {% endif %}
                     {% if qpl.account_id %}
-                    <a href="{{ url_for('account_detail', id=qpl.account_id) }}" class="btn btn-outline-success btn-sm">
+                    <a href="{{ url_for('account_detail', account_id=qpl.account_id) }}" class="btn btn-outline-success btn-sm">
                         <i class="fas fa-building me-2"></i>
                         View Account Details
                     </a>

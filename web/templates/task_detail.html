@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Task Details - CDE Prosperity{% endblock %}
+{% block title %}{{ task.subject if task.subject else 'Task Details' }} - CDE Prosperity{% endblock %}
 
 {% block content %}
 <div class="container-fluid mt-4">
@@ -14,7 +14,7 @@
                         <ol class="breadcrumb">
                             <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
                             <li class="breadcrumb-item"><a href="/tasks">Tasks</a></li>
-                            <li class="breadcrumb-item active">{{ task.title[:50] if task.title else 'Untitled Task' }}...</li>
+                            <li class="breadcrumb-item active">{{ task.subject[:50] if task.subject else 'Untitled Task' }}...</li>
                         </ol>
                     </nav>
                 </div>
@@ -206,8 +206,8 @@
                             <form id="taskForm">
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
-                                        <label for="title" class="form-label">Title</label>
-                                        <input type="text" class="form-control" id="title" name="title" value="{{ task.title }}" required>
+                                        <label for="subject" class="form-label">Subject</label>
+                                        <input type="text" class="form-control" id="subject" name="subject" value="{{ task.subject }}" required>
                                     </div>
                                     <div class="col-md-3 mb-3">
                                         <label for="status" class="form-label">Status</label>
@@ -285,8 +285,8 @@
                             <!-- View Mode -->
                             <div class="row">
                                 <div class="col-md-8 mb-3">
-                                    <h6 class="text-muted">Title</h6>
-                                    <p class="mb-0">{{ task.title }}</p>
+                                    <h6 class="text-muted">Subject</h6>
+                                    <p class="mb-0">{{ task.subject }}</p>
                                 </div>
                                 <div class="col-md-2 mb-3">
                                     <h6 class="text-muted">Status</h6>
@@ -340,14 +340,7 @@
                                         {% endif %}
                                     </div>
                                 </div>
-                                <div class="col-md-6 mb-3">
-                                    <div class="border rounded p-2 bg-light">
-                                        <h6 class="text-muted mb-1"><i class="fas fa-tasks me-1"></i>Status</h6>
-                                        <span class="badge bg-{{ 'info' if task.status == 'In Progress' else 'success' if task.status == 'Completed' else 'warning' if task.status == 'Pending' else 'secondary' }} fs-6">
-                                            {{ task.status or 'Not Set' }}
-                                        </span>
-                                    </div>
-                                </div>
+
                             </div>
                             
                             <div class="row">
@@ -398,11 +391,15 @@
                             </div>
                             {% endif %}
                             
-                            {% if task.description %}
+                            {% if task.clean_description or task.description %}
                             <div class="mb-3">
                                 <h6 class="text-muted">Description</h6>
                                 <div class="border rounded p-3 bg-light">
-                                    {{ task.description | replace('\n', '<br>') | safe }}
+                                    {% if task.clean_description %}
+                                        {{ task.clean_description | replace('\n', '<br>') | safe }}
+                                    {% else %}
+                                        {{ task.description | replace('\n', '<br>') | safe }}
+                                    {% endif %}
                                 </div>
                             </div>
                             {% endif %}
@@ -502,6 +499,166 @@
                                         <small class="text-muted">New/Prospecting</small>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Processing Report (for PDF processing tasks) -->
+                    {% if processing_data %}
+                    <div class="card mb-4">
+                        <div class="card-header d-flex align-items-center">
+                            <div class="bg-success bg-opacity-10 rounded-circle p-2 me-3">
+                                <i class="fas fa-chart-bar text-success"></i>
+                            </div>
+                            <div>
+                                <h5 class="card-title mb-0">Records Created During Processing</h5>
+                                <small class="text-muted">Double-click any record to view details</small>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <!-- Opportunities -->
+                                <div class="col-md-6 mb-4">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="fas fa-handshake text-primary me-2"></i>
+                                        <h6 class="text-primary mb-0">Opportunities ({{ processing_data.created_opportunities|length if processing_data.created_opportunities else 0 }})</h6>
+                                    </div>
+                                    {% if processing_data.created_opportunities %}
+                                        {% for opp in processing_data.created_opportunities %}
+                                        <div class="mb-2 p-2 bg-light rounded small" ondblclick="viewOpportunity({{ opp.id }})" style="cursor: pointer;" title="Double-click to view details">
+                                            <div class="fw-bold">{{ opp.request_number or 'Unknown' }}</div>
+                                            <div class="text-muted">NSN: {{ opp.nsn or 'N/A' }}</div>
+                                        </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <div class="text-muted small">• None</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Contacts -->
+                                <div class="col-md-6 mb-4">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="fas fa-user text-success me-2"></i>
+                                        <h6 class="text-success mb-0">Contacts ({{ processing_data.created_contacts|length if processing_data.created_contacts else 0 }})</h6>
+                                    </div>
+                                    {% if processing_data.created_contacts %}
+                                        {% for contact in processing_data.created_contacts %}
+                                        <div class="mb-2 p-2 bg-light rounded small" ondblclick="viewContact({{ contact.id }})" style="cursor: pointer;" title="Double-click to view details">
+                                            <div class="fw-bold">{{ contact.name or 'Unknown' }}</div>
+                                            <div class="text-muted">{{ contact.email or 'No email' }}</div>
+                                        </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <div class="text-muted small">• None</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Accounts -->
+                                <div class="col-md-6 mb-4">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="fas fa-building text-info me-2"></i>
+                                        <h6 class="text-info mb-0">Accounts ({{ processing_data.created_accounts|length if processing_data.created_accounts else 0 }})</h6>
+                                    </div>
+                                    {% if processing_data.created_accounts %}
+                                        {% for account in processing_data.created_accounts %}
+                                        <div class="mb-2 p-2 bg-light rounded small" ondblclick="viewAccount({{ account.id }})" style="cursor: pointer;" title="Double-click to view details">
+                                            <div class="fw-bold">{{ account.name or 'Unknown' }}</div>
+                                        </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <div class="text-muted small">• None</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Products -->
+                                <div class="col-md-6 mb-4">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="fas fa-box text-warning me-2"></i>
+                                        <h6 class="text-warning mb-0">Products ({{ processing_data.created_products|length if processing_data.created_products else 0 }})</h6>
+                                    </div>
+                                    {% if processing_data.created_products %}
+                                        {% for product in processing_data.created_products %}
+                                        <div class="mb-2 p-2 bg-light rounded small" ondblclick="viewProduct({{ product.id }})" style="cursor: pointer;" title="Double-click to view details">
+                                            <div class="fw-bold">NSN: {{ product.nsn or 'Unknown NSN' }}</div>
+                                            <div class="text-muted">{{ product.name or 'Unknown Product' }}</div>
+                                        </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <div class="text-muted small">• None</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- QPLs -->
+                                <div class="col-md-6 mb-4">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="fas fa-list-alt text-purple me-2"></i>
+                                        <h6 class="text-purple mb-0">QPLs ({{ processing_data.created_qpls|length if processing_data.created_qpls else 0 }})</h6>
+                                    </div>
+                                    {% if processing_data.created_qpls %}
+                                        {% for qpl in processing_data.created_qpls %}
+                                        <div class="mb-2 p-2 bg-light rounded small" ondblclick="viewQPL({{ qpl.id }})" style="cursor: pointer;" title="Double-click to view details">
+                                            <div class="fw-bold">{{ qpl.name or 'Unknown QPL' }}</div>
+                                        </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <div class="text-muted small">• None</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <!-- Records Updated Section -->
+                            <div class="border-top pt-3">
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fas fa-edit text-secondary me-2"></i>
+                                    <h6 class="text-secondary mb-0">Records Updated During Processing</h6>
+                                </div>
+                                {% if processing_data.updated_records %}
+                                    <div class="text-muted">Updated {{ processing_data.updated_records|length }} existing records</div>
+                                {% else %}
+                                    <div class="text-muted">No records updated</div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Processing Summary -->
+                            <div class="border-top pt-3 mt-3">
+                                <h6 class="mb-2">Processing Summary:</h6>
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <div class="text-center p-2 bg-primary bg-opacity-10 rounded">
+                                            <div class="h4 text-primary mb-0">{{ processing_data.processed or 0 }}</div>
+                                            <small class="text-muted">Processed</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="text-center p-2 bg-success bg-opacity-10 rounded">
+                                            {% set total_created = (processing_data.created_opportunities|length if processing_data.created_opportunities else 0) + (processing_data.created_contacts|length if processing_data.created_contacts else 0) + (processing_data.created_accounts|length if processing_data.created_accounts else 0) + (processing_data.created_products|length if processing_data.created_products else 0) + (processing_data.created_qpls|length if processing_data.created_qpls else 0) %}
+                                            <div class="h4 text-success mb-0">{{ total_created }}</div>
+                                            <small class="text-muted">Created</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="text-center p-2 bg-warning bg-opacity-10 rounded">
+                                            <div class="h4 text-warning mb-0">{{ processing_data.skipped or 0 }}</div>
+                                            <small class="text-muted">Skipped</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="text-center p-2 bg-danger bg-opacity-10 rounded">
+                                            <div class="h4 text-danger mb-0">{{ processing_data.errors|length if processing_data.errors else 0 }}</div>
+                                            <small class="text-muted">Errors</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                {% if processing_data.errors %}
+                                <div class="mt-3">
+                                    <h6 class="text-danger">Errors Encountered:</h6>
+                                    {% for error in processing_data.errors %}
+                                    <div class="alert alert-danger small mb-1">• {{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
@@ -750,6 +907,23 @@ function deleteOpportunity(oppId) {
     }
 }
 
+// Record navigation functions
+function viewContact(contactId) {
+    window.location.href = '/contact/' + contactId;
+}
+
+function viewAccount(accountId) {
+    window.location.href = '/account/' + accountId;
+}
+
+function viewProduct(productId) {
+    window.location.href = '/products#product-' + productId;
+}
+
+function viewQPL(qplId) {
+    window.location.href = '/qpl/' + qplId;
+}
+
 // Initialize DataTables when document is ready
 $(document).ready(function() {
     // Initialize opportunities table with pagination
@@ -765,7 +939,7 @@ $(document).ready(function() {
                 emptyTable: "No opportunities found for this task"
             },
             columnDefs: [
-                { orderable: false, targets: 7 } // Disable sorting on Actions column
+                { orderable: false, targets: 6 } // Disable sorting on Actions column (0-indexed, so Actions = 6)
             ]
         });
     }

@@ -19,6 +19,11 @@
                 Load PDFs
                 <span class="badge bg-warning ms-2" id="pdfCount">0</span>
             </button>
+            <button type="button" class="btn btn-danger btn-lg" onclick="clearAllData()" id="clearDataBtn" title="Development Only: Clear all database data">
+                <i class="fas fa-trash-alt me-2"></i>
+                Clear All Data
+                <span class="badge bg-light text-dark ms-2">DEV</span>
+            </button>
             <button type="button" class="btn btn-outline-primary btn-lg">
                 <i class="fas fa-calendar-day me-2"></i>
                 Today: <span id="currentDate"></span>
@@ -778,8 +783,7 @@
                     message += ` A review task has been created and is due today.`;
                 }
                 
-                // Show success message
-                showAlert('success', message);
+                // Removed success popup per user request - info available in reports
                 
                 // Refresh PDF count
                 loadPDFCount();
@@ -795,6 +799,60 @@
         .catch(error => {
             console.error('Error:', error);
             showAlert('error', 'Network error while processing PDFs');
+        })
+        .finally(() => {
+            // Restore button
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        });
+    }
+    
+    // Clear All Data function (Development Only)
+    function clearAllData() {
+        // Double confirmation for safety
+        if (!confirm('⚠️ WARNING: This will delete ALL data from the database!\n\nThis includes:\n• All Opportunities\n• All Products\n• All Accounts/Contacts\n• All Tasks\n• All QPL entries\n• All Interactions\n\nThis action cannot be undone!\n\nAre you sure you want to continue?')) {
+            return;
+        }
+        
+        if (!confirm('🚨 FINAL CONFIRMATION\n\nThis will permanently delete EVERYTHING in your CRM database.\n\nType "DELETE" in the next prompt to confirm.')) {
+            return;
+        }
+        
+        const confirmText = prompt('Type "DELETE" to confirm database clearing:');
+        if (confirmText !== 'DELETE') {
+            showAlert('error', 'Database clearing cancelled - confirmation text did not match.');
+            return;
+        }
+        
+        const btn = document.getElementById('clearDataBtn');
+        const originalText = btn.innerHTML;
+        
+        // Show loading state
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Clearing...';
+        btn.disabled = true;
+        
+        fetch('/api/clear-all-data', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert('success', 'All database data has been cleared successfully. Refreshing page...');
+                
+                // Refresh page after 2 seconds to show empty state
+                setTimeout(() => {
+                    location.reload();
+                }, 2000);
+            } else {
+                showAlert('error', 'Error clearing data: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('error', 'Network error while clearing data');
         })
         .finally(() => {
             // Restore button

@@ -100,7 +100,8 @@ class DIBBsCRMProcessor:
             print(f"Error saving settings: {e}")
     
     def get_filter_settings(self) -> Dict[str, Any]:
-        """Get current filter settings"""
+        """Get current filter settings - reload from file to ensure latest values"""
+        self.settings = self.load_settings()  # Reload from file
         return self.settings.copy()
     
     def update_filter_settings(self, new_settings: Dict[str, Any]):
@@ -108,6 +109,8 @@ class DIBBsCRMProcessor:
         self.settings.update(new_settings)
         self.save_settings(self.settings)
         print(f"Settings updated and saved: {self.settings}")
+        # Reload settings to ensure they're properly persisted
+        self.settings = self.load_settings()
 
     def extract_text_from_pdf(self, pdf_file):
         """Extract text from PDF file"""
@@ -169,22 +172,25 @@ class DIBBsCRMProcessor:
 
     def move_files(self, source_path, destination_folder):
         """Move processed files to appropriate folder"""
-        source = Path(source_path)
+        # DEVELOPMENT: File moving commented out for testing purposes
+        # source = Path(source_path)
         
-        if destination_folder:
-            # Move to automation folder
-            destination = Path(destination_folder) / source.name
-        else:
-            # Move to reviewed folder
-            destination = self.reviewed_dir / source.name
+        # if destination_folder:
+        #     # Move to automation folder
+        #     destination = Path(destination_folder) / source.name
+        # else:
+        #     # Move to reviewed folder
+        #     destination = self.reviewed_dir / source.name
         
-        try:
-            # Ensure destination directory exists
-            destination.parent.mkdir(parents=True, exist_ok=True)
-            shutil.move(str(source), str(destination))
-            print(f"Moved {source.name} to {destination.parent}")
-        except Exception as e:
-            print(f"Error moving file {source.name}: {e}")
+        # try:
+        #     # Ensure destination directory exists
+        #     destination.parent.mkdir(parents=True, exist_ok=True)
+        #     shutil.move(str(source), str(destination))
+        #     print(f"Moved {source.name} to {destination.parent}")
+        # except Exception as e:
+        #     print(f"Error moving file {source.name}: {e}")
+        
+        print(f"DEVELOPMENT MODE: File moving disabled - {Path(source_path).name} remains in To Process")
 
     def find_request_numbers(self, text):
         """Find request numbers using DIBBs.py pattern"""
@@ -605,10 +611,16 @@ class DIBBsCRMProcessor:
                 if existing_products:
                     product_id = existing_products[0]['id']
                 else:
-                    # Create new product
+                    # Create new product with all available PDF data
+                    product_name = pdf_data.get('product_description', '').strip()
+                    if not product_name or product_name == "Manually Check":
+                        product_name = f"Product for NSN {pdf_data['nsn']}"
+                    
                     product_id = crm_data.create_product(
-                        name=f"Product for NSN {pdf_data['nsn']}",
+                        name=product_name,
                         nsn=pdf_data['nsn'],
+                        fsc=pdf_data.get('fsc', '') if pdf_data.get('fsc') != "Manually Check" else '',
+                        description=pdf_data.get('product_description', '').strip() if pdf_data.get('product_description') != "Manually Check" else '',
                         manufacturer=pdf_data['mfr'] or 'Unknown',
                         category='PDF Import',
                         unit=pdf_data['unit'] or 'EA'
@@ -620,7 +632,9 @@ class DIBBsCRMProcessor:
                     self.results['created_products'].append({
                         'id': product_id,
                         'nsn': pdf_data['nsn'],
-                        'name': f"Product for NSN {pdf_data['nsn']}"
+                        'name': product_name,
+                        'fsc': pdf_data.get('fsc', '') if pdf_data.get('fsc') != "Manually Check" else '',
+                        'description': pdf_data.get('product_description', '').strip() if pdf_data.get('product_description') != "Manually Check" else ''
                     })
             
             # Try to find or create account from office/division information using intelligent matching

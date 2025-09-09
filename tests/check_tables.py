@@ -1,18 +1,17 @@
-import sqlite3
+from src.core.crm_data import crm_data
 
-conn = sqlite3.connect('data/crm.db')
-cursor = conn.cursor()
-
-cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
-tables = cursor.fetchall()
-
-print('Tables in database:')
+print('All tables in database:')
+tables = crm_data.execute_query('SELECT name FROM sqlite_master WHERE type="table"')
 for table in tables:
-    print(f'  - {table[0]}')
+    if isinstance(table, dict):
+        print(f'  - {table["name"]}')
+    else:
+        print(f'  - {table[0]}')
 
-# Check if we have opportunities
-cursor.execute("SELECT COUNT(*) FROM opportunities")
-opp_count = cursor.fetchone()[0]
-print(f'\nOpportunities: {opp_count}')
-
-conn.close()
+print('\nProduct-related tables:')
+product_tables = crm_data.execute_query('SELECT name FROM sqlite_master WHERE type="table" AND name LIKE "%product%"')
+for table in product_tables:
+    if isinstance(table, dict):
+        print(f'  - {table["name"]}')
+    else:
+        print(f'  - {table[0]}')

@@ -547,7 +547,7 @@ def qpls():
     # Build filters
     filters = {}
     if search:
-        filters['manufacturer_name'] = search
+        filters['manufacturer_name'] = search  # This will be mapped to 'manufacturer' in get_qpls_with_details
     if cage_code:
         filters['cage_code'] = cage_code
     if nsn:
@@ -574,38 +574,12 @@ def qpls():
 def qpl_detail(qpl_id):
     """QPL detail view"""
     try:
-        query = """
-            SELECT pm.id, pm.manufacturer_name, pm.cage_code, pm.part_number, 
-                   pm.is_active, pm.created_date, pm.modified_date, pm.product_id, pm.account_id,
-                   p.name as product_name, p.nsn,
-                   a.name as account_name
-            FROM product_manufacturers pm
-            LEFT JOIN products p ON pm.product_id = p.id
-            LEFT JOIN accounts a ON pm.account_id = a.id
-            WHERE pm.id = ?
-        """
+        qpl = crm_data.get_qpl_entry_by_id(qpl_id)
         
-        result = crm_data.execute_query(query, [qpl_id])
-        
-        if not result:
+        if not qpl:
             flash('QPL not found', 'error')
             return redirect(url_for('qpls'))
         
-        qpl_data = result[0]
-        qpl = {
-            'id': qpl_data['id'],
-            'manufacturer_name': qpl_data['manufacturer_name'],
-            'cage_code': qpl_data['cage_code'],
-            'part_number': qpl_data['part_number'],
-            'is_active': qpl_data['is_active'],
-            'created_date': datetime.fromisoformat(qpl_data['created_date']) if qpl_data['created_date'] else None,
-            'modified_date': datetime.fromisoformat(qpl_data['modified_date']) if qpl_data['modified_date'] else None,
-            'product_id': qpl_data['product_id'],
-            'account_id': qpl_data['account_id'],
-            'product_name': qpl_data['product_name'],
-            'nsn': qpl_data['nsn'],
-            'account_name': qpl_data['account_name']
-        }
         
         # Get products and accounts for edit modal
         products_list = crm_data.get_products()
@@ -624,57 +598,20 @@ def qpl_detail(qpl_id):
 def get_qpls_with_details(filters=None):
     """Get QPLs with related product and account information"""
     try:
-        # Base query with joins
-        query = """
-            SELECT pm.id, pm.manufacturer_name, pm.cage_code, pm.part_number, 
-                   pm.is_active, pm.created_date, pm.product_id, pm.account_id,
-                   p.name as product_name, p.nsn,
-                   a.name as account_name
-            FROM product_manufacturers pm
-            LEFT JOIN products p ON pm.product_id = p.id
-            LEFT JOIN accounts a ON pm.account_id = a.id
-        """
-        
-        conditions = []
-        params = []
-        
+        # Use the CRM data layer method instead of direct query
+        filter_dict = {}
         if filters:
             if filters.get('manufacturer_name'):
-                conditions.append("pm.manufacturer_name LIKE ?")
-                params.append(f"%{filters['manufacturer_name']}%")
+                filter_dict['manufacturer_name'] = filters['manufacturer_name']
             if filters.get('cage_code'):
-                conditions.append("pm.cage_code LIKE ?")
-                params.append(f"%{filters['cage_code']}%")
+                filter_dict['cage_code'] = filters['cage_code']
             if filters.get('nsn'):
-                conditions.append("p.nsn LIKE ?")
-                params.append(f"%{filters['nsn']}%")
+                filter_dict['nsn'] = filters['nsn']
         
-        if conditions:
-            query += " WHERE " + " AND ".join(conditions)
+        qpls_list = crm_data.get_qpl_entries(filters=filter_dict)
         
-        query += " ORDER BY pm.manufacturer_name, pm.created_date DESC"
         
-        results = crm_data.execute_query(query, params)
-        
-        # Convert to objects for template
-        qpls = []
-        for row in results:
-            qpl = {
-                'id': row['id'],
-                'manufacturer_name': row['manufacturer_name'],
-                'cage_code': row['cage_code'],
-                'part_number': row['part_number'],
-                'is_active': row['is_active'],
-                'created_date': datetime.fromisoformat(row['created_date']) if row['created_date'] else None,
-                'product_id': row['product_id'],
-                'account_id': row['account_id'],
-                'product_name': row['product_name'],
-                'nsn': row['nsn'],
-                'account_name': row['account_name']
-            }
-            qpls.append(qpl)
-        
-        return qpls
+        return qpls_list
         
     except Exception as e:
         app.logger.error(f"Error getting QPLs: {e}")
@@ -724,7 +661,7 @@ def create_qpl_record(qpl_data):
     """Create a QPL record in the database"""
     try:
         query = """
-            INSERT INTO product_manufacturers 
+            INSERT INTO qpls 
             (manufacturer_name, cage_code, part_number, product_id, account_id, 
              is_active, created_date, modified_date)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -754,7 +691,7 @@ def get_qpl_api(qpl_id):
         query = """
             SELECT id, manufacturer_name, cage_code, part_number, 
                    product_id, account_id, is_active
-            FROM product_manufacturers 
+            FROM qpls 
             WHERE id = ?
         """
         
@@ -788,7 +725,7 @@ def update_qpl_api(qpl_id):
         data = request.get_json()
         
         query = """
-            UPDATE product_manufacturers 
+            UPDATE qpls 
             SET manufacturer_name = ?, cage_code = ?, part_number = ?, 
                 product_id = ?, account_id = ?, is_active = ?, modified_date = ?
             WHERE id = ?
@@ -820,7 +757,7 @@ def update_qpl_api(qpl_id):
 def delete_qpl_api(qpl_id):
     """Delete QPL"""
     try:
-        query = "DELETE FROM product_manufacturers WHERE id = ?"
+        query = "DELETE FROM qpls WHERE id = ?"
         result = crm_data.execute_update(query, [qpl_id])
         
         return jsonify({'success': True, 'message': 'QPL deleted successfully'})
@@ -1463,6 +1400,20 @@ def product_detail(product_identifier):
     except Exception as e:
         return render_template('error.html', error=str(e))
 
+@app.route('/api/products/id/<int:product_id>')
+def api_get_product_by_id(product_id):
+    """API endpoint to get product details by ID"""
+    try:
+        product = crm_data.get_product_by_id(product_id)
+        if product:
+            # Convert sqlite3.Row to dict for JSON serialization
+            product_dict = dict(product)
+            return jsonify(product_dict)
+        else:
+            return jsonify({'error': 'Product not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/products/<nsn>')
 def api_get_product(nsn):
     """API endpoint to get product details by NSN"""
@@ -1877,6 +1828,7 @@ def start_task_api(task_id):
 @app.route('/tasks/<int:task_id>')
 def task_detail(task_id):
     """Show task detail page"""
+    print(f"🔍 TASK DETAIL REQUEST: Task ID {task_id}")
     try:
         task = crm_data.get_task_by_id(task_id)
         if not task:
@@ -1884,24 +1836,123 @@ def task_detail(task_id):
         
         # Get related opportunities using the new method
         opportunities = crm_data.get_opportunities_linked_to_task(task_id)
-        processing_report = ""
+        processing_data = None
         
-        # Extract processing report from task description if available
+        # Debug logging - detailed task information
+        app.logger.info(f"=== TASK {task_id} DEBUG ===")
+        app.logger.info(f"Task subject: {task.get('subject', 'No subject')}")
+        app.logger.info(f"Task description length: {len(task.get('description', '')) if task.get('description') else 0}")
+        
+        # Check for processing data in description field
         if task.get('description'):
-            desc = task['description']
-            if 'PROCESSING REPORT:' in desc:
-                parts = desc.split('PROCESSING REPORT:')
-                if len(parts) > 1:
-                    processing_report = parts[1].split('REPORT ID:')[0].strip()
+            app.logger.info(f"Description preview: '{task['description'][:200]}...'")
+            has_processing_data = '<!-- PROCESSING_DATA:' in task['description']
+            app.logger.info(f"Contains '<!-- PROCESSING_DATA:': {has_processing_data}")
+            
+            if has_processing_data:
+                try:
+                    # Extract the JSON data from the HTML comment
+                    start_marker = '<!-- PROCESSING_DATA:'
+                    end_marker = ' -->'
+                    start_index = task['description'].find(start_marker) + len(start_marker)
+                    end_index = task['description'].find(end_marker, start_index)
+                    
+                    if end_index > start_index:
+                        data_str = task['description'][start_index:end_index]
+                        app.logger.info(f"Extracted data string length: {len(data_str)}")
+                        app.logger.info(f"Data string preview: '{data_str[:100]}...'")
+                        processing_data = json.loads(data_str)
+                        app.logger.info(f"Successfully parsed processing data with {len(processing_data)} keys")
+                        app.logger.info(f"Processing data keys: {list(processing_data.keys())}")
+                        
+                        # Log specific data
+                        if 'created_opportunities' in processing_data:
+                            app.logger.info(f"Created opportunities: {len(processing_data['created_opportunities'])}")
+                            
+                        # Clean the task description for display (remove the processing data comment)
+                        clean_description = task['description'][:task['description'].find(start_marker)].strip()
+                        task['clean_description'] = clean_description
+                        
+                        # Get the actual created records from the database instead of relying on incomplete processing data
+                        # This ensures we show all the records that were actually created
+                        try:
+                            # Get records created on the same date as this task
+                            task_date = task.get('created_date', '')[:10]  # Get just the date part (YYYY-MM-DD)
+                            
+                            # Get actual opportunities
+                            all_opportunities = crm_data.get_opportunities()
+                            today_opportunities = [opp for opp in all_opportunities 
+                                                 if opp.get('created_date', '')[:10] == task_date]
+                            
+                            # Get actual contacts 
+                            all_contacts = crm_data.get_contacts()
+                            today_contacts = [contact for contact in all_contacts 
+                                            if contact.get('created_date', '')[:10] == task_date]
+                            
+                            # Get actual accounts
+                            all_accounts = crm_data.get_accounts()
+                            today_accounts = [account for account in all_accounts 
+                                            if account.get('created_date', '')[:10] == task_date]
+                            
+                            # Get actual products
+                            all_products = crm_data.get_products()
+                            today_products = [product for product in all_products 
+                                            if product.get('created_date', '')[:10] == task_date]
+                            
+                            # Get QPLs created today (using qpls table)
+                            try:
+                                qpls_query = f'SELECT id, manufacturer_name, part_number, created_date FROM qpls WHERE date(created_date) = "{task_date}" ORDER BY id'
+                                qpl_results = crm_data.execute_query(qpls_query)
+                                today_qpls = [{'id': qpl['id'], 'name': f"{qpl['manufacturer_name']} - {qpl['part_number']}" if qpl['part_number'] else qpl['manufacturer_name'] or 'Unknown QPL', 'created_date': qpl['created_date']} for qpl in qpl_results]
+                            except Exception as qpl_error:
+                                app.logger.error(f"Error loading QPL data: {str(qpl_error)}")
+                                today_qpls = []
+                            
+                            # Update processing data with real counts and data
+                            processing_data['created_opportunities'] = [
+                                {'id': opp['id'], 'request_number': opp.get('name', 'Unknown'), 'nsn': opp.get('product_nsn', 'N/A')}
+                                for opp in today_opportunities
+                            ]
+                            processing_data['created_contacts'] = [
+                                {'id': contact['id'], 'name': contact.get('name', 'Unknown'), 'email': contact.get('email', 'No email')}
+                                for contact in today_contacts
+                            ]
+                            processing_data['created_accounts'] = [
+                                {'id': account['id'], 'name': account.get('name', 'Unknown')}
+                                for account in today_accounts
+                            ]
+                            processing_data['created_products'] = [
+                                {'id': product['id'], 'name': product.get('name', 'Unknown'), 'nsn': product.get('nsn', 'N/A')}
+                                for product in today_products
+                            ]
+                            processing_data['created_qpls'] = today_qpls
+                            
+                            app.logger.info(f"Updated processing data with real counts: opportunities={len(today_opportunities)}, contacts={len(today_contacts)}, accounts={len(today_accounts)}, products={len(today_products)}, qpls={len(today_qpls)}")
+                            
+                        except Exception as db_error:
+                            app.logger.error(f"Error getting actual created records: {db_error}")
+                            # Keep the original processing data if we can't get the real data
+                    
+                except Exception as e:
+                    app.logger.error(f"JSON parsing error: {str(e)}")
+                    app.logger.error(f"Raw data string that failed: '{data_str[:500] if 'data_str' in locals() else 'N/A'}'")
+                    processing_data = None
+        
+        app.logger.info(f"Final processing_data: {'Available' if processing_data else 'None'}")
+        app.logger.info(f"Final opportunities count: {len(opportunities) if opportunities else 0}")
+        app.logger.info(f"=== END TASK {task_id} DEBUG ===")
         
         edit_mode = request.args.get('edit') == 'true'
         
         return render_template('task_detail.html', 
                              task=task, 
                              opportunities=opportunities,
-                             processing_report=processing_report,
+                             processing_data=processing_data,
                              edit_mode=edit_mode)
     except Exception as e:
+        app.logger.error(f"Error in task_detail route: {str(e)}")
+        import traceback
+        app.logger.error(f"Traceback: {traceback.format_exc()}")
         return render_template('error.html', error=str(e))
 
 @app.route('/tasks/<int:task_id>/status', methods=['POST'])
@@ -2678,15 +2729,17 @@ def get_pdf_count():
             return jsonify({'count': 0, 'status': 'No directory'})
         
         try:
-            # First approach: direct globbing
+            # First approach: direct globbing - combine and deduplicate
             pdf_files_lower = list(to_process_dir.glob("*.pdf"))
             pdf_files_upper = list(to_process_dir.glob("*.PDF"))
-            pdf_count = len([f for f in pdf_files_lower if f.is_file()]) + \
-                       len([f for f in pdf_files_upper if f.is_file()])
+            
+            # Combine and deduplicate by file path
+            all_pdfs = list(set(pdf_files_lower + pdf_files_upper))
+            pdf_count = len([f for f in all_pdfs if f.is_file()])
                 
             # Add detailed information for debugging
+            import os
             file_info = []
-            all_pdfs = pdf_files_lower + pdf_files_upper
             for pdf in all_pdfs:
                 if pdf.is_file():
                     file_info.append({
@@ -2746,30 +2799,48 @@ def load_pdfs():
         report_id = datetime.now().strftime("%Y%m%d_%H%M%S")
         
         # Auto-create single review task for successful processing
+        task_created_successfully = False
         if results['processed'] > 0:
             try:
                 # Create task due today
                 today = datetime.now().strftime("%Y-%m-%d")
-                process_date = datetime.now().strftime("%B %d, %Y")
+                process_date = datetime.now().strftime("%m/%d/%Y")  # Changed format for title
                 
                 # Get created opportunities for summary
                 created_opportunities = []
                 if 'created_opportunities' in results and results['created_opportunities']:
                     created_opportunities = results['created_opportunities']
                 
-                # Simple, clean task description with NSN and proper formatting  
-                task_description = f"""Please review all new opportunities
+                # Get all created records for detailed report
+                created_accounts = results.get('created_accounts', [])
+                created_contacts = results.get('created_contacts', [])
+                created_products = results.get('created_products', [])
+                updated_records = results.get('updated_contacts', []) + results.get('updated_accounts', [])
+                
+                # Build simple task description  
+                task_description = f"""Review PDF processing results for {process_date}
 
-Processing Report:
-{results.get('detailed_report', 'No detailed report available')}
+Please review all newly created opportunities and verify data accuracy.
 
-Created Opportunities:
-{chr(10).join([f"• {opp.get('request_number', 'Unknown')} (ID: {opp.get('id', 'N/A')}) - NSN: {opp.get('nsn', 'N/A')}" for opp in created_opportunities]) if created_opportunities else 'None'}"""
+Double-click any opportunity in the table below to view full details."""
 
-                # Create ONE comprehensive review task with specific title format
+                # Store processing data for later use in task detail
+                processing_data = {
+                    'processed': results['processed'],
+                    'created': results['created'],
+                    'skipped': results.get('skipped', 0),
+                    'errors': results.get('errors', []),
+                    'created_opportunities': created_opportunities,
+                    'created_contacts': created_contacts,
+                    'created_accounts': created_accounts,
+                    'created_products': created_products,
+                    'updated_records': updated_records
+                }
+                
+                # Create ONE comprehensive review task with new title format
                 task_id = crm_data.create_task(
-                    subject=f"DIBBs PDF review {process_date}",
-                    description=task_description,
+                    subject=f"Load PDF {process_date} Review",
+                    description=task_description,  # Keep clean user description
                     status="Not Started",
                     priority="High",
                     type="Follow-up",
@@ -2778,16 +2849,31 @@ Created Opportunities:
                     assigned_to="System Generated"
                 )
                 
+                # Store processing data separately in a custom processing_data field or handle differently
+                # For now, we'll append it to description but handle it properly in the template
+                current_task = crm_data.get_task_by_id(task_id)
+                updated_description = f"{task_description}\n\n<!-- PROCESSING_DATA:{json.dumps(processing_data)} -->"
+                crm_data.update_task(task_id, description=updated_description)
+                
+                # Link created opportunities to the task (commented out - method doesn't exist)
+                # for opp in created_opportunities:
+                #     if opp.get('id'):
+                #         try:
+                #             crm_data.link_opportunity_to_task(opp['id'], task_id)
+                #         except Exception as link_error:
+                #             app.logger.error(f"Error linking opportunity {opp['id']} to task {task_id}: {str(link_error)}")
+                
                 # Track task creation in results
                 if 'created_tasks' not in results:
                     results['created_tasks'] = []
                 results['created_tasks'].append({
                     'id': task_id,
-                    'subject': f"DIBBs PDF review {process_date}",
+                    'subject': f"Load PDF {process_date} Review",
                     'type': 'PDF Processing Review',
                     'created_opportunities': created_opportunities
                 })
                 
+                task_created_successfully = True
                 app.logger.info(f"Auto-created review task {task_id} for PDF processing results")
                 
             except Exception as task_error:
@@ -2803,7 +2889,7 @@ Created Opportunities:
             'errors': results['errors'],
             'report_id': report_id,
             'detailed_report_available': True,
-            'review_task_created': results['processed'] > 0
+            'review_task_created': task_created_successfully
         })
     except Exception as e:
         app.logger.error(f"Error in load_pdfs: {str(e)}")
@@ -2812,6 +2898,108 @@ Created Opportunities:
         return jsonify({
             'success': False,
             'message': str(e),
+            'traceback': traceback.format_exc()
+        }), 500
+
+@app.route('/api/clear-all-data', methods=['POST'])
+def clear_all_data():
+    """Clear all data from database - DEVELOPMENT ONLY"""
+    try:
+        app.logger.warning("CLEAR ALL DATA requested - DEVELOPMENT MODE")
+        
+        # List of all tables to clear (in proper order to handle foreign keys)
+        tables_to_clear = [
+            'tasks',
+            'interactions', 
+            'opportunity_products',
+            'opportunities',
+            'qpl_entries',
+            'qpls',
+            'products',
+            'contacts',
+            'accounts',
+            'rfqs',
+            'quotes',  # vendor quotes
+            'vendor_rfq_emails',  # vendor email requests
+            'email_templates',  # email templates
+            'email_responses'  # email responses
+        ]
+        
+        cleared_count = 0
+        cleared_tables = []
+        
+        # Clear each table
+        for table in tables_to_clear:
+            try:
+                # Check if table exists first
+                check_query = f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table}'"
+                table_exists = crm_data.execute_query(check_query)
+                
+                if table_exists:
+                    # Clear the table
+                    result = crm_data.execute_update(f"DELETE FROM {table}", [])
+                    cleared_tables.append(f"{table} ({result} records)")
+                    cleared_count += result if result else 0
+                    app.logger.info(f"Cleared table '{table}': {result} records deleted")
+                else:
+                    app.logger.info(f"Table '{table}' does not exist, skipping")
+                    
+            except Exception as table_error:
+                app.logger.error(f"Error clearing table '{table}': {str(table_error)}")
+                # Continue with other tables even if one fails
+        
+        # Reset auto-increment sequences (SQLite specific)
+        try:
+            crm_data.execute_update("DELETE FROM sqlite_sequence", [])
+            app.logger.info("Reset auto-increment sequences")
+        except Exception as seq_error:
+            app.logger.warning(f"Could not reset sequences: {str(seq_error)}")
+        
+        # Clear output files (CSV and JSON reports)
+        files_deleted = 0
+        try:
+            from src.core.config_manager import ConfigManager
+            import os
+            
+            config_manager = ConfigManager()
+            output_dir = config_manager.get_output_dir()
+            
+            if output_dir.exists():
+                for file_path in output_dir.iterdir():
+                    if file_path.is_file():
+                        try:
+                            file_path.unlink()  # Delete the file
+                            files_deleted += 1
+                            app.logger.info(f"Deleted output file: {file_path.name}")
+                        except Exception as file_error:
+                            app.logger.error(f"Could not delete file {file_path.name}: {str(file_error)}")
+                
+                app.logger.warning(f"DELETED {files_deleted} output files from {output_dir}")
+            else:
+                app.logger.info("Output directory does not exist, skipping file cleanup")
+                
+        except Exception as file_cleanup_error:
+            app.logger.error(f"Error during file cleanup: {str(file_cleanup_error)}")
+        
+        # Log the operation
+        app.logger.warning(f"DATABASE CLEARED - {cleared_count} total records deleted from {len(cleared_tables)} tables")
+        app.logger.warning(f"FILES CLEARED - {files_deleted} output files deleted")
+        
+        return jsonify({
+            'success': True,
+            'message': f'Successfully cleared {cleared_count} records from {len(cleared_tables)} tables and deleted {files_deleted} output files',
+            'cleared_tables': cleared_tables,
+            'total_records_deleted': cleared_count,
+            'files_deleted': files_deleted
+        })
+        
+    except Exception as e:
+        app.logger.error(f"Error in clear_all_data: {str(e)}")
+        import traceback
+        app.logger.error(traceback.format_exc())
+        return jsonify({
+            'success': False,
+            'message': f'Error clearing database: {str(e)}',
             'traceback': traceback.format_exc()
         }), 500
 
@@ -3612,7 +3800,7 @@ def api_complete_task(task_id):
 def delete_qpl_entry(qpl_id):
     """Delete a QPL entry"""
     try:
-        query = "DELETE FROM product_manufacturers WHERE id = ?"
+        query = "DELETE FROM qpls WHERE id = ?"
         result = crm_data.execute_update(query, (qpl_id,))
         
         return jsonify({'success': True, 'message': 'QPL entry removed successfully'})

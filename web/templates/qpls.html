@@ -69,16 +69,14 @@
                 </thead>
                 <tbody>
                     {% for qpl in qpls %}
-                    <tr>
+                    <tr onclick="window.location.href='{{ url_for('qpl_detail', qpl_id=qpl.id) }}'" style="cursor: pointer;">
                         <td>
                             <div class="d-flex align-items-center">
                                 <div class="me-3">
                                     <i class="fas fa-certificate text-primary"></i>
                                 </div>
                                 <div>
-                                    <a href="{{ url_for('qpl_detail', qpl_id=qpl.id) }}" class="text-decoration-none">
-                                        <strong>{{ qpl.manufacturer_name }}</strong>
-                                    </a>
+                                    <strong>{{ qpl.manufacturer }}</strong>
                                 </div>
                             </div>
                         </td>
@@ -97,10 +95,15 @@
                             {% endif %}
                         </td>
                         <td>
-                            {% if qpl.product_name %}
-                                <a href="{{ url_for('product_detail', product_identifier=qpl.product_id) }}" class="text-decoration-none">
-                                    {{ qpl.product_name }}
+                            {% if qpl.name %}
+                                {% if qpl.product_id %}
+                                <a href="{{ url_for('product_detail', product_identifier=qpl.product_id) }}" 
+                                   class="text-decoration-none" onclick="event.stopPropagation()">
+                                    {{ qpl.name }}
                                 </a>
+                                {% else %}
+                                    {{ qpl.name }}
+                                {% endif %}
                             {% else %}
                                 <span class="text-muted">N/A</span>
                             {% endif %}
@@ -114,7 +117,8 @@
                         </td>
                         <td>
                             {% if qpl.account_name %}
-                                <a href="{{ url_for('account_detail', account_id=qpl.account_id) }}" class="text-decoration-none">
+                                <a href="{{ url_for('account_detail', account_id=qpl.account_id) }}" 
+                                   class="text-decoration-none" onclick="event.stopPropagation()">
                                     <i class="fas fa-building text-muted me-1"></i>
                                     {{ qpl.account_name }}
                                 </a>
@@ -131,17 +135,21 @@
                         </td>
                         <td>
                             <small class="text-muted">
-                                {{ qpl.created_date.strftime('%m/%d/%Y') if qpl.created_date else 'N/A' }}
+                                {% if qpl.created_date %}
+                                    {{ qpl.created_date[:10] }}
+                                {% else %}
+                                    N/A
+                                {% endif %}
                             </small>
                         </td>
                         <td>
                             <div class="btn-group btn-group-sm" role="group">
                                 <button type="button" class="btn btn-outline-primary" 
-                                        onclick="editQpl({{ qpl.id }})" title="Edit QPL">
+                                        onclick="event.stopPropagation(); editQpl({{ qpl.id }})" title="Edit QPL">
                                     <i class="fas fa-edit"></i>
                                 </button>
                                 <button type="button" class="btn btn-outline-danger" 
-                                        onclick="deleteQpl({{ qpl.id }}, '{{ qpl.manufacturer_name }}')" title="Delete QPL">
+                                        onclick="event.stopPropagation(); deleteQpl({{ qpl.id }}, '{{ qpl.manufacturer_name }}')" title="Delete QPL">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </div>

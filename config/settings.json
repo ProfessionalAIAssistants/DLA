@@ -11,5 +11,7 @@
   "auto_create_opportunities": true,
   "link_related_records": true,
   "move_processed_files": true,
-  "skip_duplicates": true
+  "skip_duplicates": true,
+  "isoRequired": "NO",
+  "samplingRequired": "NO"
 }

@@ -1059,7 +1059,7 @@ class CRMData:
         """Create a new task"""
         fields = ['subject', 'description', 'status', 'priority', 'work_date', 'due_date',
                  'owner', 'start_date', 'completed_date', 'parent_item_type', 'parent_item_id',
-                 'sub_item_type', 'sub_item_id', 'time_taken']
+                 'sub_item_type', 'sub_item_id', 'time_taken', 'notes', 'assigned_to', 'type']
         
         # Handle title -> subject mapping FIRST
         if 'title' in kwargs and kwargs['title']:
@@ -1137,7 +1137,19 @@ class CRMData:
                 opportunities.append(opp)
         
         # For processing tasks, also look for opportunities that reference this task
-        if 'processing' in task.get('subject', '').lower() or 'pdf' in task.get('subject', '').lower() or 'dibbs' in task.get('subject', '').lower():
+        task_subject = task.get('subject', '').lower()
+        task_description = task.get('description', '')
+        
+        # Check if this is a processing task by subject keywords or if it has processing data
+        is_processing_task = (
+            'processing' in task_subject or 
+            'pdf' in task_subject or 
+            'dibbs' in task_subject or 
+            'evaluate' in task_subject or
+            '<!-- PROCESSING_DATA:' in task_description
+        )
+        
+        if is_processing_task:
             # Look for opportunities that have reference tasks pointing to this task
             ref_tasks_query = """
                 SELECT DISTINCT parent_item_id 
@@ -1154,6 +1166,8 @@ class CRMData:
             
             # Also extract opportunity IDs from the task description if it lists created opportunities
             description = task.get('description', '')
+            
+            # Check for old format with "(ID: 123)" patterns
             if 'Created Opportunities:' in description:
                 # Extract opportunity IDs from the description
                 import re
@@ -1166,6 +1180,35 @@ class CRMData:
                             opportunities.append(opp)
                     except (ValueError, TypeError):
                         continue
+            
+            # Check for new HTML comment format with processing data
+            if '<!-- PROCESSING_DATA:' in description:
+                try:
+                    import json
+                    # Extract the JSON data from the HTML comment
+                    start_marker = '<!-- PROCESSING_DATA:'
+                    end_marker = ' -->'
+                    start_index = description.find(start_marker) + len(start_marker)
+                    end_index = description.find(end_marker, start_index)
+                    
+                    if end_index > start_index:
+                        data_str = description[start_index:end_index]
+                        processing_data = json.loads(data_str)
+                        
+                        # Extract opportunity IDs from the processing data
+                        if 'created_opportunities' in processing_data:
+                            for opp_data in processing_data['created_opportunities']:
+                                opp_id = opp_data.get('id')
+                                if opp_id:
+                                    try:
+                                        opp = self.get_opportunity_by_id(int(opp_id))
+                                        if opp and opp not in opportunities:
+                                            opportunities.append(opp)
+                                    except (ValueError, TypeError):
+                                        continue
+                except (json.JSONDecodeError, ValueError, TypeError) as e:
+                    # If JSON parsing fails, continue without processing data opportunities
+                    pass
         
         return opportunities    # ==================== INTERACTIONS ====================
     
@@ -1346,53 +1389,51 @@ class CRMData:
     
     def create_qpl_entry(self, **kwargs):
         """Create a new QPL entry"""
-        fields = ['name', 'nsn', 'fsc', 'product_name', 'manufacturer', 'part_number',
-                 'cage_code', 'description', 'specifications', 'qualification_date',
-                 'expiration_date', 'status']
+        fields = ['product_id', 'account_id', 'manufacturer_name', 'cage_code', 
+                 'part_number', 'is_active']
         
         valid_fields = {k: v for k, v in kwargs.items() if k in fields and v is not None}
         
-        if not valid_fields.get('name'):
-            raise ValueError("QPL entry name is required")
+        if not valid_fields.get('manufacturer_name'):
+            raise ValueError("Manufacturer name is required")
         
         # Set default values
-        valid_fields['status'] = valid_fields.get('status', 'Active')
+        valid_fields['is_active'] = valid_fields.get('is_active', True)
         valid_fields['created_date'] = datetime.now()
         valid_fields['modified_date'] = datetime.now()
         
         placeholders = ', '.join(['?' for _ in valid_fields])
         columns = ', '.join(valid_fields.keys())
         
-        query = f"INSERT INTO qpl ({columns}) VALUES ({placeholders})"
+        query = f"INSERT INTO qpls ({columns}) VALUES ({placeholders})"
         return db.execute_update(query, list(valid_fields.values()))
     
     def get_qpl_entries(self, filters=None, limit=None):
         """Get QPL entries with optional filters"""
         query = """
             SELECT q.*, 
-                   GROUP_CONCAT(p.name, ', ') as linked_products
-            FROM qpl q
-            LEFT JOIN qpl_products qp ON q.id = qp.qpl_id
-            LEFT JOIN products p ON qp.product_id = p.id
-            WHERE q.status = 'Active'
+                   p.name as product_name, p.nsn,
+                   a.name as account_name
+            FROM qpls q
+            LEFT JOIN products p ON q.product_id = p.id
+            LEFT JOIN accounts a ON q.account_id = a.id
+            WHERE (q.is_active = 1 OR q.is_active IS NULL)
         """
         params = []
         
         if filters:
-            if filters.get('name'):
-                query += " AND q.name LIKE ?"
-                params.append(f"%{filters['name']}%")
-            if filters.get('manufacturer'):
-                query += " AND q.manufacturer LIKE ?"
-                params.append(f"%{filters['manufacturer']}%")
+            if filters.get('manufacturer_name') or filters.get('manufacturer'):
+                search_term = filters.get('manufacturer_name') or filters.get('manufacturer')
+                query += " AND q.manufacturer_name LIKE ?"
+                params.append(f"%{search_term}%")
             if filters.get('cage_code'):
                 query += " AND q.cage_code LIKE ?"
                 params.append(f"%{filters['cage_code']}%")
             if filters.get('nsn'):
-                query += " AND q.nsn LIKE ?"
+                query += " AND p.nsn LIKE ?"
                 params.append(f"%{filters['nsn']}%")
         
-        query += " GROUP BY q.id ORDER BY q.name"
+        query += " ORDER BY q.manufacturer_name, q.created_date DESC"
         if limit:
             query += f" LIMIT {limit}"
         
@@ -1402,22 +1443,20 @@ class CRMData:
         """Get a specific QPL entry by ID"""
         query = """
             SELECT q.*, 
-                   GROUP_CONCAT(p.name, ', ') as linked_products,
-                   GROUP_CONCAT(p.id, ',') as linked_product_ids
-            FROM qpl q
-            LEFT JOIN qpl_products qp ON q.id = qp.qpl_id
-            LEFT JOIN products p ON qp.product_id = p.id
+                   p.name as product_name, p.nsn,
+                   a.name as account_name
+            FROM qpls q
+            LEFT JOIN products p ON q.product_id = p.id
+            LEFT JOIN accounts a ON q.account_id = a.id
             WHERE q.id = ?
-            GROUP BY q.id
         """
         results = db.execute_query(query, [qpl_id])
         return results[0] if results else None
     
     def update_qpl_entry(self, qpl_id, **kwargs):
         """Update a QPL entry"""
-        fields = ['name', 'nsn', 'fsc', 'product_name', 'manufacturer', 'part_number',
-                 'cage_code', 'description', 'specifications', 'qualification_date',
-                 'expiration_date', 'status']
+        fields = ['product_id', 'account_id', 'manufacturer_name', 'cage_code', 
+                 'part_number', 'is_active']
         
         valid_fields = {k: v for k, v in kwargs.items() if k in fields and v is not None}
         
@@ -1427,7 +1466,7 @@ class CRMData:
         valid_fields['modified_date'] = datetime.now()
         
         set_clause = ', '.join([f"{k} = ?" for k in valid_fields.keys()])
-        query = f"UPDATE qpl SET {set_clause} WHERE id = ?"
+        query = f"UPDATE qpls SET {set_clause} WHERE id = ?"
         
         params = list(valid_fields.values()) + [qpl_id]
         return db.execute_update(query, params)
@@ -1449,10 +1488,10 @@ class CRMData:
         """Get all QPL entries linked to a specific product"""
         query = """
             SELECT q.*
-            FROM qpl q
+            FROM qpls q
             JOIN qpl_products qp ON q.id = qp.qpl_id
             WHERE qp.product_id = ? AND q.status = 'Active'
-            ORDER BY q.name
+            ORDER BY q.product_name
         """
         return db.execute_query(query, [product_id])
     
@@ -1470,9 +1509,9 @@ class CRMData:
     def search_qpl_by_cage(self, cage_code):
         """Search QPL entries by CAGE code"""
         query = """
-            SELECT * FROM qpl 
+            SELECT * FROM qpls 
             WHERE cage_code LIKE ? AND status = 'Active'
-            ORDER BY name
+            ORDER BY product_name
         """
         return db.execute_query(query, [f"%{cage_code}%"])
 
@@ -2594,10 +2633,16 @@ class CRMData:
     def get_qpl_manufacturers_for_product(self, product_id):
         """Get all QPL manufacturers for a specific product"""
         query = """
-            SELECT pm.*, a.name as manufacturer_name, a.cage as cage_code
-            FROM product_manufacturers pm
-            JOIN accounts a ON pm.account_id = a.id
-            WHERE pm.product_id = ? AND pm.is_active = 1 AND a.type = 'QPL'
+            SELECT DISTINCT 
+                a.id as account_id,
+                a.name as manufacturer_name,
+                a.cage as cage_code,
+                q.part_number,
+                q.created_date,
+                q.id
+            FROM qpl_entries q 
+            JOIN accounts a ON q.account_id = a.id 
+            WHERE q.product_id = ?
             ORDER BY a.name
         """
         return db.execute_query(query, [product_id])
@@ -2606,32 +2651,21 @@ class CRMData:
         """Get all QPL products for a specific manufacturer/account"""
         query = """
             SELECT pm.*, p.nsn, p.name as product_name, p.description
-            FROM product_manufacturers pm
+            FROM qpls pm
             JOIN products p ON pm.product_id = p.id
             WHERE pm.account_id = ? AND pm.is_active = 1
             ORDER BY p.nsn
         """
         return db.execute_query(query, [account_id])
     
-    def get_qpl_entry_by_id(self, qpl_id):
-        """Get specific QPL entry"""
-        query = """
-            SELECT pm.*, p.nsn, p.name as product_name, p.description,
-                   a.name as manufacturer_name, a.cage as cage_code
-            FROM product_manufacturers pm
-            JOIN products p ON pm.product_id = p.id
-            JOIN accounts a ON pm.account_id = a.id
-            WHERE pm.id = ?
-        """
-        results = db.execute_query(query, [qpl_id])
-        return results[0] if results else None
+
     
     def search_qpl_entries(self, search_term):
         """Search QPL entries by NSN, manufacturer, or part number"""
         query = """
             SELECT pm.*, p.nsn, p.name as product_name, p.description,
                    a.name as manufacturer_name, a.cage as cage_code
-            FROM product_manufacturers pm
+            FROM qpls pm
             JOIN products p ON pm.product_id = p.id
             JOIN accounts a ON pm.account_id = a.id
             WHERE pm.is_active = 1 AND (
@@ -2650,21 +2684,21 @@ class CRMData:
         stats = {}
         
         # Total QPL entries
-        result = db.execute_query("SELECT COUNT(*) as count FROM product_manufacturers WHERE is_active = 1")
+        result = db.execute_query("SELECT COUNT(*) as count FROM qpls WHERE is_active = 1")
         stats['total_qpl_entries'] = result[0]['count'] if result else 0
         
         # Total QPL manufacturers
-        result = db.execute_query("SELECT COUNT(DISTINCT account_id) as count FROM product_manufacturers WHERE is_active = 1")
+        result = db.execute_query("SELECT COUNT(DISTINCT account_id) as count FROM qpls WHERE is_active = 1")
         stats['total_manufacturers'] = result[0]['count'] if result else 0
         
         # Total products with QPL
-        result = db.execute_query("SELECT COUNT(DISTINCT product_id) as count FROM product_manufacturers WHERE is_active = 1")
+        result = db.execute_query("SELECT COUNT(DISTINCT product_id) as count FROM qpls WHERE is_active = 1")
         stats['total_products_with_qpl'] = result[0]['count'] if result else 0
         
         # Products without QPL
         result = db.execute_query("""
             SELECT COUNT(*) as count FROM products p 
-            WHERE p.id NOT IN (SELECT DISTINCT product_id FROM product_manufacturers WHERE is_active = 1)
+            WHERE p.id NOT IN (SELECT DISTINCT product_id FROM qpls WHERE is_active = 1)
             AND p.is_active = 1
         """)
         stats['products_without_qpl'] = result[0]['count'] if result else 0

@@ -13,56 +13,8 @@
                     <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
                     <li class="breadcrumb-item"><a href="/products">Products</a></li>
                     <li class="breadcrumb-item active">{{ product.nsn or product.name }}</li>
-                </ol>    if ($('#vendorsTable').length) {
-        $('#vendorsTable').DataTable({
-            pageLength: 10,
-            responsive: true,
-            order: [[0, 'asc']], // Sort by vendor name
-            language: {
-                search: "Search vendors:",
-                lengthMenu: "Show _MENU_ vendors per page",
-                info: "Showing _START_ to _END_ of _TOTAL_ vendors",
-                emptyTable: "No vendors found for this product"
-            },
-            columnDefs: [
-                { orderable: false, targets: 5 } // Disable sorting on Actions column (Vendor=0, Type=1, CAGE=2, Location=3, Contact=4, Actions=5)
-            ]
-        });
-    }
-    
-    if ($('#opportunitiesTable').length) {
-        $('#opportunitiesTable').DataTable({
-            pageLength: 10,
-            responsive: true,
-            order: [[3, 'desc']], // Sort by close date descending
-            language: {
-                search: "Search opportunities:",
-                lengthMenu: "Show _MENU_ opportunities per page",
-                info: "Showing _START_ to _END_ of _TOTAL_ opportunities",
-                emptyTable: "No opportunities found for this product"
-            },
-            columnDefs: [
-                { orderable: false, targets: 4 } // Disable sorting on Actions column (Request=0, Stage=1, Amount=2, Close Date=3, Actions=4)
-            ]
-        });
-    }
-    
-    if ($('#quotesTable').length) {
-        $('#quotesTable').DataTable({
-            pageLength: 10,
-            responsive: true,
-            order: [[0, 'asc']], // Sort by quote number
-            language: {
-                search: "Search quotes:",
-                lengthMenu: "Show _MENU_ quotes per page",
-                info: "Showing _START_ to _END_ of _TOTAL_ quotes",
-                emptyTable: "No quotes found for this product"
-            },
-            columnDefs: [
-                { orderable: false, targets: 5 } // Disable sorting on Actions column (Quote#=0, Vendor=1, Amount=2, Lead Time=3, Status=4, Actions=5)
-            ]
-        });
-    }nav>
+                </ol>
+            </nav>
         </div>
         <div class="d-flex gap-2">
             <button type="button" class="btn btn-primary" onclick="editProduct({{ product.id }})">
@@ -370,61 +322,53 @@
                 </div>
                 <div class="card-body">
                     {% if opportunities %}
-                    <div class="table-responsive">
-                        <table class="table table-hover" id="paymentHistoriesTable">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Opportunity</th>
-                                    <th>Stage</th>
-                                    <th>Amount</th>
-                                    <th>Close Date</th>
-                                    <th>Status</th>
-                                    <th class="text-center">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for opp in opportunities %}
-                                <tr>
-                                    <td>
-                                        <a href="/opportunity/{{ opp.id }}" class="text-decoration-none">
-                                            {{ opp.name }}
-                                        </a>
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-{% if opp.stage == 'Closed Won' %}success{% elif opp.stage == 'Closed Lost' %}danger{% elif opp.stage == 'Proposal' %}warning{% else %}primary{% endif %}">
-                                            {{ opp.stage or 'Unknown' }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        {% if opp.amount %}
-                                            <strong class="text-success">${{ "%.2f"|format(opp.amount) }}</strong>
-                                        {% else %}
-                                            <span class="text-muted">N/A</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        {% if opp.close_date %}
+                    <div class="row">
+                        {% for opp in opportunities %}
+                        <div class="col-12 mb-3">
+                            <div class="card border-start border-primary border-3 shadow-sm">
+                                <div class="card-body py-3">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div class="flex-grow-1">
+                                            <h6 class="mb-1">
+                                                <a href="/opportunity/{{ opp.id }}" class="text-decoration-none text-primary fw-bold">
+                                                    {{ opp.name }}
+                                                </a>
+                                            </h6>
+                                            <div class="d-flex flex-wrap gap-2 mb-2">
+                                                <span class="badge bg-{% if opp.stage == 'Closed Won' %}success{% elif opp.stage == 'Closed Lost' %}danger{% elif opp.stage == 'Proposal' %}warning{% else %}primary{% endif %} me-2">
+                                                    {{ opp.stage or 'Unknown' }}
+                                                </span>
+                                                <span class="badge bg-{% if opp.stage == 'Closed Won' %}success{% elif opp.stage == 'Closed Lost' %}danger{% else %}secondary{% endif %}">
+                                                    {% if opp.stage == 'Closed Won' %}Paid{% elif opp.stage == 'Closed Lost' %}Not Paid{% else %}Pending{% endif %}
+                                                </span>
+                                            </div>
                                             <small class="text-muted">
-                                                {{ opp.close_date.strftime('%m/%d/%Y') if opp.close_date is not string else opp.close_date[:10] }}
+                                                {% if opp.close_date %}
+                                                    Close Date: {{ opp.close_date.strftime('%m/%d/%Y') if opp.close_date is not string else opp.close_date[:10] }}
+                                                {% else %}
+                                                    Close Date: Not set
+                                                {% endif %}
                                             </small>
-                                        {% else %}
-                                            <span class="text-muted">N/A</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-{% if opp.stage == 'Closed Won' %}success{% elif opp.stage == 'Closed Lost' %}danger{% else %}secondary{% endif %}">
-                                            {% if opp.stage == 'Closed Won' %}Paid{% elif opp.stage == 'Closed Lost' %}Not Paid{% else %}Pending{% endif %}
-                                        </span>
-                                    </td>
-                                    <td class="text-center">
-                                        <a href="/opportunity/{{ opp.id }}" class="btn btn-outline-primary btn-sm" title="View">
-                                            <i class="fas fa-eye"></i>
-                                        </a>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                                        </div>
+                                        <div class="text-end">
+                                            <div class="h5 mb-0">
+                                                {% if opp.amount %}
+                                                    <span class="text-success fw-bold">${{ "{:,.0f}".format(opp.amount) }}</span>
+                                                {% else %}
+                                                    <span class="text-muted">N/A</span>
+                                                {% endif %}
+                                            </div>
+                                            <div class="mt-2">
+                                                <a href="/opportunity/{{ opp.id }}" class="btn btn-outline-primary btn-sm" title="View Opportunity">
+                                                    <i class="fas fa-eye me-1"></i>View
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
                     </div>
                     {% else %}
                     <div class="text-center py-4">
@@ -664,8 +608,22 @@
 
 <script>
 function editProduct(productId) {
-    // Navigate to edit product page
-    window.location.href = '/products/' + productId + '?edit=true';
+    // Get the product to find its NSN, then redirect to products page with edit modal
+    fetch('/api/products/id/' + productId)
+        .then(response => response.json())
+        .then(product => {
+            if (product.error) {
+                alert('Error: ' + product.error);
+                return;
+            }
+            // Redirect to products page and trigger edit for this NSN
+            window.location.href = '/products?edit=' + encodeURIComponent(product.nsn);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            // Fallback: just redirect to products page
+            window.location.href = '/products';
+        });
 }
 
 function deleteProduct(productId) {
@@ -761,23 +719,6 @@ $(document).ready(function() {
                 lengthMenu: "Show _MENU_ vendors per page",
                 info: "Showing _START_ to _END_ of _TOTAL_ vendors",
                 emptyTable: "No vendor information available"
-            },
-            columnDefs: [
-                { orderable: false, targets: 5 } // Disable sorting on Actions column
-            ]
-        });
-    }
-    
-    if ($('#paymentHistoriesTable').length) {
-        $('#paymentHistoriesTable').DataTable({
-            pageLength: 10,
-            responsive: true,
-            order: [[3, 'desc']], // Sort by close date descending
-            language: {
-                search: "Search payment history:",
-                lengthMenu: "Show _MENU_ payments per page",
-                info: "Showing _START_ to _END_ of _TOTAL_ payment records",
-                emptyTable: "No payment history available"
             },
             columnDefs: [
                 { orderable: false, targets: 5 } // Disable sorting on Actions column

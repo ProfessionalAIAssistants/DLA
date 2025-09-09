@@ -286,7 +286,7 @@
                             <!-- Task -->
                             <td>
                                 <div>
-                                    <strong>{{ task.title }}</strong>
+                                    <strong>{{ task.subject }}</strong>
                                     {% if task.description %}
                                         <br><small class="text-muted">{{ (task.description or 'No description')[:100] }}{{ '...' if (task.description or '')|length > 100 else '' }}</small>
                                     {% endif %}
@@ -356,8 +356,8 @@
                     <div class="row">
                         <div class="col-md-8">
                             <div class="mb-3">
-                                <label for="title" class="form-label">Task Title *</label>
-                                <input type="text" class="form-control" id="title" name="title" required placeholder="Enter task title">
+                                <label for="subject" class="form-label">Task Subject *</label>
+                                <input type="text" class="form-control" id="subject" name="subject" required placeholder="Enter task subject">
                             </div>
                         </div>
                         <div class="col-md-2">
@@ -841,7 +841,7 @@ function duplicateTask(taskId) {
             if (task) {
                 // Create new task with same details but remove ID and reset status
                 const newTask = {
-                    title: task.title + ' (Copy)',
+                    subject: task.subject + ' (Copy)',
                     description: task.description,
                     priority: task.priority,
                     owner: task.owner,

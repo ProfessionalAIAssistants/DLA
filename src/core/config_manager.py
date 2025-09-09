@@ -49,7 +49,7 @@ class ConfigManager:
         
     def get_output_dir(self) -> Path:
         """Get the output directory path"""
-        return self.data_dir / 'output' / 'Output'
+        return self.data_dir / 'output'
         
     def get_database_path(self) -> Path:
         """Get the database file path"""

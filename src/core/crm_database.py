@@ -174,25 +174,20 @@ class CRMDatabase:
             )
         ''')
         
-        # QPL (Qualified Products List) Table
+        # QPLs (Simple QPL) Table
         self.conn.execute('''
-            CREATE TABLE IF NOT EXISTS qpl (
+            CREATE TABLE IF NOT EXISTS qpls (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                nsn TEXT NOT NULL,
-                fsc TEXT,
-                product_name TEXT,
-                manufacturer TEXT,
-                part_number TEXT,
-                cage_code TEXT,
-                description TEXT,
-                specifications TEXT,
-                qualification_date DATE,
-                expiration_date DATE,
-                status TEXT DEFAULT 'Active' CHECK(status IN ('Active', 'Inactive', 'Pending')),
                 product_id INTEGER,
+                account_id INTEGER,
+                manufacturer_name TEXT,
+                cage_code TEXT,
+                part_number TEXT,
+                is_active INTEGER DEFAULT 1,
                 created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 modified_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (product_id) REFERENCES products (id)
+                FOREIGN KEY (product_id) REFERENCES products (id),
+                FOREIGN KEY (account_id) REFERENCES accounts (id)
             )
         ''')
         
@@ -254,7 +249,10 @@ class CRMDatabase:
             'CREATE INDEX IF NOT EXISTS idx_tasks_due_date ON tasks(due_date)',
             'CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status)',
             'CREATE INDEX IF NOT EXISTS idx_interactions_date ON interactions(interaction_date)',
-            'CREATE INDEX IF NOT EXISTS idx_qpl_nsn ON qpl(nsn)'
+            'CREATE INDEX IF NOT EXISTS idx_qpls_product ON qpls(product_id)',
+            'CREATE INDEX IF NOT EXISTS idx_qpls_account ON qpls(account_id)',
+            'CREATE INDEX IF NOT EXISTS idx_qpls_manufacturer ON qpls(manufacturer_name)',
+            'CREATE INDEX IF NOT EXISTS idx_qpls_created ON qpls(created_date)'
         ]
         
         for index in indexes:
