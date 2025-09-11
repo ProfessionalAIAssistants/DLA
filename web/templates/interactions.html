@@ -167,6 +167,9 @@
                 </div>
                 <div class="card-body">
                     {% if interactions %}
+                    <div class="mb-2">
+                        <small class="text-muted">Double-click any interaction to view details</small>
+                    </div>
                     <div class="table-responsive">
                         <table class="table table-striped table-hover">
                             <thead class="table-dark">
@@ -185,7 +188,9 @@
                             </thead>
                             <tbody>
                                 {% for interaction in interactions %}
-                                <tr>
+                                <tr style="cursor: pointer;" 
+                                    ondblclick="viewInteraction({{ interaction.id }})"
+                                    title="Double-click to view interaction details">
                                     <td>
                                         <div class="fw-bold">{{ interaction.interaction_date.split(' ')[0] if interaction.interaction_date else 'N/A' }}</div>
                                         <small class="text-muted">{{ interaction.interaction_date.split(' ')[1] if interaction.interaction_date and ' ' in interaction.interaction_date else '' }}</small>

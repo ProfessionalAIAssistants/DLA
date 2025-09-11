@@ -256,8 +256,11 @@ Reference ID: {rfq_email_id}""",
                 manufacturer = mfr_text
         
         # Use explicit part_number field if available
-        if opportunity.get('part_number'):
-            part_number = opportunity['part_number']
+        try:
+            if opportunity['part_number']:
+                part_number = opportunity['part_number']
+        except (KeyError, IndexError):
+            pass
         
         variables = {
             'request_number': f"RFQ-{opportunity['id']}-{datetime.now().strftime('%Y%m%d')}",
@@ -448,10 +451,10 @@ Reference ID: {rfq_email_id}""",
         
         # Generate preview variables (simplified)
         variables = {
-            'request_number': opportunity.get('request_number') or f"REQ-{opportunity['id']}",
-            'product_name': opportunity.get('product_name') or 'Product Name',
-            'manufacturer': opportunity.get('manufacturer') or 'TBD',
-            'quantity': opportunity.get('quantity') or 1,
+            'request_number': opportunity['request_number'] if opportunity['request_number'] else f"REQ-{opportunity['id']}",
+            'product_name': opportunity['product_name'] if opportunity['product_name'] else 'Product Name',
+            'manufacturer': opportunity['manufacturer'] if opportunity['manufacturer'] else 'TBD',
+            'quantity': opportunity['quantity'] if opportunity['quantity'] else 1,
             'vendor_contact_name': 'Vendor Contact',
             'buyer_name': 'THE BUYER'
         }

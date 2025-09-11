@@ -76,7 +76,7 @@
                                     <i class="fas fa-certificate text-primary"></i>
                                 </div>
                                 <div>
-                                    <strong>{{ qpl.manufacturer }}</strong>
+                                    <strong>{{ qpl.manufacturer_name }}</strong>
                                 </div>
                             </div>
                         </td>
@@ -95,14 +95,14 @@
                             {% endif %}
                         </td>
                         <td>
-                            {% if qpl.name %}
+                            {% if qpl.product_name %}
                                 {% if qpl.product_id %}
                                 <a href="{{ url_for('product_detail', product_identifier=qpl.product_id) }}" 
                                    class="text-decoration-none" onclick="event.stopPropagation()">
-                                    {{ qpl.name }}
+                                    {{ qpl.product_name }}
                                 </a>
                                 {% else %}
-                                    {{ qpl.name }}
+                                    {{ qpl.product_name }}
                                 {% endif %}
                             {% else %}
                                 <span class="text-muted">N/A</span>
@@ -437,5 +437,31 @@ function deleteQpl(qplId, manufacturerName) {
         });
     }
 }
+
+// Handle URL parameters for pre-populating forms
+document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    // If 'add' parameter is present, show the create modal
+    if (urlParams.get('add') === 'true') {
+        const modal = new bootstrap.Modal(document.getElementById('createQplModal'));
+        modal.show();
+        
+        // Pre-populate product if specified
+        const productId = urlParams.get('product_id');
+        const productName = urlParams.get('product_name');
+        
+        if (productId) {
+            const productSelect = document.getElementById('product_id');
+            if (productSelect) {
+                productSelect.value = productId;
+            }
+        }
+        
+        // Clean up URL parameters
+        const cleanUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, cleanUrl);
+    }
+});
 </script>
 {% endblock %}

@@ -45,6 +45,11 @@
                         <i class="fas fa-envelope me-2"></i>Email Settings
                     </button>
                 </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-semibold" id="database-tab" data-bs-toggle="tab" data-bs-target="#database" type="button" role="tab" aria-controls="database" aria-selected="false">
+                        <i class="fas fa-database me-2"></i>Database Cleanup
+                    </button>
+                </li>
             </ul>
         </div>
         
@@ -67,7 +72,7 @@
                                 <label for="minDeliveryDays" class="form-label fw-bold">
                                     <i class="fas fa-shipping-fast me-2"></i>Minimum Delivery Days
                                 </label>
-                                <input type="number" class="form-control" id="minDeliveryDays" 
+                                <input type="number" class="form-control" id="minDeliveryDays" name="min_delivery_days"
                                        value="{{ settings.min_delivery_days }}" min="0" max="999">
                                 <div class="form-text">Only process RFQs with delivery days >= this value</div>
                             </div>
@@ -79,21 +84,21 @@
                                         <i class="fas fa-certificate me-2"></i>ISO Requirement
                                     </legend>
                                     <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="isoRequired" id="isoNo" 
+                                        <input class="form-check-input" type="radio" name="iso_required" id="isoNo" 
                                                value="NO" {% if settings.iso_required == 'NO' %}checked{% endif %}>
                                         <label class="form-check-label" for="isoNo">
                                             Process only NON-ISO required RFQs
                                         </label>
                                     </div>
                                     <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="isoRequired" id="isoYes" 
+                                        <input class="form-check-input" type="radio" name="iso_required" id="isoYes" 
                                                value="YES" {% if settings.iso_required == 'YES' %}checked{% endif %}>
                                         <label class="form-check-label" for="isoYes">
                                             Process only ISO required RFQs
                                         </label>
                                     </div>
                                     <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="isoRequired" id="isoAny" 
+                                        <input class="form-check-input" type="radio" name="iso_required" id="isoAny" 
                                                value="ANY" {% if settings.iso_required == 'ANY' %}checked{% endif %}>
                                         <label class="form-check-label" for="isoAny">
                                             Process regardless of ISO requirement
@@ -109,21 +114,21 @@
                                         <i class="fas fa-vial me-2"></i>Sampling Requirement
                                     </legend>
                                     <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="samplingRequired" id="samplingNo" 
+                                        <input class="form-check-input" type="radio" name="sampling_required" id="samplingNo" 
                                                value="NO" {% if settings.sampling_required == 'NO' %}checked{% endif %}>
                                         <label class="form-check-label" for="samplingNo">
                                             Process only NON-sampling required RFQs
                                         </label>
                                     </div>
                                     <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="samplingRequired" id="samplingYes" 
+                                        <input class="form-check-input" type="radio" name="sampling_required" id="samplingYes" 
                                                value="YES" {% if settings.sampling_required == 'YES' %}checked{% endif %}>
                                         <label class="form-check-label" for="samplingYes">
                                             Process only sampling required RFQs
                                         </label>
                                     </div>
                                     <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="samplingRequired" id="samplingAny" 
+                                        <input class="form-check-input" type="radio" name="sampling_required" id="samplingAny" 
                                                value="ANY" {% if settings.sampling_required == 'ANY' %}checked{% endif %}>
                                         <label class="form-check-label" for="samplingAny">
                                             Process regardless of sampling requirement
@@ -137,7 +142,7 @@
                                 <label class="form-label fw-bold">
                                     <i class="fas fa-search me-2"></i>Inspection Point
                                 </label>
-                                <select class="form-select" id="inspectionPoint">
+                                <select class="form-select" id="inspectionPoint" name="inspection_point">
                                     <option value="ANY" {% if settings.inspection_point == 'ANY' %}selected{% endif %}>Any Inspection Point</option>
                                     <option value="DESTINATION" {% if settings.inspection_point == 'DESTINATION' %}selected{% endif %}>Destination Only</option>
                                     <option value="ORIGIN" {% if settings.inspection_point == 'ORIGIN' %}selected{% endif %}>Origin Only</option>
@@ -151,7 +156,7 @@
                                 <label for="manufacturerFilter" class="form-label fw-bold">
                                     <i class="fas fa-industry me-2"></i>Manufacturer Filter
                                 </label>
-                                <textarea class="form-control" id="manufacturerFilter" rows="3" 
+                                <textarea class="form-control" id="manufacturerFilter" name="manufacturer_filter" rows="3" 
                                           placeholder="Enter manufacturer names, one per line">{{ settings.manufacturer_filter }}</textarea>
                                 <div class="form-text">Only process RFQs from these manufacturers (leave empty to accept all)</div>
                             </div>
@@ -161,7 +166,7 @@
                                 <label for="fscFilter" class="form-label fw-bold">
                                     <i class="fas fa-filter me-2"></i>FSC Filter
                                 </label>
-                                <textarea class="form-control" id="fscFilter" rows="3" 
+                                <textarea class="form-control" id="fscFilter" name="fsc_filter" rows="3" 
                                           placeholder="Enter FSC codes to include, one per line">{{ settings.fsc_filter }}</textarea>
                                 <div class="form-text">Only process RFQs with these FSC codes (leave empty to accept all)</div>
                             </div>
@@ -171,7 +176,7 @@
                                 <label for="packagingFilter" class="form-label fw-bold">
                                     <i class="fas fa-box me-2"></i>Packaging Type Filter
                                 </label>
-                                <textarea class="form-control" id="packagingFilter" rows="3" 
+                                <textarea class="form-control" id="packagingFilter" name="packaging_filter" rows="3" 
                                           placeholder="Enter packaging types to include, one per line">{{ settings.packaging_filter }}</textarea>
                                 <div class="form-text">Only process RFQs with these packaging types (leave empty to accept all)</div>
                             </div>
@@ -241,7 +246,7 @@
                                 <div class="row">
                                     <div class="col-md-6">
                                         <div class="form-check mb-3">
-                                            <input class="form-check-input" type="checkbox" id="autoCreateOpportunities" 
+                                            <input class="form-check-input" type="checkbox" id="autoCreateOpportunities" name="auto_create_opportunities"
                                                    {% if settings.auto_create_opportunities %}checked{% endif %}>
                                             <label class="form-check-label" for="autoCreateOpportunities">
                                                 <strong>Auto-create opportunities</strong>
@@ -251,7 +256,7 @@
                                     </div>
                                     <div class="col-md-6">
                                         <div class="form-check mb-3">
-                                            <input class="form-check-input" type="checkbox" id="linkRelatedRecords" 
+                                            <input class="form-check-input" type="checkbox" id="linkRelatedRecords" name="link_related_records"
                                                    {% if settings.link_related_records %}checked{% endif %}>
                                             <label class="form-check-label" for="linkRelatedRecords">
                                                 <strong>Auto-link related records</strong>
@@ -261,7 +266,7 @@
                                     </div>
                                     <div class="col-md-6">
                                         <div class="form-check mb-3">
-                                            <input class="form-check-input" type="checkbox" id="moveProcessedFiles" 
+                                            <input class="form-check-input" type="checkbox" id="moveProcessedFiles" name="move_processed_files"
                                                    {% if settings.move_processed_files %}checked{% endif %}>
                                             <label class="form-check-label" for="moveProcessedFiles">
                                                 <strong>Move processed files</strong>
@@ -271,7 +276,7 @@
                                     </div>
                                     <div class="col-md-6">
                                         <div class="form-check mb-3">
-                                            <input class="form-check-input" type="checkbox" id="skipDuplicates" 
+                                            <input class="form-check-input" type="checkbox" id="skipDuplicates" name="skip_duplicates"
                                                    {% if settings.skip_duplicates %}checked{% endif %}>
                                             <label class="form-check-label" for="skipDuplicates">
                                                 <strong>Skip duplicates</strong>
@@ -294,7 +299,7 @@
                                 <div class="row">
                                     <div class="col-md-6">
                                         <div class="form-check mb-3">
-                                            <input class="form-check-input" type="checkbox" id="autoCreateTasks">
+                                            <input class="form-check-input" type="checkbox" id="autoCreateTasks" name="auto_create_tasks">
                                             <label class="form-check-label" for="autoCreateTasks">
                                                 <strong>Auto-create follow-up tasks</strong>
                                                 <br><small class="text-muted">Create tasks for opportunities requiring follow-up</small>
@@ -303,7 +308,7 @@
                                     </div>
                                     <div class="col-md-6">
                                         <div class="form-check mb-3">
-                                            <input class="form-check-input" type="checkbox" id="autoAssignTasks">
+                                            <input class="form-check-input" type="checkbox" id="autoAssignTasks" name="auto_assign_tasks">
                                             <label class="form-check-label" for="autoAssignTasks">
                                                 <strong>Auto-assign tasks</strong>
                                                 <br><small class="text-muted">Automatically assign tasks based on rules</small>
@@ -893,6 +898,238 @@
                 </div>
             </div>
         </div>
+
+        <!-- Database Cleanup Tab -->
+        <div class="tab-pane fade" id="database" role="tabpanel" aria-labelledby="database-tab">
+            <div class="row">
+                <div class="col-lg-8">
+                    <form id="databaseCleanupForm">
+                        <div class="card border-0 shadow-sm mb-4">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-database me-2 text-danger"></i>Database Cleanup
+                                </h5>
+                                <p class="text-muted mb-0 small mt-1">Select specific database tables to clean instead of clearing all data</p>
+                            </div>
+                            <div class="card-body">
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    <strong>Warning:</strong> Database cleanup operations cannot be undone. Please ensure you have backups before proceeding.
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h6 class="fw-semibold mb-3">Core Business Data</h6>
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="checkbox" id="cleanOpportunities" name="tables" value="opportunities">
+                                            <label class="form-check-label" for="cleanOpportunities">
+                                                <i class="fas fa-handshake me-1 text-primary"></i>
+                                                <strong>Opportunities</strong>
+                                                <br><small class="text-muted">All opportunity records and related data</small>
+                                            </label>
+                                        </div>
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="checkbox" id="cleanAccounts" name="tables" value="accounts">
+                                            <label class="form-check-label" for="cleanAccounts">
+                                                <i class="fas fa-building me-1 text-info"></i>
+                                                <strong>Accounts</strong>
+                                                <br><small class="text-muted">Company and vendor accounts</small>
+                                            </label>
+                                        </div>
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="checkbox" id="cleanContacts" name="tables" value="contacts">
+                                            <label class="form-check-label" for="cleanContacts">
+                                                <i class="fas fa-users me-1 text-success"></i>
+                                                <strong>Contacts</strong>
+                                                <br><small class="text-muted">Individual contact information</small>
+                                            </label>
+                                        </div>
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="checkbox" id="cleanProducts" name="tables" value="products">
+                                            <label class="form-check-label" for="cleanProducts">
+                                                <i class="fas fa-box me-1 text-warning"></i>
+                                                <strong>Products</strong>
+                                                <br><small class="text-muted">Product catalog and specifications</small>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6 class="fw-semibold mb-3">Activity & Reference Data</h6>
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="checkbox" id="cleanTasks" name="tables" value="tasks">
+                                            <label class="form-check-label" for="cleanTasks">
+                                                <i class="fas fa-tasks me-1 text-primary"></i>
+                                                <strong>Tasks</strong>
+                                                <br><small class="text-muted">All task records and assignments</small>
+                                            </label>
+                                        </div>
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="checkbox" id="cleanInteractions" name="tables" value="interactions">
+                                            <label class="form-check-label" for="cleanInteractions">
+                                                <i class="fas fa-comments me-1 text-info"></i>
+                                                <strong>Interactions</strong>
+                                                <br><small class="text-muted">Communication history and notes</small>
+                                            </label>
+                                        </div>
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="checkbox" id="cleanRfqs" name="tables" value="rfqs">
+                                            <label class="form-check-label" for="cleanRfqs">
+                                                <i class="fas fa-file-contract me-1 text-success"></i>
+                                                <strong>RFQs</strong>
+                                                <br><small class="text-muted">Request for Quote records</small>
+                                            </label>
+                                        </div>
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="checkbox" id="cleanQpls" name="tables" value="qpls">
+                                            <label class="form-check-label" for="cleanQpls">
+                                                <i class="fas fa-list-check me-1 text-warning"></i>
+                                                <strong>QPLs</strong>
+                                                <br><small class="text-muted">Qualified Parts List entries</small>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <hr class="my-4">
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h6 class="fw-semibold mb-3">Email & Communication</h6>
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="checkbox" id="cleanVendorEmails" name="tables" value="vendor_rfq_emails">
+                                            <label class="form-check-label" for="cleanVendorEmails">
+                                                <i class="fas fa-envelope me-1 text-primary"></i>
+                                                <strong>Vendor RFQ Emails</strong>
+                                                <br><small class="text-muted">Email requests sent to vendors</small>
+                                            </label>
+                                        </div>
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="checkbox" id="cleanEmailTemplates" name="tables" value="email_templates">
+                                            <label class="form-check-label" for="cleanEmailTemplates">
+                                                <i class="fas fa-file-text me-1 text-info"></i>
+                                                <strong>Email Templates</strong>
+                                                <br><small class="text-muted">Saved email templates</small>
+                                            </label>
+                                        </div>
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="checkbox" id="cleanQuotes" name="tables" value="quotes">
+                                            <label class="form-check-label" for="cleanQuotes">
+                                                <i class="fas fa-dollar-sign me-1 text-success"></i>
+                                                <strong>Quotes</strong>
+                                                <br><small class="text-muted">Vendor quote responses</small>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6 class="fw-semibold mb-3">System Data</h6>
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="checkbox" id="cleanOutputFiles" name="clean_files" value="true">
+                                            <label class="form-check-label" for="cleanOutputFiles">
+                                                <i class="fas fa-folder me-1 text-warning"></i>
+                                                <strong>Output Files</strong>
+                                                <br><small class="text-muted">Generated CSV/JSON reports and exports</small>
+                                            </label>
+                                        </div>
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="checkbox" id="resetSequences" name="reset_sequences" value="true">
+                                            <label class="form-check-label" for="resetSequences">
+                                                <i class="fas fa-sort-numeric-down me-1 text-danger"></i>
+                                                <strong>Reset ID Sequences</strong>
+                                                <br><small class="text-muted">Reset auto-increment counters</small>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <hr class="my-4">
+                                
+                                <div class="row align-items-center">
+                                    <div class="col-md-8">
+                                        <div class="form-check form-check-inline me-4">
+                                            <input class="form-check-input" type="checkbox" id="selectAllTables">
+                                            <label class="form-check-label fw-semibold" for="selectAllTables">
+                                                Select All Tables
+                                            </label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="checkbox" id="confirmCleanup" required>
+                                            <label class="form-check-label text-danger fw-semibold" for="confirmCleanup">
+                                                I understand this action cannot be undone
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 text-end">
+                                        <button type="submit" class="btn btn-danger" disabled id="cleanupBtn">
+                                            <i class="fas fa-trash me-2"></i>Clean Selected Tables
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                
+                <div class="col-lg-4">
+                    <!-- Database Status Card -->
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">
+                                <i class="fas fa-info-circle me-2 text-primary"></i>Database Information
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <h6 class="fw-semibold">Record Counts</h6>
+                                <div class="small">
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <span>Opportunities:</span>
+                                        <span class="badge bg-primary" id="countOpportunities">-</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <span>Accounts:</span>
+                                        <span class="badge bg-info" id="countAccounts">-</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <span>Contacts:</span>
+                                        <span class="badge bg-success" id="countContacts">-</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <span>Products:</span>
+                                        <span class="badge bg-warning text-dark" id="countProducts">-</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <span>Tasks:</span>
+                                        <span class="badge bg-primary" id="countTasks">-</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <span>RFQs:</span>
+                                        <span class="badge bg-success" id="countRfqs">-</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <h6 class="fw-semibold">Quick Actions</h6>
+                                <div class="d-grid gap-2">
+                                    <button class="btn btn-outline-primary btn-sm" id="refreshCounts">
+                                        <i class="fas fa-sync me-1"></i>Refresh Counts
+                                    </button>
+                                    <button class="btn btn-outline-warning btn-sm" id="cleanTestData">
+                                        <i class="fas fa-vial me-1"></i>Clean Test Data Only
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="alert alert-info small">
+                                <i class="fas fa-lightbulb me-2"></i>
+                                <strong>Tip:</strong> Use the individual table cleanup to remove specific data types while preserving others. This is safer than the "Clear All Data" button.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 </div>
 
@@ -1158,6 +1395,157 @@ document.addEventListener('DOMContentLoaded', function() {
                 alertDiv.remove();
             }
         }, 5000);
+    }
+
+    // Database Cleanup functionality
+    const databaseCleanupForm = document.getElementById('databaseCleanupForm');
+    const selectAllTables = document.getElementById('selectAllTables');
+    const confirmCleanup = document.getElementById('confirmCleanup');
+    const cleanupBtn = document.getElementById('cleanupBtn');
+
+    if (databaseCleanupForm) {
+        // Handle select all tables checkbox
+        selectAllTables.addEventListener('change', function() {
+            const tableCheckboxes = document.querySelectorAll('input[name="tables"]');
+            tableCheckboxes.forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
+        });
+
+        // Enable/disable cleanup button based on confirmation
+        confirmCleanup.addEventListener('change', function() {
+            cleanupBtn.disabled = !this.checked;
+        });
+
+        // Handle form submission
+        databaseCleanupForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const selectedTables = formData.getAll('tables');
+            const cleanFiles = formData.get('clean_files') === 'true';
+            const resetSequences = formData.get('reset_sequences') === 'true';
+            
+            if (selectedTables.length === 0 && !cleanFiles && !resetSequences) {
+                showAlert('warning', 'Please select at least one cleanup option.');
+                return;
+            }
+            
+            // Final confirmation
+            const tablesList = selectedTables.length > 0 ? selectedTables.join(', ') : 'none';
+            const message = `This will permanently delete data from:\n\nTables: ${tablesList}\n${cleanFiles ? '• Output files\n' : ''}${resetSequences ? '• Reset ID sequences\n' : ''}\nThis action cannot be undone!\n\nAre you sure you want to continue?`;
+            
+            if (!confirm(message)) {
+                return;
+            }
+            
+            // Show loading state
+            const originalText = cleanupBtn.innerHTML;
+            cleanupBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Cleaning...';
+            cleanupBtn.disabled = true;
+            
+            const requestData = {
+                tables: selectedTables,
+                clean_files: cleanFiles,
+                reset_sequences: resetSequences
+            };
+            
+            fetch('/api/database/cleanup', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert('success', `Database cleanup completed! ${data.message}`);
+                    // Reset form
+                    databaseCleanupForm.reset();
+                    selectAllTables.checked = false;
+                    confirmCleanup.checked = false;
+                    cleanupBtn.disabled = true;
+                    // Refresh counts
+                    refreshDatabaseCounts();
+                } else {
+                    showAlert('error', 'Error during database cleanup: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showAlert('error', 'Error during database cleanup. Please try again.');
+            })
+            .finally(() => {
+                // Restore button state
+                cleanupBtn.innerHTML = originalText;
+                cleanupBtn.disabled = !confirmCleanup.checked;
+            });
+        });
+    }
+
+    // Refresh database counts
+    function refreshDatabaseCounts() {
+        fetch('/api/database/counts')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update count badges
+                document.getElementById('countOpportunities').textContent = data.counts.opportunities || 0;
+                document.getElementById('countAccounts').textContent = data.counts.accounts || 0;
+                document.getElementById('countContacts').textContent = data.counts.contacts || 0;
+                document.getElementById('countProducts').textContent = data.counts.products || 0;
+                document.getElementById('countTasks').textContent = data.counts.tasks || 0;
+                document.getElementById('countRfqs').textContent = data.counts.rfqs || 0;
+            }
+        })
+        .catch(error => {
+            console.error('Error refreshing counts:', error);
+        });
+    }
+
+    // Refresh counts button
+    const refreshCountsBtn = document.getElementById('refreshCounts');
+    if (refreshCountsBtn) {
+        refreshCountsBtn.addEventListener('click', refreshDatabaseCounts);
+        // Load counts on page load
+        refreshDatabaseCounts();
+    }
+
+    // Clean test data button
+    const cleanTestDataBtn = document.getElementById('cleanTestData');
+    if (cleanTestDataBtn) {
+        cleanTestDataBtn.addEventListener('click', function() {
+            if (confirm('This will remove test/sample data from the database. Continue?')) {
+                const originalText = this.innerHTML;
+                this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Cleaning...';
+                this.disabled = true;
+                
+                fetch('/api/database/clean-test-data', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showAlert('success', 'Test data cleaned successfully!');
+                        refreshDatabaseCounts();
+                    } else {
+                        showAlert('error', 'Error cleaning test data: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showAlert('error', 'Error cleaning test data. Please try again.');
+                })
+                .finally(() => {
+                    this.innerHTML = originalText;
+                    this.disabled = false;
+                });
+            }
+        });
     }
 });
 </script>

@@ -108,6 +108,9 @@
             </div>
             <div class="card-body">
                 {% if interactions %}
+                <div class="mb-2">
+                    <small class="text-muted">Double-click any interaction to view details</small>
+                </div>
                 <div class="table-responsive">
                     <table class="table table-striped table-hover">
                         <thead>
@@ -121,7 +124,7 @@
                         </thead>
                         <tbody>
                             {% for interaction in interactions[:5] %}
-                            <tr>
+                            <tr class="interaction-row" data-interaction-id="{{ interaction.id }}" style="cursor: pointer;" title="Double-click to view interaction details">
                                 <td>{{ interaction.interaction_date or 'N/A' }}</td>
                                 <td>
                                     <span class="badge bg-info">{{ interaction.type or 'N/A' }}</span>
@@ -138,7 +141,7 @@
                 <div class="text-center py-4">
                     <i class="fas fa-comments fa-3x text-muted mb-3"></i>
                     <p class="text-muted">No interactions recorded for this contact yet.</p>
-                    <button class="btn btn-primary">
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addInteractionModal">
                         <i class="fas fa-plus me-1"></i>
                         Add First Interaction
                     </button>
@@ -157,6 +160,9 @@
             </div>
             <div class="card-body">
                 {% if opportunities %}
+                <div class="mb-2">
+                    <small class="text-muted">Double-click any opportunity to view details</small>
+                </div>
                 <div class="table-responsive">
                     <table class="table table-sm table-hover">
                         <thead class="table-light">
@@ -428,39 +434,67 @@
                             <label for="interactionType" class="form-label">Type *</label>
                             <select class="form-select" id="interactionType" name="type" required>
                                 <option value="">Select Type</option>
+                                <option value="Call">Call</option>
                                 <option value="Email">Email</option>
-                                <option value="Phone Call">Phone Call</option>
-                                <option value="Meeting">Meeting</option>
-                                <option value="Note">Note</option>
-                                <option value="Task">Task</option>
+                                <option value="LinkedIn">LinkedIn</option>
+                                <option value="Text">Text</option>
                             </select>
                         </div>
                         <div class="col-md-6">
-                            <label for="interactionDate" class="form-label">Date *</label>
+                            <label for="interactionDirection" class="form-label">Direction *</label>
+                            <select class="form-select" id="interactionDirection" name="direction" required>
+                                <option value="">Select Direction</option>
+                                <option value="Sent">Sent</option>
+                                <option value="Received">Received</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="interactionDate" class="form-label">Date/Time *</label>
                             <input type="datetime-local" class="form-control" id="interactionDate" name="interaction_date" required>
                         </div>
+                        <div class="col-md-6">
+                            <label for="interactionStatus" class="form-label">Status</label>
+                            <select class="form-select" id="interactionStatus" name="status">
+                                <option value="Pending">Pending</option>
+                                <option value="Completed">Completed</option>
+                                <option value="Failed">Failed</option>
+                            </select>
+                        </div>
                         <div class="col-12">
-                            <label for="interactionSubject" class="form-label">Subject *</label>
-                            <input type="text" class="form-control" id="interactionSubject" name="subject" required>
+                            <label for="interactionSubject" class="form-label">Subject</label>
+                            <input type="text" class="form-control" id="interactionSubject" name="subject">
+                        </div>
+                        <div class="col-12">
+                            <label for="interactionMessage" class="form-label">Message/Notes</label>
+                            <textarea class="form-control" id="interactionMessage" name="message" rows="4"></textarea>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="interactionContact" class="form-label">Contact</label>
+                            <select class="form-select" id="interactionContact" name="contact_id">
+                                <option value="{{ contact.id }}" selected>{{ contact.first_name }} {{ contact.last_name }}</option>
+                                <!-- Other contacts can be loaded via JavaScript if needed -->
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="interactionOpportunity" class="form-label">Opportunity</label>
+                            <select class="form-select" id="interactionOpportunity" name="opportunity_id">
+                                <option value="">Select Opportunity</option>
+                                <!-- Opportunities will be loaded via JavaScript -->
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="interactionProject" class="form-label">Project</label>
+                            <select class="form-select" id="interactionProject" name="project_id">
+                                <option value="">Select Project</option>
+                                <!-- Projects will be loaded via JavaScript -->
+                            </select>
                         </div>
                         <div class="col-md-6">
                             <label for="interactionDuration" class="form-label">Duration (minutes)</label>
-                            <input type="number" class="form-control" id="interactionDuration" name="duration_minutes" min="1">
+                            <input type="number" class="form-control" id="interactionDuration" name="duration_minutes" min="0">
                         </div>
                         <div class="col-md-6">
-                            <label for="interactionOutcome" class="form-label">Outcome</label>
-                            <select class="form-select" id="interactionOutcome" name="outcome">
-                                <option value="">Select Outcome</option>
-                                <option value="Successful">Successful</option>
-                                <option value="Follow-up Required">Follow-up Required</option>
-                                <option value="No Response">No Response</option>
-                                <option value="Declined">Declined</option>
-                                <option value="Completed">Completed</option>
-                            </select>
-                        </div>
-                        <div class="col-12">
-                            <label for="interactionNotes" class="form-label">Notes</label>
-                            <textarea class="form-control" id="interactionNotes" name="notes" rows="4"></textarea>
+                            <!-- Empty column for alignment -->
                         </div>
                     </div>
                 </div>
@@ -494,7 +528,7 @@ document.addEventListener('DOMContentLoaded', function() {
         addInteraction();
     });
     
-    // Set default interaction date to now
+    // Set default interaction date to now and add modal event handlers
     const interactionDateField = document.getElementById('interactionDate');
     if (interactionDateField) {
         const now = new Date();
@@ -502,13 +536,49 @@ document.addEventListener('DOMContentLoaded', function() {
         interactionDateField.value = now.toISOString().slice(0, 16);
     }
     
+    // Handle add interaction modal show event
+    const addInteractionModal = document.getElementById('addInteractionModal');
+    addInteractionModal.addEventListener('show.bs.modal', function() {
+        // Set current date/time as default
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        document.getElementById('interactionDate').value = now.toISOString().slice(0, 16);
+        
+        // Set default status to Completed
+        document.getElementById('interactionStatus').value = 'Completed';
+        
+        // Load opportunities and projects
+        loadOpportunitiesForInteraction();
+        loadProjectsForInteraction();
+    });
+    
     // Add double-click functionality to opportunity rows
     document.querySelectorAll('.opportunity-row').forEach(row => {
         row.addEventListener('dblclick', function() {
             const opportunityId = this.dataset.opportunityId;
             if (opportunityId) {
                 // Navigate to opportunity detail page
-                window.location.href = `/opportunities/${opportunityId}`;
+                window.location.href = `/opportunity/${opportunityId}`;
+            }
+        });
+        
+        // Add hover effect
+        row.addEventListener('mouseenter', function() {
+            this.style.backgroundColor = '#f8f9fa';
+        });
+        
+        row.addEventListener('mouseleave', function() {
+            this.style.backgroundColor = '';
+        });
+    });
+    
+    // Add double-click functionality to interaction rows
+    document.querySelectorAll('.interaction-row').forEach(row => {
+        row.addEventListener('dblclick', function() {
+            const interactionId = this.dataset.interactionId;
+            if (interactionId) {
+                // Navigate to interaction detail page
+                window.location.href = `/interactions/${interactionId}`;
             }
         });
         
@@ -590,7 +660,12 @@ function addInteraction() {
         contact_id: contactId
     };
     formData.forEach((value, key) => {
-        data[key] = value;
+        // Map form field names to database field names
+        if (key === 'message') {
+            data['description'] = value;
+        } else {
+            data[key] = value;
+        }
     });
     
     fetch('/api/interactions', {
@@ -621,6 +696,46 @@ function addInteraction() {
         console.error('Error adding interaction:', error);
         alert('Error adding interaction. Please try again.');
     });
+}
+
+// Load opportunities for interaction dropdown
+function loadOpportunitiesForInteraction() {
+    fetch('/api/opportunities')
+        .then(response => response.json())
+        .then(opportunities => {
+            const select = document.getElementById('interactionOpportunity');
+            select.innerHTML = '<option value="">Select Opportunity</option>';
+            
+            opportunities.forEach(opp => {
+                const option = document.createElement('option');
+                option.value = opp.id;
+                option.textContent = `${opp.name} - ${opp.nsn || 'No NSN'}`;
+                select.appendChild(option);
+            });
+        })
+        .catch(error => {
+            console.error('Error loading opportunities:', error);
+        });
+}
+
+// Load projects for interaction dropdown  
+function loadProjectsForInteraction() {
+    fetch('/api/projects')
+        .then(response => response.json())
+        .then(projects => {
+            const select = document.getElementById('interactionProject');
+            select.innerHTML = '<option value="">Select Project</option>';
+            
+            projects.forEach(project => {
+                const option = document.createElement('option');
+                option.value = project.id;
+                option.textContent = project.name || `Project ${project.id}`;
+                select.appendChild(option);
+            });
+        })
+        .catch(error => {
+            console.error('Error loading projects:', error);
+        });
 }
 </script>
 

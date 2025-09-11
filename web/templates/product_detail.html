@@ -173,11 +173,14 @@
 
             <!-- Vendors Section -->
             <div class="card mb-4">
-                <div class="card-header">
+                <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="card-title mb-0">
                         <i class="fas fa-store me-2"></i>Vendors
                         <span class="badge bg-secondary ms-2">{{ vendors|length }}</span>
                     </h5>
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="addVendorAccount()">
+                        <i class="fas fa-plus me-1"></i>Add Vendor
+                    </button>
                 </div>
                 <div class="card-body">
                     {% if vendors %}
@@ -246,7 +249,10 @@
                     <div class="text-center py-4">
                         <i class="fas fa-store fa-3x text-muted mb-3"></i>
                         <h6 class="text-muted">No Vendors</h6>
-                        <p class="text-muted small">No vendor information available from QPL manufacturers.</p>
+                        <p class="text-muted small">No vendor accounts have been linked to this product yet.</p>
+                        <button type="button" class="btn btn-outline-primary" onclick="addVendorAccount()">
+                            <i class="fas fa-plus me-1"></i>Add First Vendor
+                        </button>
                     </div>
                     {% endif %}
                 </div>
@@ -317,53 +323,64 @@
                 <div class="card-header">
                     <h5 class="card-title mb-0">
                         <i class="fas fa-credit-card me-2"></i>Payment Histories
-                        <span class="badge bg-success ms-2">{{ opportunities|length if opportunities else 0 }}</span>
+                        {% set payment_count = opportunities|selectattr('payment_history')|list|length %}
+                        <span class="badge bg-success ms-2">{{ payment_count }}</span>
                     </h5>
                 </div>
                 <div class="card-body">
-                    {% if opportunities %}
+                    {% set opportunities_with_payment = opportunities|selectattr('payment_history') %}
+                    {% if opportunities_with_payment %}
                     <div class="row">
-                        {% for opp in opportunities %}
+                        {% for opp in opportunities_with_payment %}
                         <div class="col-12 mb-3">
-                            <div class="card border-start border-primary border-3 shadow-sm">
-                                <div class="card-body py-3">
-                                    <div class="d-flex justify-content-between align-items-start">
-                                        <div class="flex-grow-1">
-                                            <h6 class="mb-1">
-                                                <a href="/opportunity/{{ opp.id }}" class="text-decoration-none text-primary fw-bold">
-                                                    {{ opp.name }}
-                                                </a>
+                            <div class="card border-start border-success border-3 shadow-sm">
+                                <div class="card-header bg-light">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h6 class="mb-0 fw-bold text-success">
+                                            <a href="/opportunity/{{ opp.id }}" class="text-decoration-none text-success">
+                                                {{ opp.name }}
+                                            </a>
+                                        </h6>
+                                        <div class="d-flex gap-2">
+                                            <span class="badge bg-{% if opp.stage == 'Closed Won' %}success{% elif opp.stage == 'Closed Lost' %}danger{% elif opp.stage == 'Proposal' %}warning{% else %}primary{% endif %}">
+                                                {{ opp.stage or 'Unknown' }}
+                                            </span>
+                                            <a href="/opportunity/{{ opp.id }}" class="btn btn-outline-success btn-sm" title="View Opportunity">
+                                                <i class="fas fa-eye me-1"></i>View
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="payment-history-content">
+                                        {% if opp.payment_history %}
+                                        <div class="bg-light p-3 rounded">
+                                            <h6 class="mb-2 text-success">
+                                                <i class="fas fa-dollar-sign me-2"></i>Payment History Records
                                             </h6>
-                                            <div class="d-flex flex-wrap gap-2 mb-2">
-                                                <span class="badge bg-{% if opp.stage == 'Closed Won' %}success{% elif opp.stage == 'Closed Lost' %}danger{% elif opp.stage == 'Proposal' %}warning{% else %}primary{% endif %} me-2">
-                                                    {{ opp.stage or 'Unknown' }}
-                                                </span>
-                                                <span class="badge bg-{% if opp.stage == 'Closed Won' %}success{% elif opp.stage == 'Closed Lost' %}danger{% else %}secondary{% endif %}">
-                                                    {% if opp.stage == 'Closed Won' %}Paid{% elif opp.stage == 'Closed Lost' %}Not Paid{% else %}Pending{% endif %}
-                                                </span>
-                                            </div>
-                                            <small class="text-muted">
-                                                {% if opp.close_date %}
-                                                    Close Date: {{ opp.close_date.strftime('%m/%d/%Y') if opp.close_date is not string else opp.close_date[:10] }}
-                                                {% else %}
-                                                    Close Date: Not set
+                                            <div class="payment-entries" style="max-height: 300px; overflow-y: auto;">
+                                                {% for line in opp.payment_history.split('\n') %}
+                                                {% if line.strip() %}
+                                                <div class="payment-entry mb-2 p-2 bg-white border rounded">
+                                                    <div class="d-flex justify-content-between align-items-center">
+                                                        <div>
+                                                            <strong class="text-primary">{{ line.strip() }}</strong>
+                                                        </div>
+                                                        <div>
+                                                            <small class="badge bg-success">Historical</small>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                                 {% endif %}
-                                            </small>
-                                        </div>
-                                        <div class="text-end">
-                                            <div class="h5 mb-0">
-                                                {% if opp.amount %}
-                                                    <span class="text-success fw-bold">${{ "{:,.0f}".format(opp.amount) }}</span>
-                                                {% else %}
-                                                    <span class="text-muted">N/A</span>
-                                                {% endif %}
-                                            </div>
-                                            <div class="mt-2">
-                                                <a href="/opportunity/{{ opp.id }}" class="btn btn-outline-primary btn-sm" title="View Opportunity">
-                                                    <i class="fas fa-eye me-1"></i>View
-                                                </a>
+                                                {% endfor %}
                                             </div>
                                         </div>
+                                        {% else %}
+                                        <div class="text-muted text-center py-2">
+                                            <i class="fas fa-exclamation-circle me-2"></i>
+                                            No payment history data available
+                                        </div>
+                                        {% endif %}
                                     </div>
                                 </div>
                             </div>
@@ -374,7 +391,7 @@
                     <div class="text-center py-4">
                         <i class="fas fa-credit-card fa-3x text-muted mb-3"></i>
                         <h6 class="text-muted">No Payment History</h6>
-                        <p class="text-muted small">No payment information available from opportunities.</p>
+                        <p class="text-muted small">No payment information available from connected opportunities.</p>
                     </div>
                     {% endif %}
                 </div>
@@ -650,8 +667,29 @@ function deleteProduct(productId) {
 }
 
 function addQPLManufacturer(productId) {
-    // TODO: Implement QPL manufacturer addition modal
-    alert('QPL Manufacturer addition will be implemented');
+    // Redirect to QPLs page with product pre-selected
+    const productNsn = '{{ product.nsn }}';
+    const productName = '{{ product.name }}';
+    
+    // Create the URL with query parameters to pre-populate the QPL form
+    const url = new URL('/qpls', window.location.origin);
+    url.searchParams.set('add', 'true');
+    url.searchParams.set('product_id', productId);
+    url.searchParams.set('product_name', productName);
+    if (productNsn && productNsn !== 'None') {
+        url.searchParams.set('product_nsn', productNsn);
+    }
+    
+    window.location.href = url.toString();
+}
+
+function addVendorAccount() {
+    // Redirect to accounts page with vendor type pre-selected
+    const url = new URL('/accounts', window.location.origin);
+    url.searchParams.set('add', 'true');
+    url.searchParams.set('type', 'Vendor');
+    
+    window.location.href = url.toString();
 }
 
 function editQPLEntry(qplId) {
@@ -687,7 +725,244 @@ function exportQPLData(productId) {
 }
 
 function addQuote() {
-    alert('Quote request functionality will be implemented based on your requirements');
+    console.log('addQuote called for product:', {{ product.id }});
+    
+    // Show vendor selection modal for quote request
+    showVendorSelectionModal({{ product.id }});
+}
+
+function showVendorSelectionModal(productId) {
+    // Create modal for vendor selection
+    const modalHtml = `
+        <div class="modal fade" id="vendorSelectionModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="fas fa-users me-2"></i>Request Quotes from Vendors
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Email Template:</label>
+                            <select id="modalEmailTemplate" class="form-select">
+                                <option value="Standard Quote Request">Standard Quote Request</option>
+                                <option value="Urgent Quote Request">Urgent Quote Request</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Quantity Needed:</label>
+                            <input type="number" id="quoteQuantity" class="form-control" value="1" min="1">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Select Vendors:</label>
+                            <div id="vendorCheckboxes" class="border rounded p-3" style="max-height: 300px; overflow-y: auto;">
+                                <div class="text-center py-3">
+                                    <i class="fas fa-spinner fa-spin"></i> Loading vendors...
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info small">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Selected vendors will receive quote request emails with product details and specifications.
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-success" onclick="processQuoteRequests(${productId})">
+                            <i class="fas fa-paper-plane me-1"></i>Send Quote Requests
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remove existing modal if any
+    const existingModal = document.getElementById('vendorSelectionModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Add modal to DOM
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('vendorSelectionModal'));
+    modal.show();
+    
+    // Load QPL manufacturers for this product
+    loadVendorsForProduct(productId);
+}
+
+function loadVendorsForProduct(productId) {
+    fetch(`/api/products/${productId}/qpl-vendors`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayVendorCheckboxes(data.vendors);
+            } else {
+                console.error('Error loading vendors:', data.message);
+                document.getElementById('vendorCheckboxes').innerHTML = `
+                    <div class="text-center py-3 text-danger">
+                        <i class="fas fa-exclamation-triangle"></i> Error loading vendors
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('vendorCheckboxes').innerHTML = `
+                <div class="text-center py-3 text-danger">
+                    <i class="fas fa-exclamation-triangle"></i> Network error
+                </div>
+            `;
+        });
+}
+
+function displayVendorCheckboxes(vendors) {
+    const container = document.getElementById('vendorCheckboxes');
+    
+    if (!vendors || vendors.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-3 text-muted">
+                <i class="fas fa-building fa-2x mb-2"></i>
+                <p>No QPL vendors found for this product.</p>
+                <small>Add QPL manufacturers first to request quotes.</small>
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '';
+    vendors.forEach(vendor => {
+        html += `
+            <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" value="${vendor.id}" id="vendor${vendor.id}">
+                <label class="form-check-label d-flex justify-content-between align-items-center" for="vendor${vendor.id}">
+                    <div>
+                        <strong>${vendor.name}</strong>
+                        ${vendor.cage_code ? `<span class="badge bg-secondary ms-2">${vendor.cage_code}</span>` : ''}
+                    </div>
+                    ${vendor.part_number ? `<small class="text-muted">Part: ${vendor.part_number}</small>` : ''}
+                </label>
+            </div>
+        `;
+    });
+    
+    // Add "Select All" option
+    html = `
+        <div class="form-check mb-3 border-bottom pb-2">
+            <input class="form-check-input" type="checkbox" id="selectAllVendors" onchange="toggleAllVendors()">
+            <label class="form-check-label fw-bold" for="selectAllVendors">
+                Select All Vendors
+            </label>
+        </div>
+    ` + html;
+    
+    container.innerHTML = html;
+}
+
+function toggleAllVendors() {
+    const selectAll = document.getElementById('selectAllVendors');
+    const checkboxes = document.querySelectorAll('#vendorCheckboxes input[type="checkbox"]:not(#selectAllVendors)');
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = selectAll.checked;
+    });
+}
+
+function processQuoteRequests(productId) {
+    const selectedVendors = [];
+    const checkboxes = document.querySelectorAll('#vendorCheckboxes input[type="checkbox"]:checked:not(#selectAllVendors)');
+    
+    checkboxes.forEach(checkbox => {
+        selectedVendors.push(parseInt(checkbox.value));
+    });
+    
+    if (selectedVendors.length === 0) {
+        alert('Please select at least one vendor to send quote requests.');
+        return;
+    }
+    
+    const template = document.getElementById('modalEmailTemplate').value;
+    const quantity = document.getElementById('quoteQuantity').value;
+    
+    const requestData = {
+        vendor_ids: selectedVendors,
+        template: template,
+        quantity: parseInt(quantity)
+    };
+    
+    console.log('Sending quote requests:', requestData);
+    
+    // Show loading state
+    const button = document.querySelector('[onclick*="processQuoteRequests"]');
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Sending...';
+    button.disabled = true;
+    
+    fetch(`/api/products/${productId}/request-quotes`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('vendorSelectionModal'));
+            modal.hide();
+            
+            // Show success message
+            showSuccessMessage(`Quote requests sent to ${selectedVendors.length} vendor(s)`);
+            
+            // Refresh the page to show new quotes
+            setTimeout(() => {
+                location.reload();
+            }, 1500);
+        } else {
+            alert('Error sending quote requests: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Network error while sending quote requests');
+    })
+    .finally(() => {
+        // Restore button
+        button.innerHTML = originalText;
+        button.disabled = false;
+    });
+}
+
+function showSuccessMessage(message) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = 'alert alert-success alert-dismissible fade show position-fixed';
+    alertDiv.style.cssText = `
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        min-width: 300px;
+    `;
+    alertDiv.innerHTML = `
+        <i class="fas fa-check-circle me-2"></i>${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(alertDiv);
+    
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
 }
 
 // Initialize DataTables

@@ -3,6 +3,18 @@
 {% block title %}Products - CDE Prosperity{% endblock %}
 
 {% block content %}
+<style>
+tbody tr:hover {
+    background-color: #f8f9fa !important;
+    transform: translateY(-1px);  
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: all 0.2s ease;
+}
+
+tbody tr {
+    transition: all 0.2s ease;
+}
+</style>
 <div class="container-fluid">
     <!-- Modern Header -->
     <div class="d-flex justify-content-between align-items-center mb-5">
@@ -731,6 +743,26 @@ document.addEventListener('DOMContentLoaded', function() {
     window.addVendorRelationship = function() {
         alert('Vendor relationship functionality will be implemented in the next update.');
     };
+
+    // Add double-click functionality to product rows
+    document.querySelectorAll('tbody tr').forEach(row => {
+        row.style.cursor = 'pointer';
+        row.title = 'Double-click to view product details';
+        row.addEventListener('dblclick', function() {
+            const nsnElement = this.querySelector('td strong');
+            if (nsnElement) {
+                const nsn = nsnElement.textContent.trim();
+                if (nsn && nsn !== 'N/A') {
+                    window.location.href = `/products/${nsn}`;
+                }
+            }
+        });
+    });
 });
 </script>
 {% endblock %}
+
+
+
+
+

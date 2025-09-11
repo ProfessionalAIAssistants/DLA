@@ -1328,12 +1328,12 @@ function changeStage(newStage) {
         if (data.success) {
             location.reload();
         } else {
-            alert('Error updating stage: ' + (data.message || 'Unknown error'));
+            showErrorNotification('Error updating stage: ' + (data.message || 'Unknown error'));
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Error updating stage');
+        showErrorNotification('Error updating stage');
     });
 }
 
@@ -1403,12 +1403,12 @@ function saveOpportunity() {
         if (data.success) {
             location.reload();
         } else {
-            alert('Error updating opportunity: ' + data.message);
+            showErrorNotification('Error updating opportunity: ' + data.message);
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Error updating opportunity');
+        showErrorNotification('Error updating opportunity');
     });
 }
 
@@ -1544,7 +1544,7 @@ function saveStageInline() {
             document.getElementById('stageEdit').classList.add('d-none');
             location.reload(); // Refresh to update progress bar
         } else {
-            alert('Error updating stage: ' + data.message);
+            showErrorNotification('Error updating stage: ' + (data.message || 'Unknown error'));
         }
     });
 }
@@ -1569,7 +1569,7 @@ function saveStateInline() {
         if (data.success) {
             location.reload(); // Refresh to update badge colors
         } else {
-            alert('Error updating state: ' + data.message);
+            showErrorNotification('Error updating state: ' + data.message);
         }
     });
 }
@@ -1598,7 +1598,7 @@ function saveBidPriceInline() {
             document.getElementById('bidPriceDisplay').classList.remove('d-none');
             document.getElementById('bidPriceEdit').classList.add('d-none');
         } else {
-            alert('Error updating bid price: ' + data.message);
+            showErrorNotification('Error updating bid price: ' + data.message);
         }
     });
 }
@@ -1627,7 +1627,7 @@ function savePurchaseCostsInline() {
             document.getElementById('purchaseCostsDisplay').classList.remove('d-none');
             document.getElementById('purchaseCostsEdit').classList.add('d-none');
         } else {
-            alert('Error updating purchase costs: ' + data.message);
+            showErrorNotification('Error updating purchase costs: ' + data.message);
         }
     });
 }
@@ -1656,7 +1656,7 @@ function savePackagingShippingInline() {
             document.getElementById('packagingShippingDisplay').classList.remove('d-none');
             document.getElementById('packagingShippingEdit').classList.add('d-none');
         } else {
-            alert('Error updating packaging & shipping: ' + data.message);
+            showErrorNotification('Error updating packaging & shipping: ' + data.message);
         }
     });
 }
@@ -1664,6 +1664,12 @@ function savePackagingShippingInline() {
 // ==================== AUTO-SAVE FUNCTIONS ====================
 
 function autoSaveStage() {
+    // Prevent multiple simultaneous updates
+    if (window.isUpdatingStage) {
+        return;
+    }
+    window.isUpdatingStage = true;
+    
     const newValue = document.getElementById('stageSelect').value;
     const opportunityId = {{ opportunity.id }};
     
@@ -1684,17 +1690,27 @@ function autoSaveStage() {
             updateStageColors();
             showSaveIndicator('stageSelect', true);
         } else {
-            alert('Error updating stage: ' + data.message);
+            showErrorNotification('Error updating stage: ' + data.message);
             showSaveIndicator('stageSelect', false);
         }
     })
     .catch(error => {
         console.error('Error:', error);
+        showErrorNotification('Error updating stage');
         showSaveIndicator('stageSelect', false);
+    })
+    .finally(() => {
+        window.isUpdatingStage = false;
     });
 }
 
 function autoSaveState() {
+    // Prevent multiple simultaneous updates
+    if (window.isUpdatingState) {
+        return;
+    }
+    window.isUpdatingState = true;
+    
     const newValue = document.getElementById('stateSelect').value;
     const opportunityId = {{ opportunity.id }};
     
@@ -1710,17 +1726,26 @@ function autoSaveState() {
             updateStateColors();
             showSaveIndicator('stateSelect', true);
         } else {
-            alert('Error updating state: ' + data.message);
+            showErrorNotification('Error updating state: ' + data.message);
             showSaveIndicator('stateSelect', false);
         }
     })
     .catch(error => {
         console.error('Error:', error);
+        showErrorNotification('Error updating state');
         showSaveIndicator('stateSelect', false);
+    })
+    .finally(() => {
+        window.isUpdatingState = false;
     });
 }
 
 function autoSaveBidPrice() {
+    // Prevent multiple simultaneous calls
+    if (window.isUpdatingBidPrice) {
+        return;
+    }
+    
     const inputValue = document.getElementById('bidPriceInput').value.trim();
     const newValue = inputValue === '' ? null : parseFloat(inputValue);
     const opportunityId = {{ opportunity.id }};
@@ -1728,8 +1753,12 @@ function autoSaveBidPrice() {
     // Don't save if the value is invalid (not a number and not empty)
     if (inputValue !== '' && isNaN(newValue)) {
         showSaveIndicator('bidPriceInput', false);
+        showErrorNotification('Invalid bid price format');
         return;
     }
+    
+    // Set flag to prevent concurrent calls
+    window.isUpdatingBidPrice = true;
     
     fetch(`/api/opportunities/${opportunityId}`, {
         method: 'PATCH',
@@ -1742,18 +1771,28 @@ function autoSaveBidPrice() {
             showSaveIndicator('bidPriceInput', true);
             updateProfitCalculation();
         } else {
-            alert('Error updating bid price: ' + data.message);
+            console.error('Bid price update failed:', data.message);
             showSaveIndicator('bidPriceInput', false);
+            showErrorNotification('Error updating bid price: ' + data.message);
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Error updating bid price: ' + error.message);
         showSaveIndicator('bidPriceInput', false);
+        showErrorNotification('Error updating bid price: Network error');
+    })
+    .finally(() => {
+        // Clear flag to allow future calls
+        window.isUpdatingBidPrice = false;
     });
 }
 
 function autoSavePurchaseCosts() {
+    // Prevent multiple simultaneous calls
+    if (window.isUpdatingPurchaseCosts) {
+        return;
+    }
+    
     const inputValue = document.getElementById('purchaseCostsInput').value.trim();
     const newValue = inputValue === '' ? null : parseFloat(inputValue);
     const opportunityId = {{ opportunity.id }};
@@ -1761,8 +1800,12 @@ function autoSavePurchaseCosts() {
     // Don't save if the value is invalid (not a number and not empty)
     if (inputValue !== '' && isNaN(newValue)) {
         showSaveIndicator('purchaseCostsInput', false);
+        showErrorNotification('Invalid purchase costs format');
         return;
     }
+    
+    // Set flag to prevent concurrent calls
+    window.isUpdatingPurchaseCosts = true;
     
     fetch(`/api/opportunities/${opportunityId}`, {
         method: 'PATCH',
@@ -1775,18 +1818,28 @@ function autoSavePurchaseCosts() {
             showSaveIndicator('purchaseCostsInput', true);
             updateProfitCalculation();
         } else {
-            alert('Error updating purchase costs: ' + data.message);
+            console.error('Purchase costs update failed:', data.message);
             showSaveIndicator('purchaseCostsInput', false);
+            showErrorNotification('Error updating purchase costs: ' + data.message);
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Error updating purchase costs: ' + error.message);
         showSaveIndicator('purchaseCostsInput', false);
+        showErrorNotification('Error updating purchase costs: Network error');
+    })
+    .finally(() => {
+        // Clear flag to allow future calls
+        window.isUpdatingPurchaseCosts = false;
     });
 }
 
 function autoSavePackagingShipping() {
+    // Prevent multiple simultaneous calls
+    if (window.isUpdatingPackagingShipping) {
+        return;
+    }
+    
     const inputValue = document.getElementById('packagingShippingInput').value.trim();
     const newValue = inputValue === '' ? null : parseFloat(inputValue);
     const opportunityId = {{ opportunity.id }};
@@ -1794,8 +1847,12 @@ function autoSavePackagingShipping() {
     // Don't save if the value is invalid (not a number and not empty)
     if (inputValue !== '' && isNaN(newValue)) {
         showSaveIndicator('packagingShippingInput', false);
+        showErrorNotification('Invalid packaging & shipping format');
         return;
     }
+    
+    // Set flag to prevent concurrent calls
+    window.isUpdatingPackagingShipping = true;
     
     fetch(`/api/opportunities/${opportunityId}`, {
         method: 'PATCH',
@@ -1808,14 +1865,19 @@ function autoSavePackagingShipping() {
             showSaveIndicator('packagingShippingInput', true);
             updateProfitCalculation();
         } else {
-            alert('Error updating packaging & shipping: ' + data.message);
+            console.error('Packaging & shipping update failed:', data.message);
             showSaveIndicator('packagingShippingInput', false);
+            showErrorNotification('Error updating packaging & shipping: ' + data.message);
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Error updating packaging & shipping: ' + error.message);
         showSaveIndicator('packagingShippingInput', false);
+        showErrorNotification('Error updating packaging & shipping: Network error');
+    })
+    .finally(() => {
+        // Clear flag to allow future calls
+        window.isUpdatingPackagingShipping = false;
     });
 }
 
@@ -1851,6 +1913,45 @@ function showSaveIndicator(fieldId, success) {
         field.className = originalClass;
         field.style.boxShadow = '';
     }, 1500);
+}
+
+function showErrorNotification(message) {
+    // Create or get existing notification container
+    let notificationContainer = document.getElementById('errorNotificationContainer');
+    if (!notificationContainer) {
+        notificationContainer = document.createElement('div');
+        notificationContainer.id = 'errorNotificationContainer';
+        notificationContainer.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            max-width: 400px;
+        `;
+        document.body.appendChild(notificationContainer);
+    }
+    
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = 'alert alert-danger alert-dismissible fade show';
+    notification.style.cssText = `
+        margin-bottom: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    `;
+    notification.innerHTML = `
+        <i class="fas fa-exclamation-triangle me-2"></i>${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    // Add to container
+    notificationContainer.appendChild(notification);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.remove();
+        }
+    }, 5000);
 }
 
 function linkProduct(opportunityId) {
@@ -2054,7 +2155,7 @@ function loadVendorEmailsList(opportunityId) {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                displayVendorEmails(data.emails);
+                displayVendorEmails(data.emails, opportunityId);
             } else {
                 console.error('Error loading vendor emails:', data.message);
             }
@@ -2064,7 +2165,7 @@ function loadVendorEmailsList(opportunityId) {
         });
 }
 
-function displayVendorEmails(emails) {
+function displayVendorEmails(emails, opportunityId) {
     const container = document.getElementById('vendorEmailsList');
     
     if (!emails || emails.length === 0) {
@@ -2266,7 +2367,7 @@ function markEmailSent(emailId) {
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Error updating email status.');
+            showErrorNotification('Error updating email status.');
         });
     }
 }
@@ -2524,26 +2625,24 @@ function saveTask() {
 function completeTask(taskId) {
     console.log('completeTask called for task:', taskId);
     
-    if (confirm('Mark this task as completed?')) {
-        fetch(`/api/tasks/${taskId}/complete`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                location.reload();
-            } else {
-                alert('Error completing task: ' + (data.message || 'Unknown error'));
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Error completing task. Please try again.');
-        });
-    }
+    fetch(`/api/tasks/${taskId}/complete`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            showErrorNotification('Error completing task: ' + (data.message || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showErrorNotification('Error completing task. Please try again.');
+    });
 }
 
 function editTask(taskId) {
@@ -2556,26 +2655,24 @@ function editTask(taskId) {
 function deleteTask(taskId) {
     console.log('deleteTask called for task:', taskId);
     
-    if (confirm('Are you sure you want to delete this task? This action cannot be undone.')) {
-        fetch(`/api/tasks/${taskId}`, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                location.reload();
-            } else {
-                alert('Error deleting task: ' + (data.message || 'Unknown error'));
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Error deleting task. Please try again.');
-        });
-    }
+    fetch(`/api/tasks/${taskId}`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            showErrorNotification('Error deleting task: ' + (data.message || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showErrorNotification('Error deleting task. Please try again.');
+    });
 }
 
 // Load vendor emails when page loads

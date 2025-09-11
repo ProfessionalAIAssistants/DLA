@@ -71,7 +71,7 @@ class DIBBsCRMProcessor:
             'iso_required': 'NO',
             'sampling_required': 'NO',
             'inspection_point': 'DESTINATION',
-            'manufacturer_filters': ['Parker'],
+            'manufacturer_filters': [],
             'auto_process': True
         }
         
@@ -172,25 +172,27 @@ class DIBBsCRMProcessor:
 
     def move_files(self, source_path, destination_folder):
         """Move processed files to appropriate folder"""
-        # DEVELOPMENT: File moving commented out for testing purposes
-        # source = Path(source_path)
+        # Check if file movement is enabled in settings
+        if not self.settings.get('move_processed_files', True):
+            print(f"File movement disabled in settings - {Path(source_path).name} remains in To Process")
+            return
+            
+        source = Path(source_path)
         
-        # if destination_folder:
-        #     # Move to automation folder
-        #     destination = Path(destination_folder) / source.name
-        # else:
-        #     # Move to reviewed folder
-        #     destination = self.reviewed_dir / source.name
+        if destination_folder:
+            # Move to automation folder
+            destination = Path(destination_folder) / source.name
+        else:
+            # Move to reviewed folder
+            destination = self.reviewed_dir / source.name
         
-        # try:
-        #     # Ensure destination directory exists
-        #     destination.parent.mkdir(parents=True, exist_ok=True)
-        #     shutil.move(str(source), str(destination))
-        #     print(f"Moved {source.name} to {destination.parent}")
-        # except Exception as e:
-        #     print(f"Error moving file {source.name}: {e}")
-        
-        print(f"DEVELOPMENT MODE: File moving disabled - {Path(source_path).name} remains in To Process")
+        try:
+            # Ensure destination directory exists
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(str(source), str(destination))
+            print(f"Moved {source.name} to {destination.parent}")
+        except Exception as e:
+            print(f"Error moving file {source.name}: {e}")
 
     def find_request_numbers(self, text):
         """Find request numbers using DIBBs.py pattern"""
@@ -837,9 +839,13 @@ class DIBBsCRMProcessor:
                         print(f"DEBUG: Failed to create contact: {contact_error}")
                         # Continue with opportunity creation even if contact creation fails
             
-            # Create opportunity
+            # Check if opportunity already exists
+            opportunity_name = f"{pdf_data['request_number']}"
+            existing_opportunity = crm_data.get_opportunity_by_name(opportunity_name)
+            
+            # Create opportunity data
             opportunity_data = {
-                'name': f"{pdf_data['request_number']}",
+                'name': opportunity_name,
                 'description': f"Auto-created from PDF processing for request {pdf_data['request_number']}. Product: {pdf_data.get('product_description', '').strip()}. Buyer: {pdf_data.get('buyer', 'Unknown')}. Email: {pdf_data.get('email', 'N/A')}",
                 'stage': 'Prospecting',
                 'state': 'Active',
@@ -867,16 +873,29 @@ class DIBBsCRMProcessor:
             
             # Debug FOB value specifically
             print(f"DEBUG FOB: Raw='{pdf_data['fob']}', Processed='{opportunity_data['fob']}'")
-            print(f"DEBUG: About to create opportunity with data: {opportunity_data}")
-            opportunity_id = crm_data.create_opportunity(**opportunity_data)
+            
+            if existing_opportunity:
+                # Update existing opportunity
+                opportunity_id = existing_opportunity['id']
+                print(f"DEBUG: Updating existing opportunity {opportunity_id} with data: {opportunity_data}")
+                crm_data.update_opportunity(opportunity_id, **opportunity_data)
+                self.results['updated'] += 1
+                print(f"✓ Updated existing opportunity: {opportunity_name}")
+            else:
+                # Create new opportunity
+                print(f"DEBUG: Creating new opportunity with data: {opportunity_data}")
+                opportunity_id = crm_data.create_opportunity(**opportunity_data)
+                
+                if opportunity_id:
+                    self.results['created'] += 1
+                    self.results['created_opportunities'].append({
+                        'id': opportunity_id,
+                        'request_number': pdf_data['request_number'],
+                        'nsn': pdf_data['nsn']
+                    })
+                    print(f"✓ Created new opportunity: {opportunity_name}")
             
             if opportunity_id:
-                self.results['created'] += 1
-                self.results['created_opportunities'].append({
-                    'id': opportunity_id,
-                    'request_number': pdf_data['request_number'],
-                    'nsn': pdf_data['nsn']
-                })
                 
                 # Process QPL data if MFR information is available
                 if pdf_data.get('mfr') and pdf_data.get('nsn'):
@@ -885,10 +904,10 @@ class DIBBsCRMProcessor:
                         import sys
                         import os
                         
-                        # Add the root directory to path for the import
-                        root_dir = str(self.base_dir)
-                        if root_dir not in sys.path:
-                            sys.path.insert(0, root_dir)
+                        # Add the src directory to path for the import
+                        src_dir = str(self.base_dir / "src")
+                        if src_dir not in sys.path:
+                            sys.path.insert(0, src_dir)
                         
                         from mfr_parser import MFRParser
                         
@@ -918,7 +937,7 @@ class DIBBsCRMProcessor:
                             
                     except ImportError as import_error:
                         print(f"⚠️ Failed to import MFR parser: {import_error}")
-                        print(f"   Root dir: {root_dir}")
+                        print(f"   Src dir: {src_dir}")
                         print(f"   Current working directory: {os.getcwd()}")
                     except Exception as qpl_error:
                         print(f"⚠️ QPL processing error for opportunity {opportunity_id}: {qpl_error}")
@@ -1351,8 +1370,8 @@ class DIBBsCRMProcessor:
         reasons = []
         
         # DIBBs.py automation criteria:
-        # delivery_days >= 120 AND iso == "NO" AND sampling == "NO" AND 
-        # inspection_point == "DESTINATION" AND manufacturer contains "Parker"
+        # delivery_days >= configured minimum AND iso == configured requirement AND sampling == configured requirement AND 
+        # inspection_point == configured requirement AND manufacturer matches configured filters
         
         # Check delivery days (must be >= 120)
         delivery_days = pdf_data.get('delivery_days')
@@ -1378,12 +1397,18 @@ class DIBBsCRMProcessor:
         if inspection_point != "DESTINATION":
             reasons.append(f"Inspection point mismatch: automation requires DESTINATION, RFQ has '{inspection_point}'")
         
-        # Check manufacturer filters (must contain "Parker" for automation)
+        # Check manufacturer filters from settings
         mfr = pdf_data.get('mfr', '')
+        manufacturer_filters = self.settings.get('manufacturer_filters', [])
+        
         if not mfr or mfr == "Manually Check":
             reasons.append("Missing manufacturer information")
-        elif "parker" not in mfr.lower():
-            reasons.append(f"Manufacturer not in automation list: '{mfr}' does not contain 'Parker'")
+        elif manufacturer_filters:  # Only check if filters are configured
+            # Check if manufacturer matches any of the configured filters
+            mfr_matches = any(filter_name.lower() in mfr.lower() for filter_name in manufacturer_filters)
+            if not mfr_matches:
+                filter_list = ', '.join(manufacturer_filters)
+                reasons.append(f"Manufacturer not in automation list: '{mfr}' does not match any of [{filter_list}]")
         
         # Check for missing critical data
         critical_fields = ['request_number', 'nsn']

@@ -53,6 +53,9 @@
 <div class="card">
     <div class="card-body">
         {% if contacts %}
+        <div class="mb-2">
+            <small class="text-muted">Double-click any contact to view details</small>
+        </div>
         <div class="table-responsive">
             <table class="table table-hover">
                 <thead>
@@ -66,7 +69,9 @@
                 </thead>
                 <tbody>
                     {% for contact in contacts %}
-                    <tr>
+                    <tr style="cursor: pointer;" 
+                        ondblclick="viewContact({{ contact.id }})"
+                        title="Double-click to view contact details">
                         <td>
                             <strong>{{ contact.name }}</strong>
                             {% if contact.buyer_code %}

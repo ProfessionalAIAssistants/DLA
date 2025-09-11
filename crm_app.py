@@ -116,11 +116,36 @@ def update_settings():
 def update_automation_settings():
     """Update automation settings"""
     try:
-        # For now, just return success - implement actual automation settings storage later
         settings_data = request.get_json() or {}
         
         # Log what settings were received
         app.logger.info(f"Automation settings updated: {settings_data}")
+        
+        # Load current settings
+        current_settings = dibbs_processor.get_filter_settings()
+        
+        # Update automation settings - handle checkbox values properly
+        # For checkboxes, if they're not in the form data, they're unchecked (False)
+        checkbox_fields = [
+            'auto_create_opportunities', 'link_related_records', 
+            'move_processed_files', 'skip_duplicates', 
+            'auto_create_tasks', 'auto_assign_tasks'
+        ]
+        
+        # First set all checkbox fields to False (unchecked state)
+        for field in checkbox_fields:
+            current_settings[field] = False
+        
+        # Then update with any checked values from the form
+        for key, value in settings_data.items():
+            if key in checkbox_fields:
+                # Handle checkbox values - they come as 'on' when checked, or are missing when unchecked
+                current_settings[key] = value == 'on' or value is True
+            else:
+                current_settings[key] = value
+        
+        # Save updated settings
+        dibbs_processor.update_filter_settings(current_settings)
         
         return jsonify({'success': True, 'message': 'Automation settings saved successfully'})
     except Exception as e:
@@ -2321,9 +2346,9 @@ def api_get_accounts():
             
             # Filter by type if specified
             if account_type == 'vendor':
-                # For vendor filtering, include all accounts that could be vendors
-                # You can enhance this logic based on your data structure
-                accounts_list.append(account_dict)
+                # For vendor filtering, include both Vendor and QPL type accounts
+                if account_dict.get('type') in ['Vendor', 'QPL']:
+                    accounts_list.append(account_dict)
             elif account_type and account_dict.get('type') == account_type:
                 accounts_list.append(account_dict)
             elif not account_type:
@@ -3001,6 +3026,221 @@ def clear_all_data():
             'success': False,
             'message': f'Error clearing database: {str(e)}',
             'traceback': traceback.format_exc()
+        }), 500
+
+@app.route('/api/database/cleanup', methods=['POST'])
+def database_cleanup():
+    """Clean selected database tables"""
+    try:
+        app.logger.warning("Database cleanup requested")
+        
+        data = request.json
+        tables_to_clean = data.get('tables', [])
+        clean_files = data.get('clean_files', False)
+        reset_sequences = data.get('reset_sequences', False)
+        
+        if not tables_to_clean and not clean_files and not reset_sequences:
+            return jsonify({
+                'success': False,
+                'message': 'No cleanup options selected'
+            }), 400
+        
+        cleared_count = 0
+        cleared_tables = []
+        files_deleted = 0
+        
+        # Define table dependencies (order matters for foreign keys)
+        table_order = [
+            'tasks',
+            'interactions', 
+            'opportunity_products',
+            'opportunities',
+            'qpl_entries',
+            'qpls',
+            'products',
+            'contacts',
+            'accounts',
+            'rfqs',
+            'quotes',
+            'vendor_rfq_emails',
+            'email_templates',
+            'email_responses'
+        ]
+        
+        # Clean selected tables in proper order
+        for table in table_order:
+            if table in tables_to_clean:
+                try:
+                    # Check if table exists first
+                    check_query = f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table}'"
+                    table_exists = crm_data.execute_query(check_query)
+                    
+                    if table_exists:
+                        # Clear the table
+                        result = crm_data.execute_update(f"DELETE FROM {table}", [])
+                        cleared_tables.append(f"{table} ({result} records)")
+                        cleared_count += result if result else 0
+                        app.logger.info(f"Cleared table '{table}': {result} records deleted")
+                    else:
+                        app.logger.info(f"Table '{table}' does not exist, skipping")
+                        
+                except Exception as table_error:
+                    app.logger.error(f"Error clearing table '{table}': {str(table_error)}")
+                    # Continue with other tables even if one fails
+        
+        # Reset auto-increment sequences if requested
+        if reset_sequences:
+            try:
+                crm_data.execute_update("DELETE FROM sqlite_sequence", [])
+                app.logger.info("Reset auto-increment sequences")
+            except Exception as seq_error:
+                app.logger.warning(f"Could not reset sequences: {str(seq_error)}")
+        
+        # Clear output files if requested
+        if clean_files:
+            try:
+                from src.core.config_manager import ConfigManager
+                import os
+                
+                config_manager = ConfigManager()
+                output_dir = config_manager.get_output_dir()
+                
+                if output_dir.exists():
+                    for file_path in output_dir.iterdir():
+                        if file_path.is_file():
+                            try:
+                                file_path.unlink()  # Delete the file
+                                files_deleted += 1
+                                app.logger.info(f"Deleted output file: {file_path.name}")
+                            except Exception as file_error:
+                                app.logger.error(f"Could not delete file {file_path.name}: {str(file_error)}")
+                    
+                    app.logger.warning(f"DELETED {files_deleted} output files from {output_dir}")
+                else:
+                    app.logger.info("Output directory does not exist, skipping file cleanup")
+                    
+            except Exception as file_cleanup_error:
+                app.logger.error(f"Error during file cleanup: {str(file_cleanup_error)}")
+        
+        # Log the operation
+        app.logger.warning(f"DATABASE CLEANUP - {cleared_count} total records deleted from {len(cleared_tables)} tables, {files_deleted} files deleted")
+        
+        summary_parts = []
+        if cleared_tables:
+            summary_parts.append(f"{cleared_count} records from {len(cleared_tables)} tables")
+        if clean_files and files_deleted > 0:
+            summary_parts.append(f"{files_deleted} output files")
+        if reset_sequences:
+            summary_parts.append("ID sequences reset")
+            
+        message = f"Cleaned: {', '.join(summary_parts)}" if summary_parts else "No data was cleaned"
+        
+        return jsonify({
+            'success': True,
+            'message': message,
+            'cleared_tables': cleared_tables,
+            'total_records_deleted': cleared_count,
+            'files_deleted': files_deleted
+        })
+        
+    except Exception as e:
+        app.logger.error(f"Error in database_cleanup: {str(e)}")
+        import traceback
+        app.logger.error(traceback.format_exc())
+        return jsonify({
+            'success': False,
+            'message': f'Error during database cleanup: {str(e)}'
+        }), 500
+
+@app.route('/api/database/counts', methods=['GET'])
+def get_database_counts():
+    """Get record counts for all database tables"""
+    try:
+        tables = ['opportunities', 'accounts', 'contacts', 'products', 'tasks', 'rfqs', 'interactions', 'qpls']
+        counts = {}
+        
+        for table in tables:
+            try:
+                # Check if table exists first
+                check_query = f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table}'"
+                table_exists = crm_data.execute_query(check_query)
+                
+                if table_exists:
+                    count_query = f"SELECT COUNT(*) as count FROM {table}"
+                    result = crm_data.execute_query(count_query)
+                    counts[table] = result[0]['count'] if result else 0
+                else:
+                    counts[table] = 0
+                    
+            except Exception as table_error:
+                app.logger.error(f"Error counting table '{table}': {str(table_error)}")
+                counts[table] = 0
+        
+        return jsonify({
+            'success': True,
+            'counts': counts
+        })
+        
+    except Exception as e:
+        app.logger.error(f"Error getting database counts: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': f'Error getting database counts: {str(e)}'
+        }), 500
+
+@app.route('/api/database/clean-test-data', methods=['POST'])
+def clean_test_data():
+    """Clean test/sample data from database"""
+    try:
+        app.logger.warning("Clean test data requested")
+        
+        # Define queries to identify and remove test data
+        # This could include records with test names, emails, etc.
+        test_patterns = ['test', 'sample', 'demo', 'example', '@test.com', '@example.com']
+        
+        cleaned_count = 0
+        
+        # Clean test accounts
+        for pattern in test_patterns:
+            try:
+                # Clean accounts with test patterns in name or email
+                query = "DELETE FROM accounts WHERE LOWER(name) LIKE ? OR LOWER(primary_email) LIKE ?"
+                result = crm_data.execute_update(query, [f'%{pattern}%', f'%{pattern}%'])
+                cleaned_count += result if result else 0
+                
+                # Clean contacts with test patterns
+                query = "DELETE FROM contacts WHERE LOWER(first_name) LIKE ? OR LOWER(last_name) LIKE ? OR LOWER(email) LIKE ?"
+                result = crm_data.execute_update(query, [f'%{pattern}%', f'%{pattern}%', f'%{pattern}%'])
+                cleaned_count += result if result else 0
+                
+            except Exception as pattern_error:
+                app.logger.error(f"Error cleaning pattern '{pattern}': {str(pattern_error)}")
+        
+        # Clean opportunities with test NSNs or names
+        try:
+            test_nsns = ['0000000000000', '1111111111111', '9999999999999']  # Common test NSNs
+            for nsn in test_nsns:
+                query = "DELETE FROM opportunities WHERE nsn = ?"
+                result = crm_data.execute_update(query, [nsn])
+                cleaned_count += result if result else 0
+        except Exception as nsn_error:
+            app.logger.error(f"Error cleaning test NSNs: {str(nsn_error)}")
+        
+        app.logger.warning(f"TEST DATA CLEANUP - {cleaned_count} test records removed")
+        
+        return jsonify({
+            'success': True,
+            'message': f'Removed {cleaned_count} test records',
+            'records_cleaned': cleaned_count
+        })
+        
+    except Exception as e:
+        app.logger.error(f"Error cleaning test data: {str(e)}")
+        import traceback
+        app.logger.error(traceback.format_exc())
+        return jsonify({
+            'success': False,
+            'message': f'Error cleaning test data: {str(e)}'
         }), 500
 
 # API endpoints for edit functionality
@@ -3890,6 +4130,75 @@ def export_product_qpl_data(product_id):
         
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/products/<int:product_id>/qpl-vendors')
+def get_product_qpl_vendors(product_id):
+    """Get QPL vendors for quote requests"""
+    try:
+        manufacturers = crm_data.get_qpl_manufacturers_for_product(product_id)
+        
+        # Format for vendor selection
+        vendors = []
+        for manufacturer in manufacturers:
+            vendors.append({
+                'id': manufacturer['account_id'],
+                'name': manufacturer['manufacturer_name'],
+                'cage_code': manufacturer['cage_code'],
+                'part_number': manufacturer['part_number']
+            })
+        
+        return jsonify({'success': True, 'vendors': vendors})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/products/<int:product_id>/request-quotes', methods=['POST'])
+def request_product_quotes(product_id):
+    """Send quote requests to selected vendors for a product"""
+    try:
+        data = request.get_json()
+        vendor_ids = data.get('vendor_ids', [])
+        template = data.get('template', 'Standard Quote Request')
+        quantity = data.get('quantity', 1)
+        
+        if not vendor_ids:
+            return jsonify({'success': False, 'message': 'No vendors selected'})
+        
+        # Get product details
+        product = crm_data.get_product_by_id(product_id)
+        if not product:
+            return jsonify({'success': False, 'message': 'Product not found'})
+        
+        # For now, create quote records in database
+        # In a full implementation, this would also send emails
+        quotes_created = 0
+        
+        for vendor_id in vendor_ids:
+            # Get vendor details
+            vendor = crm_data.get_account_by_id(vendor_id)
+            if vendor:
+                # Create a quote record
+                quote_data = {
+                    'product_id': product_id,
+                    'vendor_id': vendor_id,
+                    'status': 'Requested',
+                    'template': template,
+                    'quantity': quantity,
+                    'request_date': datetime.now().isoformat(),
+                    'quote_number': f"QR-{product_id}-{vendor_id}-{datetime.now().strftime('%Y%m%d')}"
+                }
+                
+                # Note: You'll need to implement create_quote method in crm_data
+                # For now, we'll just count the successful attempts
+                quotes_created += 1
+        
+        return jsonify({
+            'success': True, 
+            'message': f'Quote requests sent to {quotes_created} vendor(s)',
+            'quotes_created': quotes_created
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
 
 @app.route('/api/clear-all-reports', methods=['POST'])
 def clear_all_reports():

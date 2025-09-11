@@ -147,6 +147,7 @@
                                     <option value="Customer">Customer</option>
                                     <option value="Partner">Partner</option>
                                     <option value="Vendor">Vendor</option>
+                                    <option value="QPL">QPL</option>
                                     <option value="Government">Government</option>
                                 </select>
                             </div>
@@ -233,6 +234,7 @@
                                     <option value="Customer">Customer</option>
                                     <option value="Partner">Partner</option>
                                     <option value="Vendor">Vendor</option>
+                                    <option value="QPL">QPL</option>
                                     <option value="Government">Government</option>
                                 </select>
                             </div>
@@ -427,5 +429,29 @@ function deleteAccount(accountId, accountName) {
         });
     }
 }
+
+// Handle URL parameters for pre-populating forms
+document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    // If 'add' parameter is present, show the create modal
+    if (urlParams.get('add') === 'true') {
+        const modal = new bootstrap.Modal(document.getElementById('createAccountModal'));
+        modal.show();
+        
+        // Pre-populate account type if specified
+        const accountType = urlParams.get('type');
+        if (accountType) {
+            const typeSelect = document.getElementById('accountType');
+            if (typeSelect) {
+                typeSelect.value = accountType;
+            }
+        }
+        
+        // Clean up URL parameters
+        const cleanUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, cleanUrl);
+    }
+});
 </script>
 {% endblock %}

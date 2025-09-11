@@ -584,6 +584,38 @@ class CRMData:
         query = f"INSERT INTO opportunities ({columns}) VALUES ({placeholders})"
         return db.execute_update(query, list(valid_fields.values()))
     
+    def get_opportunity_by_name(self, name):
+        """Check if an opportunity already exists by name"""
+        query = "SELECT id FROM opportunities WHERE name = ?"
+        result = db.execute_query(query, [name])
+        return result[0] if result else None
+    
+    def update_opportunity(self, opportunity_id, **kwargs):
+        """Update an existing opportunity"""
+        fields = ['stage', 'state', 'bid_price', 'purchase_costs', 'packaging_shipping',
+                 'bid_date', 'close_date', 'quantity', 'unit', 'mfr', 'fob', 
+                 'packaging_type', 'iso', 'sampling', 'days_aod', 'packaging_info',
+                 'payment', 'buyer', 'skipped', 'document', 'product_id', 
+                 'contact_id', 'account_id', 'name', 'description', 'delivery_days', 'amount',
+                 'payment_history', 'pdf_file_path']
+        
+        valid_fields = {k: v for k, v in kwargs.items() if k in fields and v is not None}
+        
+        # Calculate profit if we have the required fields
+        if all(field in valid_fields for field in ['bid_price', 'purchase_costs', 'packaging_shipping', 'quantity']):
+            profit = (valid_fields['bid_price'] - valid_fields['purchase_costs'] - valid_fields['packaging_shipping']) * valid_fields['quantity']
+            valid_fields['profit'] = profit
+        
+        if not valid_fields:
+            return opportunity_id
+        
+        set_clause = ', '.join([f"{k} = ?" for k in valid_fields.keys()])
+        query = f"UPDATE opportunities SET {set_clause} WHERE id = ?"
+        
+        params = list(valid_fields.values()) + [opportunity_id]
+        db.execute_update(query, params)
+        return opportunity_id
+    
     def get_opportunities(self, filters=None, limit=None):
         """Get opportunities with calculated fields and relationships"""
         query = """
@@ -2640,7 +2672,7 @@ class CRMData:
                 q.part_number,
                 q.created_date,
                 q.id
-            FROM qpl_entries q 
+            FROM qpls q 
             JOIN accounts a ON q.account_id = a.id 
             WHERE q.product_id = ?
             ORDER BY a.name
@@ -2712,8 +2744,8 @@ class CRMData:
         
         placeholders = ','.join(['?' for _ in account_ids])
         query = f"""
-            SELECT id, name, type, cage, address, city, state, zip_code, 
-                   phone, email, website, parent_co
+            SELECT id, name, type, cage, billing_address, location, 
+                   email, website, parent_co, created_date, is_active
             FROM accounts 
             WHERE id IN ({placeholders}) AND is_active = 1
             ORDER BY name
