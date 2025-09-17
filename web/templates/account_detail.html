@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from 'macros/account_macros.html' import account_type_badge, quick_stats_card, account_info_card, edit_account_modal %}
 
 {% block title %}{{ account.name }} - CDE Prosperity{% endblock %}
 
@@ -6,9 +7,7 @@
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
     <h1 class="h2">
         <i class="fas fa-building me-2"></i>{{ account.name }}
-        <span class="badge bg-{{ 'primary' if account.type == 'Customer' else 'warning' if account.type == 'Prospect Customer' else 'info' if account.type == 'Prospect Vendor' else 'success' if account.type == 'Vendor' else 'dark' if account.type == 'QPL' else 'danger' if account.type == 'Competitor' else 'secondary' }} ms-2">
-            {{ account.type or 'N/A' }}
-        </span>
+        {{ account_type_badge(account.type, 'ms-2') }}
     </h1>
     <div class="btn-toolbar mb-2 mb-md-0">
         <div class="btn-group me-2">
@@ -52,11 +51,7 @@
                             </tr>
                             <tr>
                                 <td><strong>Type:</strong></td>
-                                <td>
-                                    <span class="badge bg-{{ 'primary' if account.type == 'Customer' else 'warning' if account.type == 'Prospect Customer' else 'info' if account.type == 'Prospect Vendor' else 'success' if account.type == 'Vendor' else 'dark' if account.type == 'QPL' else 'danger' if account.type == 'Competitor' else 'secondary' }}">
-                                        {{ account.type or 'N/A' }}
-                                    </span>
-                                </td>
+                                <td>{{ account_type_badge(account.type) }}</td>
                             </tr>
                             <tr>
                                 <td><strong>Location:</strong></td>
@@ -110,6 +105,28 @@
                                     {% endif %}
                                 </td>
                             </tr>
+                            {% if account.type == 'Vendor' %}
+                            <tr>
+                                <td><strong>Primary Contact:</strong></td>
+                                <td>
+                                    {% if primary_contact %}
+                                        <a href="{{ url_for('contact_detail', contact_id=primary_contact.id) }}" class="text-decoration-none">
+                                            <strong>{{ primary_contact.first_name }} {{ primary_contact.last_name }}</strong>
+                                        </a>
+                                        <br>
+                                        <small class="text-muted">{{ primary_contact.title or 'Contact' }}</small>
+                                        {% if primary_contact.email %}
+                                        <br>
+                                        <a href="mailto:{{ primary_contact.email }}" class="text-muted text-decoration-none">
+                                            <i class="fas fa-envelope me-1"></i>{{ primary_contact.email }}
+                                        </a>
+                                        {% endif %}
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endif %}
                         </table>
                     </div>
                 </div>
@@ -129,6 +146,63 @@
                 {% endif %}
             </div>
         </div>
+
+        <!-- Child Accounts (for parent companies) -->
+        {% if child_accounts %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-sitemap me-2"></i>Child Companies ({{ child_accounts|length }})
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Company Name</th>
+                                <th>Type</th>
+                                <th>Location</th>
+                                <th>Contacts</th>
+                                <th>Opportunities</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for child in child_accounts %}
+                            <tr>
+                                <td>
+                                    <a href="{{ url_for('account_detail', account_id=child.id) }}" class="text-decoration-none fw-semibold">
+                                        {{ child.name }}
+                                    </a>
+                                </td>
+                                <td>
+                                    {% if child.type %}
+                                        {{ account_type_badge(child.type) }}
+                                    {% else %}
+                                        <span class="text-muted">N/A</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ child.location or 'N/A' }}</td>
+                                <td>
+                                    <span class="badge bg-info">{{ child.contact_count or 0 }}</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-success">{{ child.opportunity_count or 0 }}</span>
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('account_detail', account_id=child.id) }}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye me-1"></i>View
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
 
         <!-- Contacts -->
         <div class="card mb-4">
@@ -202,7 +276,7 @@
         </div>
 
         <!-- QPLs (if applicable) -->
-        {% if account.type in ['QPL', 'Vendor'] %}
+        {% if account.type == 'QPL' %}
         <div class="card mb-4">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="card-title mb-0">
@@ -219,9 +293,8 @@
                         <thead>
                             <tr>
                                 <th>NSN</th>
-                                <th>Product Name</th>
-                                <th>Description</th>
-                                <th>CAGE Code</th>
+                                <th>Product Description</th>
+                                <th>FSC</th>
                                 <th>Date Added</th>
                                 <th>Actions</th>
                             </tr>
@@ -230,17 +303,24 @@
                             {% for product in qpl_products %}
                             <tr>
                                 <td>
-                                    <span class="badge bg-primary">{{ product.nsn or 'N/A' }}</span>
+                                    {% if product.nsn %}
+                                    <span class="fw-bold text-primary">{{ product.nsn }}</span>
+                                    {% else %}
+                                    <span class="text-muted">N/A</span>
+                                    {% endif %}
                                 </td>
                                 <td>
-                                    <strong>{{ product.product_name or 'N/A' }}</strong>
-                                </td>
-                                <td>
-                                    <span class="text-muted">{{ product.description or 'No description' }}</span>
+                                    {% if product.nsn %}
+                                    <a href="/products/{{ product.nsn }}" class="text-decoration-none">
+                                        <strong>{{ product.product_name or product.description or 'O-RING' }}</strong>
+                                    </a>
+                                    {% else %}
+                                    <strong>{{ product.product_name or product.description or 'O-RING' }}</strong>
+                                    {% endif %}
                                 </td>
                                 <td>
                                     {% if product.cage_code %}
-                                    <span class="badge bg-info">{{ product.cage_code }}</span>
+                                    <span class="fw-bold text-info fs-6">{{ product.cage_code }}</span>
                                     {% else %}
                                     <span class="text-muted">N/A</span>
                                     {% endif %}
@@ -254,10 +334,17 @@
                                 </td>
                                 <td>
                                     <div class="btn-group btn-group-sm">
-                                        <button type="button" class="btn btn-outline-primary btn-sm" 
+                                        {% if product.nsn %}
+                                        <a href="/products/{{ product.nsn }}" class="btn btn-outline-primary btn-sm" 
                                                 title="View Product Details">
                                             <i class="fas fa-eye"></i>
+                                        </a>
+                                        {% else %}
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" disabled
+                                                title="No NSN available">
+                                            <i class="fas fa-eye"></i>
                                         </button>
+                                        {% endif %}
                                         <button type="button" class="btn btn-outline-danger btn-sm" 
                                                 onclick="deleteQPLEntry({{ product.id }})"
                                                 title="Remove from QPL">
@@ -280,81 +367,234 @@
             </div>
         </div>
         {% endif %}
+
+        <!-- QPL-Vendor Relationships -->
+        {% if account.type == 'QPL' or account.type == 'Vendor' %}
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    {% if account.type == 'QPL' %}
+                    <i class="fas fa-truck me-2"></i>Approved Vendors
+                    {% else %}
+                    <i class="fas fa-industry me-2"></i>QPL Manufacturers
+                    {% endif %}
+                </h5>
+                <button type="button" class="btn btn-primary btn-sm" onclick="showAddRelationshipModal()">
+                    <i class="fas fa-plus me-1"></i>
+                    {% if account.type == 'QPL' %}Add Vendor{% else %}Add QPL Manufacturer{% endif %}
+                </button>
+            </div>
+            <div class="card-body">
+                {% if account.type == 'QPL' %}
+                    <!-- Vendors who can supply this QPL manufacturer's parts -->
+                    {% if qpl_vendors %}
+                    <div class="table-responsive">
+                        <table class="table table-striped" id="vendorsTable">
+                            <thead>
+                                <tr>
+                                    <th>Vendor Name</th>
+                                    <th>Location</th>
+                                    <th>Contact</th>
+                                    <th>Relationship Since</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for vendor in qpl_vendors %}
+                                <tr>
+                                    <td>
+                                        <a href="/account/{{ vendor.id }}" class="text-decoration-none">
+                                            <strong>{{ vendor.name }}</strong>
+                                        </a>
+                                        <br><small class="text-muted">{{ vendor.type }}</small>
+                                    </td>
+                                    <td>{{ vendor.location or 'N/A' }}</td>
+                                    <td>
+                                        {% if vendor.email %}
+                                        <a href="mailto:{{ vendor.email }}" class="text-decoration-none">{{ vendor.email }}</a>
+                                        {% else %}
+                                        N/A
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ vendor.relationship_created[:10] if vendor.relationship_created else 'N/A' }}</td>
+                                    <td>
+                                        <button class="btn btn-outline-danger btn-sm" 
+                                                onclick="removeRelationship({{ account.id }}, {{ vendor.id }})"
+                                                title="Remove relationship">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-truck fa-2x text-muted mb-3"></i>
+                        <h6 class="text-muted">No Approved Vendors</h6>
+                        <p class="text-muted">No vendors are currently approved to supply this manufacturer's parts.</p>
+                    </div>
+                    {% endif %}
+                {% else %}
+                    <!-- QPL manufacturers this vendor can supply parts for -->
+                    {% if vendor_qpl_accounts %}
+                    <div class="table-responsive">
+                        <table class="table table-striped" id="qplManufacturersTable">
+                            <thead>
+                                <tr>
+                                    <th>Manufacturer</th>
+                                    <th>CAGE Code</th>
+                                    <th>Location</th>
+                                    <th>Relationship Since</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for qpl_account in vendor_qpl_accounts %}
+                                <tr>
+                                    <td>
+                                        <a href="/account/{{ qpl_account.id }}" class="text-decoration-none">
+                                            <strong>{{ qpl_account.name }}</strong>
+                                        </a>
+                                        <br><small class="text-muted">{{ qpl_account.type }}</small>
+                                    </td>
+                                    <td>
+                                        {% if qpl_account.cage %}
+                                        <span class="badge bg-info">{{ qpl_account.cage }}</span>
+                                        {% else %}
+                                        N/A
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ qpl_account.location or 'N/A' }}</td>
+                                    <td>{{ qpl_account.relationship_created[:10] if qpl_account.relationship_created else 'N/A' }}</td>
+                                    <td>
+                                        <button class="btn btn-outline-danger btn-sm" 
+                                                onclick="removeRelationship({{ qpl_account.id }}, {{ account.id }})"
+                                                title="Remove relationship">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-industry fa-2x text-muted mb-3"></i>
+                        <h6 class="text-muted">No QPL Manufacturers</h6>
+                        <p class="text-muted">This vendor is not currently approved to supply any QPL manufacturer's parts.</p>
+                    </div>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- QPL Qualifications for Vendor Accounts -->
+        {% if account.type == 'Vendor' and vendor_qpl_qualifications %}
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-certificate me-2"></i>QPL Qualifications
+                </h5>
+                <small class="text-muted">{{ vendor_qpl_qualifications|length }} qualified products</small>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped" id="qplQualificationsTable">
+                        <thead>
+                            <tr>
+                                <th>NSN</th>
+                                <th>Product Description</th>
+                                <th>FSC</th>
+                                <th>Date Added</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for qualification in vendor_qpl_qualifications %}
+                            <tr>
+                                <td>
+                                    <span class="fw-bold text-primary">{{ qualification.part_number }}</span>
+                                </td>
+                                <td>
+                                    <a href="/account/{{ qualification.account_id }}" class="text-decoration-none">
+                                        <strong>O-RING</strong>
+                                    </a>
+                                </td>
+                                <td>
+                                    {% if qualification.cage_code %}
+                                    <span class="fw-bold text-info fs-6">{{ qualification.cage_code }}</span>
+                                    {% else %}
+                                    <span class="text-muted">N/A</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <small class="text-muted">{{ qualification.created_date[:10] if qualification.created_date else 'N/A' }}</small>
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="/account/{{ qualification.account_id }}" class="btn btn-outline-primary btn-sm" 
+                                                title="View Manufacturer Details">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="mt-3">
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        This vendor is qualified to supply the above QPL parts from associated manufacturers.
+                    </small>
+                </div>
+            </div>
+        </div>
+        {% endif %}
     </div>
 
     <!-- Sidebar -->
     <div class="col-xl-4">
         <!-- Quick Stats -->
-        <div class="card mb-4">
-            <div class="card-header">
-                <h6 class="card-title mb-0">
-                    <i class="fas fa-chart-pie me-2"></i>Quick Stats
-                </h6>
-            </div>
-            <div class="card-body">
-                <div class="row text-center">
-                    <div class="col-6">
-                        <div class="p-2">
-                            <h4 class="text-primary mb-0">{{ contacts|length }}</h4>
-                            <small class="text-muted">Contacts</small>
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="p-2">
-                            <h4 class="text-success mb-0">{{ opportunities|length }}</h4>
-                            <small class="text-muted">Opportunities</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+        {{ quick_stats_card(contacts|length, opportunities|length) }}
 
         <!-- Account Info -->
-        <div class="card mb-4">
-            <div class="card-header">
-                <h6 class="card-title mb-0">
-                    <i class="fas fa-calendar me-2"></i>Account Information
-                </h6>
-            </div>
-            <div class="card-body">
-                <table class="table table-borderless table-sm">
-                    <tr>
-                        <td><strong>Created:</strong></td>
-                        <td>{{ account.created_date[:10] if account.created_date else 'N/A' }}</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Account ID:</strong></td>
-                        <td>{{ account.id }}</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Status:</strong></td>
-                        <td>
-                            <span class="badge bg-success">Active</span>
-                        </td>
-                    </tr>
-                </table>
-            </div>
-        </div>
+        {{ account_info_card(account) }}
 
         <!-- Media -->
         {% if account.image or account.video %}
-        <div class="card mb-4">
-            <div class="card-header">
-                <h6 class="card-title mb-0">
+        <div class="card mb-4 border-0 shadow-sm">
+            <div class="card-header bg-warning text-dark border-0">
+                <h6 class="card-title mb-0 fw-bold">
                     <i class="fas fa-image me-2"></i>Media
                 </h6>
             </div>
             <div class="card-body">
                 {% if account.image %}
-                <div class="mb-3">
-                    <strong>Image:</strong>
-                    <br><small class="text-muted">{{ account.image }}</small>
+                <div class="d-flex align-items-center mb-3">
+                    <div class="bg-warning bg-opacity-10 rounded-circle p-2 me-3">
+                        <i class="fas fa-image text-warning"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <small class="text-muted fw-medium">Image</small>
+                        <div class="text-dark small">{{ account.image }}</div>
+                    </div>
                 </div>
                 {% endif %}
                 {% if account.video %}
-                <div class="mb-3">
-                    <strong>Video:</strong>
-                    <br><small class="text-muted">{{ account.video }}</small>
+                <div class="d-flex align-items-center">
+                    <div class="bg-warning bg-opacity-10 rounded-circle p-2 me-3">
+                        <i class="fas fa-video text-warning"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <small class="text-muted fw-medium">Video</small>
+                        <div class="text-dark small">{{ account.video }}</div>
+                    </div>
                 </div>
                 {% endif %}
             </div>
@@ -362,179 +602,271 @@
         {% endif %}
 
         <!-- Recent Activity -->
-        <div class="card">
-            <div class="card-header">
-                <h6 class="card-title mb-0">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-info text-white border-0">
+                <h6 class="card-title mb-0 fw-bold">
                     <i class="fas fa-clock me-2"></i>Recent Activity
                 </h6>
             </div>
             <div class="card-body">
-                <div class="text-center py-4">
-                    <i class="fas fa-clock fa-2x text-muted mb-3"></i>
-                    <h6 class="text-muted">No Recent Activity</h6>
-                    <p class="text-muted">Activity tracking will appear here.</p>
-                </div>
+                {% if activity_data %}
+                    <div class="timeline">
+                        {% for activity in activity_data[:10] %}
+                        <div class="timeline-item d-flex mb-3">
+                            <div class="timeline-marker me-3">
+                                <div class="bg-{{ activity.color }} rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                    <i class="{{ activity.icon }} text-white"></i>
+                                </div>
+                            </div>
+                            <div class="timeline-content flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <p class="mb-1 fw-semibold">{{ activity.description }}</p>
+                                        <small class="text-muted">
+                                            <i class="fas fa-calendar-alt me-1"></i>
+                                            {% if activity.date != 'Unknown' %}
+                                                {% if activity.date.strftime is defined %}
+                                                    {{ activity.date.strftime('%B %d, %Y at %I:%M %p') }}
+                                                {% else %}
+                                                    {{ activity.date }}
+                                                {% endif %}
+                                            {% else %}
+                                                Unknown date
+                                            {% endif %}
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <div class="bg-info bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                            <i class="fas fa-clock text-info fa-2x"></i>
+                        </div>
+                        <h6 class="text-dark fw-bold mb-2">No Recent Activity</h6>
+                        <p class="text-muted small mb-0">Activity tracking will appear here.</p>
+                    </div>
+                {% endif %}
             </div>
         </div>
     </div>
 </div>
 
-<script>
-// Handle contact deletion
-document.addEventListener('DOMContentLoaded', function() {
-    // Add event listeners to delete buttons
-    document.querySelectorAll('.delete-contact-btn').forEach(button => {
-        button.addEventListener('click', function() {
-            const contactId = this.dataset.contactId;
-            const contactName = this.dataset.contactName;
-            deleteContact(contactId, contactName);
-        });
-    });
-});
+<!-- Modals -->
+{{ edit_account_modal() }}
 
-function deleteContact(contactId, contactName) {
-    if (confirm(`Are you sure you want to delete contact "${contactName}"? This action cannot be undone.`)) {
-        fetch(`/api/contacts/${contactId}`, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(response => {
-            if (!response.ok) {
-                // Try to parse error message from response
-                return response.json().then(data => {
-                    throw new Error(data.error || 'Failed to delete contact');
-                });
-            }
-            return response.json();
-        })
-        .then(data => {
-            // Show success message
-            alert('Contact deleted successfully');
-            // Reload the page to update the contacts list
-            window.location.reload();
-        })
-        .catch(error => {
-            console.error('Error deleting contact:', error);
-            alert(`Error deleting contact: ${error.message}`);
-        });
-    }
-}
+{% endblock %}
 
-function deleteAccount(accountId) {
-    if (confirm('Are you sure you want to delete this account? This will also delete all associated contacts and data. This action cannot be undone.')) {
-        fetch('/api/accounts/' + accountId, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert('Account deleted successfully!');
-                window.location.href = '/accounts';
-            } else {
-                alert('Failed to delete account: ' + (data.error || 'Unknown error'));
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Failed to delete account');
-        });
-    }
-}
+{% block scripts %}
+<!-- Load jQuery first for DataTables -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
-<!-- Edit Account Modal -->
-<div class="modal fade" id="editAccountModal" tabindex="-1" aria-labelledby="editAccountModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
+<!-- Load DataTables -->
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css">
+<script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+<script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
+
+<!-- Add Relationship Modal -->
+<div class="modal fade" id="addRelationshipModal" tabindex="-1" aria-labelledby="addRelationshipModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="editAccountModalLabel">Edit Account</h5>
+                <h5 class="modal-title" id="addRelationshipModalLabel">
+                    {% if account.type == 'QPL' %}Add Approved Vendor{% else %}Add QPL Manufacturer{% endif %}
+                </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form id="editAccountForm">
-                <div class="modal-body">
-                    <div class="row g-3">
-                        <div class="col-md-12">
-                            <label for="editAccountName" class="form-label">Account Name *</label>
-                            <input type="text" class="form-control" id="editAccountName" name="name" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="editAccountType" class="form-label">Account Type</label>
-                            <select class="form-select" id="editAccountType" name="type">
-                                <option value="">Select Type</option>
-                                <option value="Customer">Customer</option>
-                                <option value="Prospect">Prospect</option>
-                                <option value="Partner">Partner</option>
-                                <option value="Vendor">Vendor</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="editAccountIndustry" class="form-label">Industry</label>
-                            <input type="text" class="form-control" id="editAccountIndustry" name="industry">
-                        </div>
-                        <div class="col-md-12">
-                            <label for="editAccountDescription" class="form-label">Description</label>
-                            <textarea class="form-control" id="editAccountDescription" name="description" rows="3"></textarea>
+            <div class="modal-body">
+                <form id="addRelationshipForm">
+                    <div class="mb-3">
+                        <label for="relationshipAccount" class="form-label">
+                            {% if account.type == 'QPL' %}Select Vendor:{% else %}Select QPL Manufacturer:{% endif %}
+                        </label>
+                        <select class="form-select" id="relationshipAccount" name="relationshipAccount" onchange="toggleNewAccountForm()">
+                            <option value="">Choose...</option>
+                            <option value="new">+ Create New {% if account.type == 'QPL' %}Vendor{% else %}QPL Manufacturer{% endif %}</option>
+                        </select>
+                    </div>
+                    
+                    <!-- New Account Form (hidden by default) -->
+                    <div id="newAccountForm" style="display: none;">
+                        <div class="border-top pt-3 mb-3">
+                            <h6>Create New {% if account.type == 'QPL' %}Vendor{% else %}QPL Manufacturer{% endif %}</h6>
+                            <div class="mb-3">
+                                <label for="newAccountName" class="form-label">Account Name *</label>
+                                <input type="text" class="form-control" id="newAccountName" name="newAccountName" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="newAccountLocation" class="form-label">Location</label>
+                                <input type="text" class="form-control" id="newAccountLocation" name="newAccountLocation">
+                            </div>
+                            <div class="mb-3">
+                                <label for="newAccountEmail" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="newAccountEmail" name="newAccountEmail">
+                            </div>
+                            {% if account.type != 'QPL' %}
+                            <div class="mb-3">
+                                <label for="newAccountCage" class="form-label">CAGE Code</label>
+                                <input type="text" class="form-control" id="newAccountCage" name="newAccountCage" maxlength="5">
+                            </div>
+                            {% endif %}
                         </div>
                     </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Save Changes</button>
-                </div>
-            </form>
+                    <div class="mb-3">
+                        <label for="relationshipNotes" class="form-label">Notes (Optional)</label>
+                        <textarea class="form-control" id="relationshipNotes" name="relationshipNotes" rows="3" 
+                                  placeholder="Add any notes about this relationship..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="addRelationship()">Add Relationship</button>
+            </div>
         </div>
     </div>
 </div>
 
-function editAccount(accountId) {
-    // Fetch current account data
-    fetch(`/api/accounts/${accountId}`)
+<!-- Load account detail JavaScript after jQuery -->
+<script src="{{ url_for('static', filename='js/account_detail.js') }}"></script>
+
+<!-- QPL-Vendor Relationship JavaScript -->
+<script>
+function toggleNewAccountForm() {
+    const select = document.getElementById('relationshipAccount');
+    const newAccountForm = document.getElementById('newAccountForm');
+    
+    if (select.value === 'new') {
+        newAccountForm.style.display = 'block';
+        // Remove required attribute from select since we're creating new
+        select.removeAttribute('required');
+    } else {
+        newAccountForm.style.display = 'none';
+        // Clear new account form
+        document.getElementById('newAccountName').value = '';
+        document.getElementById('newAccountLocation').value = '';
+        document.getElementById('newAccountEmail').value = '';
+        const cageField = document.getElementById('newAccountCage');
+        if (cageField) cageField.value = '';
+        // Restore required attribute to select
+        select.setAttribute('required', 'required');
+    }
+}
+
+function showAddRelationshipModal() {
+    // Load available accounts for relationship
+    const accountType = '{{ account.type }}';
+    const targetType = accountType === 'QPL' ? 'Vendor' : 'QPL';
+    
+    fetch(`/api/accounts/${targetType.toLowerCase()}`)
         .then(response => response.json())
-        .then(account => {
-            if (account.error) {
-                alert('Error: ' + account.error);
-                return;
-            }
+        .then(data => {
+            const select = document.getElementById('relationshipAccount');
+            select.innerHTML = '<option value="">Choose...</option>';
+            select.innerHTML += `<option value="new">+ Create New ${targetType}</option>`;
             
-            // Populate form fields
-            document.getElementById('editAccountName').value = account.name || '';
-            document.getElementById('editAccountType').value = account.type || '';
-            document.getElementById('editAccountIndustry').value = account.industry || '';
-            document.getElementById('editAccountDescription').value = account.description || '';
+            // Check if data has accounts array
+            const accounts = data.accounts || data;
+            accounts.forEach(account => {
+                const option = document.createElement('option');
+                option.value = account.id;
+                option.textContent = `${account.name} ${account.location ? '(' + account.location + ')' : ''}`;
+                select.appendChild(option);
+            });
             
-            // Store account ID for form submission
-            document.getElementById('editAccountForm').dataset.accountId = accountId;
+            // Reset form
+            document.getElementById('newAccountForm').style.display = 'none';
+            toggleNewAccountForm();
             
-            // Show the modal
-            new bootstrap.Modal(document.getElementById('editAccountModal')).show();
+            // Show modal
+            new bootstrap.Modal(document.getElementById('addRelationshipModal')).show();
         })
         .catch(error => {
-            console.error('Error fetching account:', error);
-            alert('Error loading account details. Please try again.');
+            console.error('Error loading accounts:', error);
+            alert('Error loading available accounts. Please try again.');
         });
 }
 
-// Handle edit account form submission
-document.getElementById('editAccountForm').addEventListener('submit', function(e) {
-    e.preventDefault();
+async function createNewAccount() {
+    const accountType = '{{ account.type }}';
+    const targetType = accountType === 'QPL' ? 'Vendor' : 'QPL';
     
-    const accountId = this.dataset.accountId;
-    const formData = new FormData(this);
-    const data = {};
+    const newAccountData = {
+        name: document.getElementById('newAccountName').value,
+        type: targetType,
+        location: document.getElementById('newAccountLocation').value,
+        email: document.getElementById('newAccountEmail').value
+    };
     
-    // Convert FormData to JSON, excluding empty values
-    for (let [key, value] of formData.entries()) {
-        if (value !== '') {
-            data[key] = value;
-        }
+    // Add CAGE code for QPL accounts
+    if (targetType === 'QPL') {
+        newAccountData.cage = document.getElementById('newAccountCage').value;
     }
     
-    fetch(`/api/accounts/${accountId}`, {
-        method: 'PUT',
+    // Validate required fields
+    if (!newAccountData.name) {
+        alert('Account name is required.');
+        return null;
+    }
+    
+    try {
+        const response = await fetch('/api/create_account', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(newAccountData)
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+            return result.account_id;
+        } else {
+            alert('Error creating account: ' + (result.error || 'Unknown error'));
+            return null;
+        }
+    } catch (error) {
+        console.error('Error creating account:', error);
+        alert('Error creating account. Please try again.');
+        return null;
+    }
+}
+
+async function addRelationship() {
+    const accountType = '{{ account.type }}';
+    const currentAccountId = {{ account.id }};
+    let targetAccountId = document.getElementById('relationshipAccount').value;
+    
+    // Handle new account creation
+    if (targetAccountId === 'new') {
+        targetAccountId = await createNewAccount();
+        if (!targetAccountId) {
+            return; // Account creation failed
+        }
+    } else if (!targetAccountId) {
+        alert('Please select an account or create a new one.');
+        return;
+    }
+    
+    // Determine the relationship direction
+    let qplAccountId, vendorAccountId;
+    if (accountType === 'QPL') {
+        qplAccountId = currentAccountId;
+        vendorAccountId = targetAccountId;
+    } else {
+        qplAccountId = targetAccountId;
+        vendorAccountId = currentAccountId;
+    }
+    
+    const data = {
+        qpl_account_id: qplAccountId,
+        vendor_account_id: vendorAccountId
+    };
+    
+    fetch('/api/qpl-vendors', {
+        method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
@@ -542,58 +874,57 @@ document.getElementById('editAccountForm').addEventListener('submit', function(e
     })
     .then(response => response.json())
     .then(result => {
-        if (result.error) {
-            alert('Error: ' + result.error);
+        if (result.success) {
+            // Close modal
+            bootstrap.Modal.getInstance(document.getElementById('addRelationshipModal')).hide();
+            // Reload page to show updated relationships
+            location.reload();
         } else {
-            alert('Account updated successfully!');
-            bootstrap.Modal.getInstance(document.getElementById('editAccountModal')).hide();
-            location.reload(); // Refresh the page to show updates
+            alert('Error: ' + (result.error || 'Failed to create relationship'));
         }
     })
     .catch(error => {
-        console.error('Error:', error);
-        alert('Error updating account. Please try again.');
+        console.error('Error creating relationship:', error);
+        alert('Error creating relationship. Please try again.');
     });
-});
-
-function deleteQPLEntry(qplId) {
-    if (confirm('Are you sure you want to remove this product from the QPL? This action cannot be undone.')) {
-        fetch('/api/qpl/' + qplId, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert('QPL entry removed successfully!');
-                window.location.reload();
-            } else {
-                alert('Failed to remove QPL entry: ' + (data.error || 'Unknown error'));
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Failed to remove QPL entry');
-        });
-    }
 }
 
-// Initialize DataTables
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialize QPL table if it exists
-    if (document.getElementById('qplTable')) {
-        $('#qplTable').DataTable({
-            responsive: true,
-            pageLength: 10,
-            order: [[0, 'asc']], // Sort by NSN
-            columnDefs: [
-                { orderable: false, targets: [5] } // Disable sorting for Actions column
-            ]
-        });
+function removeRelationship(qplAccountId, vendorAccountId) {
+    if (!confirm('Are you sure you want to remove this relationship?')) {
+        return;
     }
-});
+    
+    fetch(`/api/qpl-vendors/${qplAccountId}/${vendorAccountId}`, {
+        method: 'DELETE'
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            // Reload page to show updated relationships
+            location.reload();
+        } else {
+            alert('Error: ' + (result.error || 'Failed to remove relationship'));
+        }
+    })
+    .catch(error => {
+        console.error('Error removing relationship:', error);
+        alert('Error removing relationship. Please try again.');
+    });
+}
 </script>
 
+<style>
+/* Custom styles for enhanced visual appeal */
+.card {
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+}
+
+.btn {
+    transition: all 0.3s ease;
+}
+</style>
 {% endblock %}

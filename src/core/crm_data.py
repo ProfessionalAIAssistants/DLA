@@ -66,6 +66,19 @@ class CRMData:
         results = db.execute_query(query, [account_id])
         return results[0] if results else None
     
+    def get_child_accounts(self, parent_company_name):
+        """Get all accounts that have this account as their parent company"""
+        query = """
+        SELECT a.*, 
+               (SELECT COUNT(*) FROM contacts c WHERE c.account_id = a.id) as contact_count,
+               (SELECT COUNT(*) FROM opportunities o WHERE o.account_id = a.id) as opportunity_count
+        FROM accounts a 
+        WHERE a.parent_co = ? AND a.is_active = 1 
+        ORDER BY a.name
+        """
+        results = db.execute_query(query, [parent_company_name])
+        return results if results else []
+    
     def update_account(self, account_id, **kwargs):
         """Update an existing account"""
         # Updated to match actual table schema
@@ -198,28 +211,29 @@ class CRMData:
     
     def update_contact(self, contact_id, **kwargs):
         """Update an existing contact"""
-        # Updated to match actual table schema
-        fields = ['first_name', 'last_name', 'name', 'title', 'email', 'phone', 'mobile', 
+        # Updated to match actual table schema - removed 'name' field which doesn't exist
+        fields = ['first_name', 'last_name', 'title', 'email', 'phone', 'mobile', 
                  'account_id', 'department', 'reports_to', 'lead_source', 'address', 
-                 'description', 'owner', 'quality', 'status', 'frequency_days', 
-                 'last_communication', 'next_communication', 'buyer_code', 'fax']
+                 'description', 'owner', 'buyer_code', 'fax']
         
         valid_fields = {k: v for k, v in kwargs.items() if k in fields and v is not None}
         
         if not valid_fields:
             return 0
         
-        # Check for duplicates if name or email is being updated
-        if valid_fields.get('name') or valid_fields.get('email'):
+        # Check for duplicates if first_name, last_name, or email is being updated
+        if valid_fields.get('first_name') or valid_fields.get('last_name') or valid_fields.get('email'):
             # Get current contact to use existing values if not provided
             current_contact = self.get_contact_by_id(contact_id)
             if not current_contact:
                 raise ValueError("Contact not found")
             
-            name = valid_fields.get('name', current_contact['name'])
+            first_name = valid_fields.get('first_name', current_contact['first_name'])
+            last_name = valid_fields.get('last_name', current_contact['last_name'])
+            full_name = f"{first_name} {last_name}".strip()
             email = valid_fields.get('email', current_contact['email'])
             
-            duplicates = self.check_contact_duplicate(name, email, exclude_id=contact_id)
+            duplicates = self.check_contact_duplicate(full_name, email, exclude_id=contact_id)
             if duplicates:
                 error_messages = [dup['message'] for dup in duplicates]
                 raise ValueError("Duplicate contact found: " + "; ".join(error_messages))
@@ -403,19 +417,39 @@ class CRMData:
         return db.execute_update(query, list(valid_fields.values()))
     
     def get_product_vendors(self, product_id):
-        """Get all vendors for a specific product"""
+        """Get all vendors authorized to sell this product through QPL relationships"""
         try:
             query = """
-                SELECT pv.*, a.name as vendor_name, a.cage as vendor_cage
-                FROM product_vendors pv
-                JOIN accounts a ON pv.vendor_id = a.id
-                WHERE pv.product_id = ? AND a.is_active = 1
-                ORDER BY pv.preferred_vendor DESC, a.name
+                SELECT DISTINCT 
+                    v.id, 
+                    v.name as vendor_name, 
+                    COALESCE(v.cage, '') as vendor_cage, 
+                    COALESCE(v.location, '') as location, 
+                    COALESCE(v.email, '') as email, 
+                    COALESCE(v.website, '') as website,
+                    MIN(qv.created_date) as relationship_date,
+                    0 as preferred_vendor,
+                    v.type,
+                    (SELECT COALESCE(c.first_name, '') || ' ' || COALESCE(c.last_name, '') || 
+                            CASE WHEN c.email IS NOT NULL AND c.email != '' 
+                                 THEN ' (' || c.email || ')' 
+                                 ELSE '' END
+                     FROM contacts c 
+                     WHERE c.account_id = v.id AND c.is_active = 1 
+                     LIMIT 1) as primary_contact
+                FROM qpls q
+                JOIN qpl_vendors qv ON q.account_id = qv.qpl_account_id
+                JOIN accounts v ON qv.vendor_account_id = v.id
+                WHERE q.product_id = ? 
+                  AND v.type = 'Vendor' 
+                  AND v.is_active = 1 
+                  AND qv.is_active = 1
+                GROUP BY v.id, v.name, v.cage, v.location, v.email, v.website, v.type
+                ORDER BY v.name
             """
             return db.execute_query(query, [product_id])
         except Exception as e:
-            # Table doesn't exist yet - return empty list
-            print(f"Warning: product_vendors table not found: {e}")
+            print(f"Warning: Error getting product vendors: {e}")
             return []
     
     def get_vendor_products(self, vendor_id):
@@ -660,6 +694,11 @@ class CRMData:
             if filters.get('search'):
                 query += " AND (o.name LIKE ? OR o.description LIKE ?)"
                 params.extend([f"%{filters['search']}%", f"%{filters['search']}%"])
+            
+            # Manufacturer filter from settings
+            if filters.get('manufacturer_filter'):
+                query += " AND o.mfr LIKE ?"
+                params.append(f"%{filters['manufacturer_filter']}%")
                 
             # Comment out these filters that don't exist in the schema
             # Uncomment and update the database schema if needed
@@ -1250,6 +1289,22 @@ class CRMData:
                  'location', 'outcome', 'status', 'related_to_type', 'related_to_id', 'contact_id',
                  'account_id', 'opportunity_id', 'rfq_id', 'project_id', 'created_by']
         
+        # Validate enum values if provided
+        if 'direction' in kwargs:
+            valid_directions = ['In Coming', 'Out Going']
+            if kwargs['direction'] not in valid_directions:
+                raise ValueError(f"Direction must be one of: {', '.join(valid_directions)}")
+        
+        if 'type' in kwargs:
+            valid_types = ['Email', 'Text', 'Call', 'LinkedIn', 'In Person', 'Mail']
+            if kwargs['type'] not in valid_types:
+                raise ValueError(f"Type must be one of: {', '.join(valid_types)}")
+        
+        if 'status' in kwargs:
+            valid_statuses = ['Completed', 'Pending', 'Failed']
+            if kwargs['status'] not in valid_statuses:
+                raise ValueError(f"Status must be one of: {', '.join(valid_statuses)}")
+        
         valid_fields = {k: v for k, v in kwargs.items() if k in fields and v is not None}
         
         if not valid_fields.get('subject'):
@@ -1775,7 +1830,7 @@ class CRMData:
         
         # Validate enum values if provided
         if 'direction' in kwargs:
-            valid_directions = ['Received', 'Sent']
+            valid_directions = ['In Coming', 'Out Going']
             if kwargs['direction'] not in valid_directions:
                 raise ValueError(f"Direction must be one of: {', '.join(valid_directions)}")
             valid_fields['direction'] = kwargs['direction']
@@ -2757,6 +2812,81 @@ class CRMData:
         # For now, return empty list since quotes table exists but may not have product relations
         # This can be enhanced based on your quote-to-product relationship structure
         return []
+    
+    # ==================== QPL VENDOR RELATIONSHIPS ====================
+    
+    def add_qpl_vendor_relationship(self, qpl_account_id, vendor_account_id):
+        """Add relationship between QPL account (manufacturer) and Vendor account (supplier)"""
+        query = """
+            INSERT OR REPLACE INTO qpl_vendors 
+            (qpl_account_id, vendor_account_id, is_active, created_date, modified_date)
+            VALUES (?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        """
+        return db.execute_update(query, [qpl_account_id, vendor_account_id])
+    
+    def remove_qpl_vendor_relationship(self, qpl_account_id, vendor_account_id):
+        """Remove relationship between QPL account and Vendor account"""
+        query = "DELETE FROM qpl_vendors WHERE qpl_account_id = ? AND vendor_account_id = ?"
+        return db.execute_update(query, [qpl_account_id, vendor_account_id])
+    
+    def get_vendors_for_qpl_account(self, qpl_account_id):
+        """Get all vendor accounts that can supply parts for this QPL account"""
+        query = """
+            SELECT v.id, v.name, v.type, v.location, v.email, v.website, v.created_date,
+                   qv.created_date as relationship_created
+            FROM qpl_vendors qv
+            JOIN accounts v ON qv.vendor_account_id = v.id
+            WHERE qv.qpl_account_id = ? AND qv.is_active = 1 AND v.is_active = 1
+            ORDER BY v.name
+        """
+        return db.execute_query(query, [qpl_account_id])
+    
+    def get_qpl_accounts_for_vendor(self, vendor_account_id):
+        """Get all QPL accounts (manufacturers) that this vendor can supply parts for"""
+        query = """
+            SELECT q.id, q.name, q.type, q.cage, q.location, q.created_date,
+                   qv.created_date as relationship_created
+            FROM qpl_vendors qv
+            JOIN accounts q ON qv.qpl_account_id = q.id
+            WHERE qv.vendor_account_id = ? AND qv.is_active = 1 AND q.is_active = 1
+            ORDER BY q.name
+        """
+        return db.execute_query(query, [vendor_account_id])
+    
+    def get_qpl_qualifications_for_vendor(self, vendor_account_id):
+        """Get all QPL products/qualifications that this vendor can supply based on manufacturer relationships"""
+        query = """
+            SELECT q.id, q.product_id, q.account_id, q.manufacturer_name, 
+                   q.cage_code, q.part_number, q.is_active, 
+                   q.created_date, q.modified_date,
+                   a.name as manufacturer_account_name, a.cage as manufacturer_account_cage
+            FROM qpl_vendors qv
+            JOIN qpls q ON qv.qpl_account_id = q.account_id
+            JOIN accounts a ON q.account_id = a.id
+            WHERE qv.vendor_account_id = ? AND qv.is_active = 1 AND q.is_active = 1
+            ORDER BY q.manufacturer_name, q.part_number
+        """
+        return db.execute_query(query, [vendor_account_id])
+    
+    def get_all_qpl_accounts(self):
+        """Get all QPL type accounts"""
+        query = """
+            SELECT id, name, type, cage, location, created_date
+            FROM accounts 
+            WHERE type = 'QPL' AND is_active = 1
+            ORDER BY name
+        """
+        return db.execute_query(query)
+    
+    def get_all_vendor_accounts(self):
+        """Get all Vendor type accounts"""
+        query = """
+            SELECT id, name, type, location, created_date
+            FROM accounts 
+            WHERE type = 'Vendor' AND is_active = 1
+            ORDER BY name
+        """
+        return db.execute_query(query)
 
 # Initialize data access layer
 crm_data = CRMData()

@@ -380,8 +380,8 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="proj_vendor_id" class="form-label">Vendor</label>
-                                <select class="form-select" id="proj_vendor_id" name="vendor_id">
+                                <label for="vendor_id" class="form-label">Vendor</label>
+                                <select class="form-select" id="vendor_id" name="vendor_id">
                                     <option value="">Select Vendor</option>
                                     {% for vendor in vendors %}
                                     <option value="{{ vendor.id }}">{{ vendor.name }}</option>
@@ -707,6 +707,19 @@ function deleteProject(projectId) {
 document.addEventListener('DOMContentLoaded', function() {
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('start_date').value = today;
+    
+    // Handle URL parameters for editing projects
+    const urlParams = new URLSearchParams(window.location.search);
+    const editProjectId = urlParams.get('edit');
+    
+    if (editProjectId) {
+        // Trigger edit for specific project
+        editProject(editProjectId);
+        
+        // Clean up URL parameters
+        const cleanUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, cleanUrl);
+    }
 });
 </script>
 

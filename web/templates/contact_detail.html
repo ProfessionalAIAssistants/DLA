@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from 'macros/contact_macros.html' import quick_actions_card, contact_stats_card, account_info_card, edit_contact_modal, add_interaction_modal, assign_account_modal, activity_timeline_card %}
 
 {% block title %}{{ contact.first_name }} {{ contact.last_name }} - CDE Prosperity{% endblock %}
 
@@ -167,25 +168,33 @@
                     <table class="table table-sm table-hover">
                         <thead class="table-light">
                             <tr>
-                                <th><i class="fas fa-handshake me-1"></i>Name</th>
+                                <th><i class="fas fa-handshake me-1"></i>Opportunity</th>
                                 <th><i class="fas fa-chart-line me-1"></i>Stage</th>
-                                <th><i class="fas fa-barcode me-1"></i>NSN</th>
+                                <th><i class="fas fa-dollar-sign me-1"></i>Amount</th>
                                 <th><i class="fas fa-calendar me-1"></i>Close Date</th>
-                                <th><i class="fas fa-percentage me-1"></i>Probability</th>
                                 <th class="text-center"><i class="fas fa-cogs me-1"></i>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for opportunity in opportunities %}
-                            <tr class="opportunity-row" data-opportunity-id="{{ opportunity.id }}" style="cursor: pointer;">
+                            <tr class="opportunity-row" data-opportunity-id="{{ opportunity.id }}" style="cursor: pointer;" ondblclick="viewOpportunity({{ opportunity.id }})">
                                 <td>
-                                    <code class="small">{{ opportunity.name or opportunity.request_number or 'N/A' }}</code>
+                                    <div>
+                                        <strong>{{ opportunity.name or 'Unnamed Opportunity' }}</strong>
+                                        {% if opportunity.product_nsn %}
+                                            <br><small class="text-muted"><i class="fas fa-barcode me-1"></i>{{ opportunity.product_nsn }}</small>
+                                        {% endif %}
+                                    </div>
                                 </td>
                                 <td>
-                                    <span class="badge bg-{{ 'primary' if opportunity.stage == 'Prospecting' else 'info' if opportunity.stage == 'Qualification' else 'warning' if opportunity.stage == 'Proposal' else 'success' if opportunity.stage == 'Won' else 'danger' if opportunity.stage == 'Lost' else 'secondary' }}">{{ opportunity.stage or 'N/A' }}</span>
+                                    <span class="badge bg-{{ 'success' if opportunity.stage == 'Closed Won' else 'danger' if opportunity.stage == 'Closed Lost' else 'secondary' if opportunity.stage in ['Prospecting', 'Qualification'] else 'primary' }}">{{ opportunity.stage or 'N/A' }}</span>
                                 </td>
                                 <td>
-                                    <span class="small">{{ opportunity.product_nsn or 'N/A' }}</span>
+                                    {% if opportunity.amount %}
+                                        <strong>${{ "{:,.2f}".format(opportunity.amount) }}</strong>
+                                    {% else %}
+                                        <span class="text-muted">N/A</span>
+                                    {% endif %}
                                 </td>
                                 <td>
                                     {% if opportunity.close_date %}
@@ -193,9 +202,6 @@
                                     {% else %}
                                     <span class="text-muted">Not set</span>
                                     {% endif %}
-                                </td>
-                                <td>
-                                    <span class="fw-bold">{{ opportunity.probability or '0' }}%</span>
                                 </td>
                                 <td class="text-center">
                                     <div class="btn-group btn-group-sm">
@@ -229,514 +235,56 @@
     <!-- Sidebar -->
     <div class="col-xl-4">
         <!-- Quick Actions -->
-        <div class="card mb-4">
-            <div class="card-header">
-                <h5 class="card-title mb-0">
-                    <i class="fas fa-bolt me-2"></i>Quick Actions
-                </h5>
-            </div>
-            <div class="card-body">
-                <div class="d-grid gap-2">
-                    {% if contact.email %}
-                    <a href="mailto:{{ contact.email }}" class="btn btn-outline-primary">
-                        <i class="fas fa-envelope me-1"></i>
-                        Send Email
-                    </a>
-                    {% endif %}
-                    {% if contact.phone %}
-                    <a href="tel:{{ contact.phone }}" class="btn btn-outline-success">
-                        <i class="fas fa-phone me-1"></i>
-                        Call Contact
-                    </a>
-                    {% endif %}
-                    <button class="btn btn-outline-info">
-                        <i class="fas fa-calendar me-1"></i>
-                        Schedule Meeting
-                    </button>
-                    <button class="btn btn-outline-warning">
-                        <i class="fas fa-sticky-note me-1"></i>
-                        Add Note
-                    </button>
-                </div>
-            </div>
-        </div>
+        {{ quick_actions_card(contact) }}
 
         <!-- Contact Statistics -->
-        <div class="card mb-4">
-            <div class="card-header">
-                <h5 class="card-title mb-0">
-                    <i class="fas fa-chart-bar me-2"></i>Contact Statistics
-                </h5>
-            </div>
-            <div class="card-body">
-                <div class="row text-center">
-                    <div class="col-6">
-                        <div class="h3 text-primary">{{ interactions|length }}</div>
-                        <div class="text-muted small">Interactions</div>
-                    </div>
-                    <div class="col-6">
-                        <div class="h3 text-success">{{ opportunities|length }}</div>
-                        <div class="text-muted small">Opportunities</div>
-                    </div>
-                </div>
-            </div>
-        </div>
+        {{ contact_stats_card(interactions|length, opportunities|length) }}
 
         <!-- Account Information -->
-        {% if account %}
-        <div class="card mb-4">
-            <div class="card-header">
-                <h5 class="card-title mb-0">
-                    <i class="fas fa-building me-2"></i>Account Information
-                </h5>
-            </div>
-            <div class="card-body">
-                <div class="d-flex align-items-center mb-3">
-                    <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-3">
-                        <i class="fas fa-building text-primary"></i>
-                    </div>
-                    <div>
-                        <h6 class="mb-1">
-                            <a href="{{ url_for('account_detail', account_id=account.id) }}" class="text-decoration-none">
-                                {{ account.name }}
-                            </a>
-                        </h6>
-                        <span class="badge bg-{{ 'primary' if account.type == 'Customer' else 'warning' if account.type == 'Prospect Customer' else 'info' if account.type == 'Prospect Vendor' else 'success' if account.type == 'Vendor' else 'dark' if account.type == 'QPL' else 'danger' if account.type == 'Competitor' else 'secondary' }}">
-                            {{ account.type or 'N/A' }}
-                        </span>
-                    </div>
-                </div>
-                
-                <div class="small text-muted">
-                    {% if account.address %}
-                    <div class="mb-1">
-                        <i class="fas fa-map-marker-alt me-1"></i>
-                        {{ account.address }}
-                        {% if account.city or account.state %}
-                        <br>{{ account.city }}{% if account.city and account.state %}, {% endif %}{{ account.state }} {{ account.zip_code }}
-                        {% endif %}
-                    </div>
-                    {% endif %}
-                    
-                    {% if account.phone %}
-                    <div class="mb-1">
-                        <i class="fas fa-phone me-1"></i>
-                        <a href="tel:{{ account.phone }}" class="text-decoration-none">{{ account.phone }}</a>
-                    </div>
-                    {% endif %}
-                    
-                    {% if account.email %}
-                    <div class="mb-1">
-                        <i class="fas fa-envelope me-1"></i>
-                        <a href="mailto:{{ account.email }}" class="text-decoration-none">{{ account.email }}</a>
-                    </div>
-                    {% endif %}
-                    
-                    {% if account.website %}
-                    <div class="mb-1">
-                        <i class="fas fa-globe me-1"></i>
-                        <a href="{{ account.website }}" target="_blank" class="text-decoration-none">{{ account.website }}</a>
-                    </div>
-                    {% endif %}
-                </div>
-                
-                <div class="d-grid mt-3">
-                    <a href="{{ url_for('account_detail', account_id=account.id) }}" class="btn btn-outline-primary btn-sm">
-                        <i class="fas fa-external-link-alt me-1"></i>
-                        View Account Details
-                    </a>
-                </div>
-            </div>
-        </div>
-        {% else %}
-        <div class="card mb-4">
-            <div class="card-header">
-                <h5 class="card-title mb-0">
-                    <i class="fas fa-building me-2"></i>Account Information
-                </h5>
-            </div>
-            <div class="card-body text-center">
-                <i class="fas fa-building fa-3x text-muted mb-3"></i>
-                <h6 class="text-muted">No Account Assigned</h6>
-                <p class="text-muted small">This contact is not associated with any account.</p>
-                <button class="btn btn-outline-primary btn-sm">
-                    <i class="fas fa-plus me-1"></i>
-                    Assign Account
-                </button>
-            </div>
-        </div>
-        {% endif %}
+        {{ account_info_card(account) }}
+
+        <!-- Activity Timeline -->
+        {{ activity_timeline_card(contact, interactions, tasks, opportunities) }}
     </div>
 </div>
 
-<!-- Edit Contact Modal -->
-<div class="modal fade" id="editContactModal" tabindex="-1" aria-labelledby="editContactModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="editContactModalLabel">Edit Contact</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form id="editContactForm">
-                <div class="modal-body">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label for="editFirstName" class="form-label">First Name *</label>
-                            <input type="text" class="form-control" id="editFirstName" name="first_name" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="editLastName" class="form-label">Last Name *</label>
-                            <input type="text" class="form-control" id="editLastName" name="last_name" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="editEmail" class="form-label">Email</label>
-                            <input type="email" class="form-control" id="editEmail" name="email">
-                        </div>
-                        <div class="col-md-6">
-                            <label for="editPhone" class="form-label">Phone</label>
-                            <input type="tel" class="form-control" id="editPhone" name="phone">
-                        </div>
-                        <div class="col-md-6">
-                            <label for="editTitle" class="form-label">Title</label>
-                            <input type="text" class="form-control" id="editTitle" name="title">
-                        </div>
-                        <div class="col-md-6">
-                            <label for="editDepartment" class="form-label">Department</label>
-                            <input type="text" class="form-control" id="editDepartment" name="department">
-                        </div>
-                        <div class="col-12">
-                            <label for="editDescription" class="form-label">Description</label>
-                            <textarea class="form-control" id="editDescription" name="description" rows="3"></textarea>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Save Changes</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
+<!-- Modals -->
+{{ edit_contact_modal() }}
+{{ add_interaction_modal() }}
+{{ assign_account_modal() }}
 
-<!-- Add Interaction Modal -->
-<div class="modal fade" id="addInteractionModal" tabindex="-1" aria-labelledby="addInteractionModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="addInteractionModalLabel">Add Interaction</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form id="addInteractionForm">
-                <div class="modal-body">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label for="interactionType" class="form-label">Type *</label>
-                            <select class="form-select" id="interactionType" name="type" required>
-                                <option value="">Select Type</option>
-                                <option value="Call">Call</option>
-                                <option value="Email">Email</option>
-                                <option value="LinkedIn">LinkedIn</option>
-                                <option value="Text">Text</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="interactionDirection" class="form-label">Direction *</label>
-                            <select class="form-select" id="interactionDirection" name="direction" required>
-                                <option value="">Select Direction</option>
-                                <option value="Sent">Sent</option>
-                                <option value="Received">Received</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="interactionDate" class="form-label">Date/Time *</label>
-                            <input type="datetime-local" class="form-control" id="interactionDate" name="interaction_date" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="interactionStatus" class="form-label">Status</label>
-                            <select class="form-select" id="interactionStatus" name="status">
-                                <option value="Pending">Pending</option>
-                                <option value="Completed">Completed</option>
-                                <option value="Failed">Failed</option>
-                            </select>
-                        </div>
-                        <div class="col-12">
-                            <label for="interactionSubject" class="form-label">Subject</label>
-                            <input type="text" class="form-control" id="interactionSubject" name="subject">
-                        </div>
-                        <div class="col-12">
-                            <label for="interactionMessage" class="form-label">Message/Notes</label>
-                            <textarea class="form-control" id="interactionMessage" name="message" rows="4"></textarea>
-                        </div>
-                        <div class="col-md-4">
-                            <label for="interactionContact" class="form-label">Contact</label>
-                            <select class="form-select" id="interactionContact" name="contact_id">
-                                <option value="{{ contact.id }}" selected>{{ contact.first_name }} {{ contact.last_name }}</option>
-                                <!-- Other contacts can be loaded via JavaScript if needed -->
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <label for="interactionOpportunity" class="form-label">Opportunity</label>
-                            <select class="form-select" id="interactionOpportunity" name="opportunity_id">
-                                <option value="">Select Opportunity</option>
-                                <!-- Opportunities will be loaded via JavaScript -->
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <label for="interactionProject" class="form-label">Project</label>
-                            <select class="form-select" id="interactionProject" name="project_id">
-                                <option value="">Select Project</option>
-                                <!-- Projects will be loaded via JavaScript -->
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="interactionDuration" class="form-label">Duration (minutes)</label>
-                            <input type="number" class="form-control" id="interactionDuration" name="duration_minutes" min="0">
-                        </div>
-                        <div class="col-md-6">
-                            <!-- Empty column for alignment -->
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Add Interaction</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
+{% endblock %}
 
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/contact_detail.js') }}"></script>
 <script>
-// Initialize edit contact functionality
+// Initialize contact detail functionality
 document.addEventListener('DOMContentLoaded', function() {
-    // Load contact data when edit modal is shown
-    const editContactModal = document.getElementById('editContactModal');
-    editContactModal.addEventListener('show.bs.modal', function() {
-        loadContactData();
-    });
-    
-    // Handle edit contact form submission
-    document.getElementById('editContactForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        saveContactChanges();
-    });
-    
-    // Handle add interaction form submission
-    document.getElementById('addInteractionForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        addInteraction();
-    });
-    
-    // Set default interaction date to now and add modal event handlers
-    const interactionDateField = document.getElementById('interactionDate');
-    if (interactionDateField) {
-        const now = new Date();
-        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-        interactionDateField.value = now.toISOString().slice(0, 16);
-    }
-    
-    // Handle add interaction modal show event
-    const addInteractionModal = document.getElementById('addInteractionModal');
-    addInteractionModal.addEventListener('show.bs.modal', function() {
-        // Set current date/time as default
-        const now = new Date();
-        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-        document.getElementById('interactionDate').value = now.toISOString().slice(0, 16);
-        
-        // Set default status to Completed
-        document.getElementById('interactionStatus').value = 'Completed';
-        
-        // Load opportunities and projects
-        loadOpportunitiesForInteraction();
-        loadProjectsForInteraction();
-    });
-    
-    // Add double-click functionality to opportunity rows
-    document.querySelectorAll('.opportunity-row').forEach(row => {
-        row.addEventListener('dblclick', function() {
-            const opportunityId = this.dataset.opportunityId;
-            if (opportunityId) {
-                // Navigate to opportunity detail page
-                window.location.href = `/opportunity/${opportunityId}`;
-            }
-        });
-        
-        // Add hover effect
-        row.addEventListener('mouseenter', function() {
-            this.style.backgroundColor = '#f8f9fa';
-        });
-        
-        row.addEventListener('mouseleave', function() {
-            this.style.backgroundColor = '';
-        });
-    });
-    
-    // Add double-click functionality to interaction rows
-    document.querySelectorAll('.interaction-row').forEach(row => {
-        row.addEventListener('dblclick', function() {
-            const interactionId = this.dataset.interactionId;
-            if (interactionId) {
-                // Navigate to interaction detail page
-                window.location.href = `/interactions/${interactionId}`;
-            }
-        });
-        
-        // Add hover effect
-        row.addEventListener('mouseenter', function() {
-            this.style.backgroundColor = '#f8f9fa';
-        });
-        
-        row.addEventListener('mouseleave', function() {
-            this.style.backgroundColor = '';
-        });
-    });
+    ContactDetailJS.init({{ contact.id }});
 });
 
-function loadContactData() {
-    const contactId = {{ contact.id }};
-    
-    fetch(`/api/contacts/${contactId}`)
-        .then(response => response.json())
-        .then(contact => {
-            if (contact.error) {
-                alert('Error: ' + contact.error);
-                return;
-            }
-            
-            // Populate edit modal fields
-            document.getElementById('editFirstName').value = contact.first_name || '';
-            document.getElementById('editLastName').value = contact.last_name || '';
-            document.getElementById('editEmail').value = contact.email || '';
-            document.getElementById('editPhone').value = contact.phone || '';
-            document.getElementById('editTitle').value = contact.title || '';
-            document.getElementById('editDepartment').value = contact.department || '';
-            document.getElementById('editDescription').value = contact.description || '';
-        })
-        .catch(error => {
-            console.error('Error fetching contact:', error);
-            alert('Error loading contact details. Please try again.');
-        });
-}
+// Ensure opportunity functions are globally available
+window.viewOpportunity = function(id) {
+    window.location.href = '/opportunity/' + id;
+};
 
-function saveContactChanges() {
-    const contactId = {{ contact.id }};
-    const formData = new FormData(document.getElementById('editContactForm'));
-    
-    const data = {};
-    formData.forEach((value, key) => {
-        data[key] = value;
-    });
-    
-    fetch(`/api/contacts/${contactId}`, {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
-    })
-    .then(response => response.json())
-    .then(result => {
-        if (result.error) {
-            alert('Error: ' + result.error);
-        } else {
-            alert('Contact updated successfully');
-            bootstrap.Modal.getInstance(document.getElementById('editContactModal')).hide();
-            // Reload page to show updated data
-            window.location.reload();
-        }
-    })
-    .catch(error => {
-        console.error('Error updating contact:', error);
-        alert('Error updating contact. Please try again.');
-    });
-}
-
-function addInteraction() {
-    const contactId = {{ contact.id }};
-    const formData = new FormData(document.getElementById('addInteractionForm'));
-    
-    const data = {
-        contact_id: contactId
-    };
-    formData.forEach((value, key) => {
-        // Map form field names to database field names
-        if (key === 'message') {
-            data['description'] = value;
-        } else {
-            data[key] = value;
-        }
-    });
-    
-    fetch('/api/interactions', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
-    })
-    .then(response => response.json())
-    .then(result => {
-        if (result.error) {
-            alert('Error: ' + result.error);
-        } else {
-            alert('Interaction added successfully');
-            bootstrap.Modal.getInstance(document.getElementById('addInteractionModal')).hide();
-            // Clear form
-            document.getElementById('addInteractionForm').reset();
-            // Reset date to current time
-            const now = new Date();
-            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-            document.getElementById('interactionDate').value = now.toISOString().slice(0, 16);
-            // Reload page to show new interaction
-            window.location.reload();
-        }
-    })
-    .catch(error => {
-        console.error('Error adding interaction:', error);
-        alert('Error adding interaction. Please try again.');
-    });
-}
-
-// Load opportunities for interaction dropdown
-function loadOpportunitiesForInteraction() {
-    fetch('/api/opportunities')
-        .then(response => response.json())
-        .then(opportunities => {
-            const select = document.getElementById('interactionOpportunity');
-            select.innerHTML = '<option value="">Select Opportunity</option>';
-            
-            opportunities.forEach(opp => {
-                const option = document.createElement('option');
-                option.value = opp.id;
-                option.textContent = `${opp.name} - ${opp.nsn || 'No NSN'}`;
-                select.appendChild(option);
-            });
-        })
-        .catch(error => {
-            console.error('Error loading opportunities:', error);
-        });
-}
-
-// Load projects for interaction dropdown  
-function loadProjectsForInteraction() {
-    fetch('/api/projects')
-        .then(response => response.json())
-        .then(projects => {
-            const select = document.getElementById('interactionProject');
-            select.innerHTML = '<option value="">Select Project</option>';
-            
-            projects.forEach(project => {
-                const option = document.createElement('option');
-                option.value = project.id;
-                option.textContent = project.name || `Project ${project.id}`;
-                select.appendChild(option);
-            });
-        })
-        .catch(error => {
-            console.error('Error loading projects:', error);
-        });
-}
+window.editOpportunity = function(id) {
+    window.location.href = '/opportunity/' + id + '?edit=true';
+};
 </script>
 
+<style>
+/* Custom styles for enhanced visual appeal */
+.card {
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+}
+
+.btn {
+    transition: all 0.3s ease;
+}
+</style>
 {% endblock %}

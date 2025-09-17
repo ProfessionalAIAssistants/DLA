@@ -345,7 +345,7 @@
 
 <!-- Add Task Modal -->
 <div class="modal fade" id="addTaskModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Add New Task</h5>
@@ -436,31 +436,48 @@
                         <label for="description" class="form-label">Description</label>
                         <textarea class="form-control" id="description" name="description" rows="3" placeholder="Detailed task description"></textarea>
                     </div>
-                            <div class="mb-3">
-                                <label for="assigned_to" class="form-label">Assigned To</label>
-                                <input type="text" class="form-control" id="assigned_to" name="assigned_to" placeholder="Task assignee">
-                            </div>
-                        </div>
+                    
+                    <div class="mb-3">
+                        <label for="assigned_to" class="form-label">Assigned To</label>
+                        <input type="text" class="form-control" id="assigned_to" name="assigned_to" placeholder="Task assignee">
                     </div>
                     
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="related_to_type" class="form-label">Related To Type</label>
-                                <select class="form-select" id="related_to_type" name="related_to_type" onchange="loadRelatedItems()">
-                                    <option value="">None</option>
-                                    <option value="Account">Account</option>
-                                    <option value="Contact">Contact</option>
-                                    <option value="Opportunity">Opportunity</option>
-                                    <option value="Quote">Quote</option>
+                                <label for="contact_id" class="form-label">Contact</label>
+                                <select class="form-select" id="contact_id" name="contact_id">
+                                    <option value="">Select Contact</option>
+                                    <!-- Contacts will be loaded via JavaScript -->
                                 </select>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="related_to_id" class="form-label">Related Item</label>
-                                <select class="form-select" id="related_to_id" name="related_to_id">
-                                    <option value="">Select item first</option>
+                                <label for="account_id" class="form-label">Account</label>
+                                <select class="form-select" id="account_id" name="account_id">
+                                    <option value="">Select Account</option>
+                                    <!-- Accounts will be loaded via JavaScript -->
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="opportunity_id" class="form-label">Opportunity</label>
+                                <select class="form-select" id="opportunity_id" name="opportunity_id">
+                                    <option value="">Select Opportunity</option>
+                                    <!-- Opportunities will be loaded via JavaScript -->
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="quote_id" class="form-label">Quote</label>
+                                <select class="form-select" id="quote_id" name="quote_id">
+                                    <option value="">Select Quote</option>
+                                    <!-- Quotes will be loaded via JavaScript -->
                                 </select>
                             </div>
                         </div>
@@ -537,8 +554,8 @@ function completeTask(taskId) {
 }
 
 function editTask(taskId) {
-    // Implementation for editing tasks
-    console.log('Edit task:', taskId);
+    // Redirect to task detail page for editing
+    window.location.href = `/tasks/${taskId}`;
 }
 
 function rescheduleTask(taskId) {
@@ -562,54 +579,77 @@ function rescheduleTask(taskId) {
     }
 }
 
-function loadRelatedItems() {
-    const typeSelect = document.getElementById('related_to_type');
-    const itemSelect = document.getElementById('related_to_id');
-    const selectedType = typeSelect.value;
-    
-    // Clear previous options
-    itemSelect.innerHTML = '<option value="">Loading...</option>';
-    
-    if (!selectedType) {
-        itemSelect.innerHTML = '<option value="">Select type first</option>';
-        return;
-    }
-    
-    let apiUrl = '';
-    switch (selectedType) {
-        case 'Contact':
-            apiUrl = '/api/contacts';
-            break;
-        case 'Opportunity':
-            apiUrl = '/api/opportunities';
-            break;
-        case 'Account':
-            apiUrl = '/api/accounts';
-            break;
-        case 'Quote':
-            // Quotes might not have a dedicated API yet
-            itemSelect.innerHTML = '<option value="">Quote API not implemented</option>';
-            return;
-        default:
-            itemSelect.innerHTML = '<option value="">Unsupported type</option>';
-            return;
-    }
-    
-    fetch(apiUrl)
+function loadTaskDropdowns() {
+    // Load contacts
+    fetch('/api/contacts')
         .then(response => response.json())
-        .then(items => {
-            itemSelect.innerHTML = '<option value="">Select item</option>';
-            items.forEach(item => {
-                const option = document.createElement('option');
-                option.value = item.id;
-                option.textContent = item.name || item.subject || `${item.first_name} ${item.last_name}` || `Item #${item.id}`;
-                itemSelect.appendChild(option);
-            });
+        .then(contacts => {
+            const contactSelect = document.getElementById('contact_id');
+            if (contactSelect) {
+                contactSelect.innerHTML = '<option value="">Select Contact</option>';
+                contacts.forEach(contact => {
+                    const option = document.createElement('option');
+                    option.value = contact.id;
+                    option.textContent = `${contact.first_name || ''} ${contact.last_name || ''}`.trim() + 
+                                       (contact.email ? ` (${contact.email})` : '');
+                    contactSelect.appendChild(option);
+                });
+            }
         })
-        .catch(error => {
-            console.error('Error loading items:', error);
-            itemSelect.innerHTML = '<option value="">Error loading items</option>';
-        });
+        .catch(error => console.error('Error loading contacts:', error));
+    
+    // Load accounts
+    fetch('/api/accounts')
+        .then(response => response.json())
+        .then(data => {
+            const accountSelect = document.getElementById('account_id');
+            if (accountSelect) {
+                accountSelect.innerHTML = '<option value="">Select Account</option>';
+                // Handle different API response formats
+                const accounts = data.success && data.accounts ? data.accounts : (Array.isArray(data) ? data : []);
+                accounts.forEach(account => {
+                    const option = document.createElement('option');
+                    option.value = account.id;
+                    option.textContent = account.name || `Account #${account.id}`;
+                    accountSelect.appendChild(option);
+                });
+            }
+        })
+        .catch(error => console.error('Error loading accounts:', error));
+    
+    // Load opportunities
+    fetch('/api/opportunities')
+        .then(response => response.json())
+        .then(opportunities => {
+            const opportunitySelect = document.getElementById('opportunity_id');
+            if (opportunitySelect) {
+                opportunitySelect.innerHTML = '<option value="">Select Opportunity</option>';
+                opportunities.forEach(opportunity => {
+                    const option = document.createElement('option');
+                    option.value = opportunity.id;
+                    option.textContent = opportunity.name || `Opportunity #${opportunity.id}`;
+                    opportunitySelect.appendChild(option);
+                });
+            }
+        })
+        .catch(error => console.error('Error loading opportunities:', error));
+    
+    // Load quotes
+    fetch('/api/quotes')
+        .then(response => response.json())
+        .then(quotes => {
+            const quoteSelect = document.getElementById('quote_id');
+            if (quoteSelect) {
+                quoteSelect.innerHTML = '<option value="">Select Quote</option>';
+                quotes.forEach(quote => {
+                    const option = document.createElement('option');
+                    option.value = quote.id;
+                    option.textContent = quote.name || `Quote #${quote.id}`;
+                    quoteSelect.appendChild(option);
+                });
+            }
+        })
+        .catch(error => console.error('Error loading quotes:', error));
 }
 
 function deleteTask(taskId) {
@@ -726,6 +766,9 @@ document.addEventListener('DOMContentLoaded', function() {
     tomorrow.setDate(tomorrow.getDate() + 1);
     const tomorrowStr = tomorrow.toISOString().split('T')[0];
     document.getElementById('due_date').value = tomorrowStr;
+    
+    // Load dropdown data
+    loadTaskDropdowns();
     
     // Force dropdown visibility with timeout
     setTimeout(() => {

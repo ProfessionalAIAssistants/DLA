@@ -110,7 +110,6 @@ class CRMDatabase:
                 contact_id INTEGER,
                 stage TEXT CHECK(stage IN ('Prospecting', 'Qualification', 'Proposal', 'Negotiation', 'Closed Won', 'Closed Lost')),
                 amount REAL,
-                probability INTEGER CHECK(probability >= 0 AND probability <= 100),
                 close_date DATE,
                 lead_source TEXT,
                 next_step TEXT,
@@ -191,6 +190,21 @@ class CRMDatabase:
             )
         ''')
         
+        # QPL Vendors Relationship Table
+        self.conn.execute('''
+            CREATE TABLE IF NOT EXISTS qpl_vendors (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                qpl_account_id INTEGER NOT NULL,
+                vendor_account_id INTEGER NOT NULL,
+                is_active INTEGER DEFAULT 1,
+                created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                modified_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (qpl_account_id) REFERENCES accounts (id),
+                FOREIGN KEY (vendor_account_id) REFERENCES accounts (id),
+                UNIQUE(qpl_account_id, vendor_account_id)
+            )
+        ''')
+        
         # Tasks Table
         self.conn.execute('''
             CREATE TABLE IF NOT EXISTS tasks (
@@ -217,7 +231,7 @@ class CRMDatabase:
                 subject TEXT NOT NULL,
                 description TEXT,
                 type TEXT CHECK(type IN ('Call', 'Email', 'Meeting', 'Note', 'Demo', 'Proposal')),
-                direction TEXT CHECK(direction IN ('Sent', 'Received')),
+                direction TEXT CHECK(direction IN ('Out Going', 'In Coming')),
                 interaction_date DATETIME,
                 duration_minutes INTEGER,
                 location TEXT,
@@ -252,7 +266,9 @@ class CRMDatabase:
             'CREATE INDEX IF NOT EXISTS idx_qpls_product ON qpls(product_id)',
             'CREATE INDEX IF NOT EXISTS idx_qpls_account ON qpls(account_id)',
             'CREATE INDEX IF NOT EXISTS idx_qpls_manufacturer ON qpls(manufacturer_name)',
-            'CREATE INDEX IF NOT EXISTS idx_qpls_created ON qpls(created_date)'
+            'CREATE INDEX IF NOT EXISTS idx_qpls_created ON qpls(created_date)',
+            'CREATE INDEX IF NOT EXISTS idx_qpl_vendors_qpl ON qpl_vendors(qpl_account_id)',
+            'CREATE INDEX IF NOT EXISTS idx_qpl_vendors_vendor ON qpl_vendors(vendor_account_id)'
         ]
         
         for index in indexes:

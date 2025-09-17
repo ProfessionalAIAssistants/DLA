@@ -3,6 +3,67 @@
 {% block title %}Accounts - CDE Prosperity{% endblock %}
 
 {% block content %}
+<style>
+/* Enhanced table row styling for double-click functionality */
+.account-row {
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.account-row:hover {
+    background-color: #f8f9fa !important;
+    transform: scale(1.01);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.account-row:active {
+    transform: scale(0.99);
+}
+
+/* Prevent text selection during double-click */
+.account-row {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+/* Allow text selection for links and input fields */
+.account-row a, .account-row input, .account-row textarea {
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
+}
+
+/* Enhanced visual feedback for double-click target */
+.account-row::after {
+    content: '💼 Double-click to view details';
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    transform: translateY(-50%);
+    background: rgba(13, 110, 253, 0.9);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.account-row:hover::after {
+    opacity: 1;
+}
+
+/* Hide the tooltip when hovering over action buttons */
+.account-row:hover .btn-group ~ * .account-row::after {
+    opacity: 0;
+}
+</style>
+
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
     <h1 class="h2">Accounts</h1>
     <div class="btn-toolbar mb-2 mb-md-0">
@@ -56,7 +117,7 @@
     <div class="card-body">
         {% if accounts %}
         <div class="table-responsive">
-            <table class="table table-hover">
+            <table class="table table-hover" id="accountsTable">
                 <thead>
                     <tr>
                         <th>Account Name</th>
@@ -70,7 +131,9 @@
                 </thead>
                 <tbody>
                     {% for account in accounts %}
-                    <tr>
+                    <tr class="account-row" data-account-id="{{ account.id }}" style="cursor: pointer; transition: all 0.2s ease;" 
+                        onmouseover="this.style.backgroundColor='#f8f9fa'; this.style.transform='scale(1.01)'" 
+                        onmouseout="this.style.backgroundColor=''; this.style.transform='scale(1)'">
                         <td>
                             <a href="{{ url_for('account_detail', account_id=account.id) }}" class="text-decoration-none">
                                 <strong>{{ account.name }}</strong>
@@ -452,6 +515,50 @@ document.addEventListener('DOMContentLoaded', function() {
         const cleanUrl = window.location.pathname;
         window.history.replaceState({}, document.title, cleanUrl);
     }
+    
+    // Add double-click functionality to account table rows
+    const accountRows = document.querySelectorAll('.account-row');
+    accountRows.forEach(row => {
+        row.addEventListener('dblclick', function(e) {
+            // Prevent double-click if clicking on action buttons
+            if (e.target.closest('.btn-group') || e.target.closest('.btn')) {
+                return;
+            }
+            
+            const accountId = this.dataset.accountId;
+            if (accountId) {
+                // Add visual feedback
+                this.style.backgroundColor = '#e3f2fd';
+                this.style.transform = 'scale(1.02)';
+                
+                // Show loading indicator
+                const loadingIndicator = document.createElement('div');
+                loadingIndicator.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Opening account details...';
+                loadingIndicator.className = 'alert alert-info position-fixed';
+                loadingIndicator.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 250px;';
+                document.body.appendChild(loadingIndicator);
+                
+                // Navigate to account detail page after a brief delay for visual feedback
+                setTimeout(() => {
+                    window.location.href = `/account/${accountId}`;
+                }, 300);
+            }
+        });
+        
+        // Add click feedback for single clicks too
+        row.addEventListener('click', function(e) {
+            // Prevent single-click feedback if clicking on action buttons or links
+            if (e.target.closest('.btn-group') || e.target.closest('.btn') || e.target.closest('a')) {
+                return;
+            }
+            
+            // Add subtle click feedback
+            this.style.backgroundColor = '#f1f8e9';
+            setTimeout(() => {
+                this.style.backgroundColor = '';
+            }, 200);
+        });
+    });
 });
 </script>
 {% endblock %}

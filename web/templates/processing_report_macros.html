@@ -1,0 +1,200 @@
+{% macro summary_card(title, value, text_class="primary", icon="info-circle") %}
+<div class="col-md-2">
+    <div class="card text-center">
+        <div class="card-body">
+            <h3 class="text-{{ text_class }} mb-1">{{ value }}</h3>
+            <small class="text-muted">{{ title }}</small>
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
+{% macro badge_with_change(before_count, after_count, label) %}
+<div class="col-md-2 mb-3">
+    <div class="text-center">
+        <h6 class="text-capitalize">{{ label }}</h6>
+        <div class="d-flex justify-content-center align-items-center">
+            <span class="me-2">{{ before_count }}</span>
+            <i class="fas fa-arrow-right text-muted me-2"></i>
+            <span class="me-2">{{ after_count }}</span>
+            {% set change = after_count - before_count %}
+            {% if change > 0 %}
+            <span class="badge bg-success">+{{ change }}</span>
+            {% elif change < 0 %}
+            <span class="badge bg-danger">{{ change }}</span>
+            {% else %}
+            <span class="text-muted">±0</span>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
+{% macro file_table(files, table_type, show_columns=None) %}
+<div class="table-responsive">
+    <table class="table table-sm mb-0">
+        <thead class="table-light">
+            <tr>
+                <th>Filename</th>
+                <th>DLA RFQ Number</th>
+                {% if table_type == "processed" %}
+                <th>Manufacturer</th>
+                <th>Delivery Days</th>
+                <th>Records Created</th>
+                <th>Records Updated</th>
+                {% elif table_type == "skipped" %}
+                <th>Skip Reason</th>
+                <th>Delivery Days</th>
+                <th>ISO</th>
+                <th>Sampling</th>
+                {% elif table_type == "error" %}
+                <th>Error</th>
+                <th>Timestamp</th>
+                {% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for file in files %}
+            <tr>
+                <td class="fw-bold">{{ file.filename }}</td>
+                <td>{{ file.rfq_data.get('request_number', 'N/A') if file.rfq_data else 'N/A' }}</td>
+                {% if table_type == "processed" %}
+                <td>{{ file.rfq_data.get('mfr', 'N/A') if file.rfq_data else 'N/A' }}</td>
+                <td>{{ file.rfq_data.get('delivery_days', 'N/A') if file.rfq_data else 'N/A' }}</td>
+                <td>
+                    {% if file.created_records > 0 %}
+                    <span class="badge bg-success">{{ file.created_records }}</span>
+                    {% else %}
+                    <span class="text-muted">-</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if file.updated_records > 0 %}
+                    <span class="badge bg-info">{{ file.updated_records }}</span>
+                    {% else %}
+                    <span class="text-muted">-</span>
+                    {% endif %}
+                </td>
+                {% elif table_type == "skipped" %}
+                <td>
+                    <small class="text-warning">{{ file.reason | replace('\n', '<br>') | safe }}</small>
+                </td>
+                <td>{{ file.rfq_data.get('delivery_days', 'N/A') if file.rfq_data else 'N/A' }}</td>
+                <td>{{ file.rfq_data.get('iso', 'N/A') if file.rfq_data else 'N/A' }}</td>
+                <td>{{ file.rfq_data.get('sampling', 'N/A') if file.rfq_data else 'N/A' }}</td>
+                {% elif table_type == "error" %}
+                <td>
+                    <small class="text-danger">{{ file.error }}</small>
+                </td>
+                <td>{{ file.timestamp[:19] | replace('T', ' ') }}</td>
+                {% endif %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endmacro %}
+
+{% macro record_type_card(record_type, records, card_class="success") %}
+<div class="col-md-6 mb-3">
+    <div class="card border-{{ card_class }}">
+        <div class="card-header bg-light">
+            <h6 class="card-title mb-0 text-capitalize text-{{ card_class }}">
+                <i class="fas fa-{% if record_type == 'opportunities' %}handshake{% elif record_type == 'contacts' %}user{% elif record_type == 'accounts' %}building{% elif record_type == 'products' %}box{% elif record_type == 'tasks' %}tasks{% elif record_type == 'qpls' %}list-alt{% else %}plus{% endif %} me-2"></i>
+                {{ "QPLs" if record_type == 'qpls' else record_type.title() }} ({{ records|length }})
+            </h6>
+        </div>
+        <div class="card-body p-0" style="max-height: 200px; overflow-y: auto;">
+            <ul class="list-group list-group-flush">
+                {% for record in records %}
+                <li class="list-group-item py-2 record-item" 
+                    data-record-type="{{ record_type }}" 
+                    data-record-id="{{ record.get('id', '') }}"
+                    style="cursor: pointer;"
+                    title="Double-click to view details">
+                    <div class="d-flex justify-content-start align-items-center">
+                        <div>
+                            <strong>
+                                {% if record_type == 'opportunities' %}
+                                    {{ record.get('request_number', 'Unknown') }}
+                                {% elif record_type == 'contacts' %}
+                                    {{ record.get('name', 'Unknown') }}
+                                {% elif record_type == 'accounts' %}
+                                    {{ record.get('name', 'Unknown') }}
+                                {% elif record_type == 'products' %}
+                                    {{ record.get('name', 'Unknown') }}
+                                {% elif record_type == 'tasks' %}
+                                    {{ record.get('subject', 'Unknown') }}
+                                {% elif record_type == 'qpls' %}
+                                    {{ record.get('manufacturer', 'Unknown') }} - {{ record.get('part_number', 'Unknown') }}
+                                {% else %}
+                                    {{ record.get('name', record.get('id', 'Unknown')) }}
+                                {% endif %}
+                            </strong>
+                            {% if record_type == 'opportunities' and record.get('nsn') %}
+                            <br><small class="text-muted">NSN: {{ record.nsn }}</small>
+                            {% elif record_type == 'contacts' and record.get('email') %}
+                            <br><small class="text-muted">{{ record.email }}</small>
+                            {% elif record_type == 'products' and record.get('nsn') %}
+                            <br><small class="text-muted">NSN: {{ record.nsn }}</small>
+                            {% elif record_type == 'qpls' and record.get('nsn') %}
+                            <br><small class="text-muted">NSN: {{ record.nsn }}</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
+{% macro updated_record_card(record_type, records) %}
+<div class="col-md-6 mb-3">
+    <div class="card border-info">
+        <div class="card-header bg-light">
+            <h6 class="card-title mb-0 text-capitalize text-info">
+                <i class="fas fa-{% if record_type == 'contacts' %}user{% elif record_type == 'accounts' %}building{% else %}edit{% endif %} me-2"></i>
+                {{ record_type.title() }} ({{ records|length }})
+            </h6>
+        </div>
+        <div class="card-body p-0" style="max-height: 200px; overflow-y: auto;">
+            <ul class="list-group list-group-flush">
+                {% for record in records %}
+                <li class="list-group-item py-2">
+                    <div class="d-flex justify-content-start align-items-start">
+                        <div>
+                            <strong>{{ record.get('name', 'Unknown') }}</strong>
+                            {% if record.get('email') %}
+                            <br><small class="text-muted">{{ record.email }}</small>
+                            {% endif %}
+                            {% if record.get('updates') %}
+                            <br><small class="text-success">Updated: {{ record.updates | join(', ') }}</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
+{% macro card_section(title, icon, icon_class="primary", content_id=None) %}
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-{{ icon }} me-2 text-{{ icon_class }}"></i>
+            {{ title }}
+        </h5>
+        {% if content_id %}
+        <small class="text-muted">Double-click any record to view details</small>
+        {% endif %}
+    </div>
+    <div class="card-body{% if content_id %} p-0{% endif %}">
+        {{ caller() }}
+    </div>
+</div>
+{% endmacro %}

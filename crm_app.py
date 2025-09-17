@@ -1,7 +1,7 @@
 # Local CRM Web Interface
 # Flask-based web interface for the CRM system
 
-from flask import Flask, render_template, request, jsonify, redirect, url_for, flash
+from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, send_from_directory
 from datetime import datetime, date, timedelta
 import json
 import os
@@ -17,6 +17,11 @@ from src.core.crm_automation import crm_automation
 from src.pdf.dibbs_crm_processor import dibbs_processor
 from src.email_automation.email_automation import email_automation
 
+# Constants
+EMAIL_CONFIG_PATH = 'email_config.json'
+OAUTH2_CONFIG_PATH = 'oauth2_config.json'
+LOCALHOST_BASE_URL = 'http://localhost:5000'
+
 # Initialize config manager and ensure directories exist
 config_manager.ensure_directories()
 app_config = config_manager.get_app_config()
@@ -29,6 +34,70 @@ app.secret_key = os.getenv('FLASK_SECRET_KEY', app_config.get('secret_key', 'you
 # Configure template and static folders
 app.template_folder = 'web/templates'
 app.static_folder = 'web/static'
+
+# Utility functions for common patterns
+def load_json_config(config_path, default=None):
+    """Load JSON configuration file with error handling"""
+    try:
+        if os.path.exists(config_path):
+            with open(config_path, 'r') as f:
+                return json.load(f)
+        return default or {}
+    except (json.JSONDecodeError, IOError) as e:
+        app.logger.error(f"Error loading config from {config_path}: {e}")
+        return default or {}
+
+def save_json_config(config_path, config_data):
+    """Save JSON configuration file with error handling"""
+    try:
+        with open(config_path, 'w') as f:
+            json.dump(config_data, f, indent=2)
+        return True
+    except (IOError, TypeError) as e:
+        app.logger.error(f"Error saving config to {config_path}: {e}")
+        return False
+
+def validate_required_fields(data, required_fields):
+    """Validate that required fields are present in data"""
+    missing_fields = []
+    for field in required_fields:
+        value = data.get(field)
+        # Consider field missing if it's None or empty string after stripping
+        if value is None or (isinstance(value, str) and value.strip() == ''):
+            missing_fields.append(field)
+    
+    if missing_fields:
+        return False, f"Missing required fields: {', '.join(missing_fields)}"
+    return True, None
+
+def get_validated_json_data(required_fields=None):
+    """Get and validate JSON data from request"""
+    try:
+        data = request.get_json()
+        if not data:
+            return None, "No JSON data provided"
+        
+        if required_fields:
+            is_valid, error_msg = validate_required_fields(data, required_fields)
+            if not is_valid:
+                return None, error_msg
+        
+        return data, None
+    except Exception as e:
+        return None, f"Invalid JSON data: {str(e)}"
+
+def handle_api_error(e, operation="operation", log_message=None):
+    """Standard error handling for API endpoints"""
+    error_msg = log_message or f"Error during {operation}: {str(e)}"
+    app.logger.error(error_msg)
+    return jsonify({'error': f'Failed to {operation}'}), 500
+
+def handle_api_success(data=None, message="Operation successful"):
+    """Standard success response for API endpoints"""
+    response = {'success': True, 'message': message}
+    if data:
+        response.update(data)
+    return jsonify(response)
 
 # Add custom Jinja2 filters
 @app.template_filter('to_datetime')
@@ -158,102 +227,83 @@ def handle_email_settings():
     if request.method == 'GET':
         try:
             # Load email settings from config file
-            import os
-            import json
-            
-            config_path = 'email_config.json'
-            if os.path.exists(config_path):
-                with open(config_path, 'r') as f:
-                    settings = json.load(f)
+            settings = load_json_config(EMAIL_CONFIG_PATH)
+            if settings:
                 return jsonify({'success': True, 'settings': settings})
-            else:
-                # Return default settings
-                default_settings = {
-                    "email_method": "smtp",  # Default method
-                    "smtp_configuration": {
-                        "enabled": False,
-                        "host": "",
-                        "port": 587,
-                        "username": "",
-                        "from_name": "CDE Prosperity DLA Team",
-                        "reply_to_email": ""
-                    },
-                    "gmail_oauth2": {
-                        "enabled": False,
-                        "client_id": "",
-                        "client_secret": "",
-                        "redirect_uri": "http://localhost:5000/auth/gmail/callback",
-                        "user_email": ""
-                    },
-                    "outlook_oauth2": {
-                        "enabled": False,
-                        "client_id": "",
-                        "client_secret": "",
-                        "tenant_id": "",
-                        "redirect_uri": "http://localhost:5000/auth/outlook/callback",
-                        "user_email": ""
-                    },
-                    "rfq_automation": {
-                        "enabled": False,
-                        "require_manual_review": True,
-                        "auto_send_approved": False,
-                        "default_priority": "Normal",
-                        "quote_deadline_days": 10,
-                        "max_daily_sends": 50,
-                        "follow_up_delay_days": 3,
-                        "business_hours_only": True,
-                        "weekend_sending": False,
-                        "business_start_hour": 8,
-                        "business_end_hour": 17
-                    },
-                    "response_processing": {
-                        "enabled": True,
-                        "auto_parse_responses": True,
-                        "require_quote_review": True,
-                        "parse_pdf_attachments": True,
-                        "create_follow_up_tasks": True
-                    },
-                    "notification_settings": {
-                        "notification_email": "",
-                        "daily_summary_time": "17:00",
-                        "notify_on_rfq_sent": True,
-                        "notify_on_response_received": True,
-                        "alert_on_urgent_quotes": True,
-                        "send_daily_digest": False
-                    }
+            
+            # Return default settings
+            default_settings = {
+                "email_method": "smtp",  # Default method
+                "smtp_configuration": {
+                    "enabled": False,
+                    "host": "",
+                    "port": 587,
+                    "username": "",
+                    "from_name": "CDE Prosperity DLA Team",
+                    "reply_to_email": ""
+                },
+                "gmail_oauth2": {
+                    "enabled": False,
+                    "client_id": "",
+                    "client_secret": "",
+                    "redirect_uri": f"{LOCALHOST_BASE_URL}/auth/gmail/callback",
+                    "user_email": ""
+                },
+                "outlook_oauth2": {
+                    "enabled": False,
+                    "client_id": "",
+                    "client_secret": "",
+                    "tenant_id": "",
+                    "redirect_uri": f"{LOCALHOST_BASE_URL}/auth/outlook/callback",
+                    "user_email": ""
+                },
+                "rfq_automation": {
+                    "enabled": False,
+                    "require_manual_review": True,
+                    "auto_send_approved": False,
+                    "default_priority": "Normal",
+                    "quote_deadline_days": 10,
+                    "max_daily_sends": 50,
+                    "follow_up_delay_days": 3,
+                    "business_hours_only": True,
+                    "weekend_sending": False,
+                    "business_start_hour": 8,
+                    "business_end_hour": 17
+                },
+                "response_processing": {
+                    "enabled": True,
+                    "auto_parse_responses": True,
+                    "require_quote_review": True,
+                    "parse_pdf_attachments": True,
+                    "create_follow_up_tasks": True
+                },
+                "notification_settings": {
+                    "notification_email": "",
+                    "daily_summary_time": "17:00",
+                    "notify_on_rfq_sent": True,
+                    "notify_on_response_received": True,
+                    "alert_on_urgent_quotes": True,
+                    "send_daily_digest": False
                 }
-                return jsonify({'success': True, 'settings': default_settings})
+            }
+            return jsonify({'success': True, 'settings': default_settings})
         except Exception as e:
             app.logger.error(f"Error loading email settings: {e}")
             return jsonify({'success': False, 'message': str(e)}), 500
     
     elif request.method == 'POST':
         try:
-            import json
-            import os
-            
             settings_data = request.get_json() or {}
             
-            # Save to email_config.json
-            config_path = 'email_config.json'
-            
             # Load existing config if it exists
-            existing_config = {}
-            if os.path.exists(config_path):
-                with open(config_path, 'r') as f:
-                    existing_config = json.load(f)
+            existing_config = load_json_config(EMAIL_CONFIG_PATH)
             
             # Update with new settings (including OAuth2 configurations)
             existing_config.update(settings_data)
             
             # Also save OAuth2 settings to separate file if provided
             if 'oauth2_method' in settings_data:
-                oauth2_config_path = 'oauth2_config.json'
-                oauth2_config = {}
-                
-                if os.path.exists(oauth2_config_path):
-                    with open(oauth2_config_path, 'r') as f:
-                        oauth2_config = json.load(f)
+                oauth2_config = load_json_config(OAUTH2_CONFIG_PATH)
                 
                 # Update OAuth2 config based on method
                 method = settings_data['oauth2_method']
@@ -262,16 +312,15 @@ def handle_email_settings():
                 elif method == 'outlook_oauth' and 'outlook_oauth2' in settings_data:
                     oauth2_config['outlook_oauth2'] = settings_data['outlook_oauth2']
                 
-                with open(oauth2_config_path, 'w') as f:
-                    json.dump(oauth2_config, f, indent=2)
+                save_json_config(OAUTH2_CONFIG_PATH, oauth2_config)
             
             # Save updated config
-            with open(config_path, 'w') as f:
-                json.dump(existing_config, f, indent=2)
+            if save_json_config(EMAIL_CONFIG_PATH, existing_config):
+                app.logger.info(f"Email settings updated and saved to {EMAIL_CONFIG_PATH}")
+                return jsonify({'success': True, 'message': 'Email settings saved successfully'})
+            else:
+                return jsonify({'success': False, 'message': 'Failed to save email settings'}), 500
             
-            app.logger.info(f"Email settings updated and saved to {config_path}")
-            
-            return jsonify({'success': True, 'message': 'Email settings saved successfully'})
         except Exception as e:
             app.logger.error(f"Error updating email settings: {e}")
             return jsonify({'success': False, 'message': str(e)}), 500
@@ -323,19 +372,14 @@ def test_email_connection():
 def get_email_status():
     """Get current email system status"""
     try:
-        import os
-        import json
-        
         # Check if email is configured
-        config_path = 'email_config.json'
         connection_status = 'not_configured'
         
-        if os.path.exists(config_path):
-            with open(config_path, 'r') as f:
-                config = json.load(f)
-                smtp_config = config.get('smtp_configuration', {})
-                if smtp_config.get('enabled') and smtp_config.get('host') and smtp_config.get('username'):
-                    connection_status = 'configured'
+        config = load_json_config(EMAIL_CONFIG_PATH)
+        if config:
+            smtp_config = config.get('smtp_configuration', {})
+            if smtp_config.get('enabled') and smtp_config.get('host') and smtp_config.get('username'):
+                connection_status = 'configured'
         
         # Get email statistics from database
         conn = sqlite3.connect(str(config_manager.get_database_path()))
@@ -376,16 +420,10 @@ def get_email_status():
 def initiate_gmail_oauth():
     """Initiate Gmail OAuth2 authorization flow"""
     try:
-        import json
-        import os
-        
         # Load OAuth2 config
-        oauth2_config_path = 'oauth2_config.json'
-        if not os.path.exists(oauth2_config_path):
+        config = load_json_config(OAUTH2_CONFIG_PATH)
+        if not config:
             return jsonify({'success': False, 'message': 'OAuth2 configuration not found'}), 400
-            
-        with open(oauth2_config_path, 'r') as f:
-            config = json.load(f)
             
         gmail_config = config.get('gmail_oauth2', {})
         client_id = gmail_config.get('client_id')
@@ -399,10 +437,11 @@ def initiate_gmail_oauth():
             'https://www.googleapis.com/auth/gmail.readonly'
         ]
         
+        redirect_uri = gmail_config.get('redirect_uri', f'{LOCALHOST_BASE_URL}/auth/gmail/callback')
         auth_url = (
             f"https://accounts.google.com/o/oauth2/auth?"
             f"client_id={client_id}&"
-            f"redirect_uri={gmail_config.get('redirect_uri', 'http://localhost:5000/auth/gmail/callback')}&"
+            f"redirect_uri={redirect_uri}&"
             f"scope={' '.join(scopes)}&"
             f"response_type=code&"
             f"access_type=offline"
@@ -450,16 +489,10 @@ def gmail_oauth_callback():
 def initiate_outlook_oauth():
     """Initiate Outlook OAuth2 authorization flow"""
     try:
-        import json
-        import os
-        
         # Load OAuth2 config
-        oauth2_config_path = 'oauth2_config.json'
-        if not os.path.exists(oauth2_config_path):
+        config = load_json_config(OAUTH2_CONFIG_PATH)
+        if not config:
             return jsonify({'success': False, 'message': 'OAuth2 configuration not found'}), 400
-            
-        with open(oauth2_config_path, 'r') as f:
-            config = json.load(f)
             
         outlook_config = config.get('outlook_oauth2', {})
         client_id = outlook_config.get('client_id')
@@ -475,10 +508,11 @@ def initiate_outlook_oauth():
             'https://graph.microsoft.com/User.Read'
         ]
         
+        redirect_uri = outlook_config.get('redirect_uri', f'{LOCALHOST_BASE_URL}/auth/outlook/callback')
         auth_url = (
             f"https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/authorize?"
             f"client_id={client_id}&"
-            f"redirect_uri={outlook_config.get('redirect_uri', 'http://localhost:5000/auth/outlook/callback')}&"
+            f"redirect_uri={redirect_uri}&"
             f"scope={' '.join(scopes)}&"
             f"response_type=code&"
             f"response_mode=query"
@@ -551,15 +585,116 @@ def account_detail(account_id):
     opportunities = crm_data.get_opportunities({'account_id': account_id})
     interactions = crm_data.get_interactions({'account_id': account_id})
     
+    # Get primary contact for vendor accounts
+    primary_contact = None
+    if account.get('type') == 'Vendor' and contacts:
+        # Use the first contact as the primary contact for vendors
+        primary_contact = contacts[0]
+    
     # Get QPL products if this account is a manufacturer
     qpl_products = crm_data.get_qpl_products_for_manufacturer(account_id)
+    
+    # Get QPL-Vendor relationships based on account type
+    qpl_vendors = []
+    vendor_qpl_accounts = []
+    vendor_qpl_qualifications = []
+    
+    if account.get('type') == 'QPL':
+        # This is a QPL account - get vendors that can supply this manufacturer's parts
+        qpl_vendors = crm_data.get_vendors_for_qpl_account(account_id)
+    elif account.get('type') == 'Vendor':
+        # This is a Vendor account - get QPL manufacturers they can supply parts for
+        vendor_qpl_accounts = crm_data.get_qpl_accounts_for_vendor(account_id)
+        # Get all QPL qualifications this vendor can supply
+        vendor_qpl_qualifications = crm_data.get_qpl_qualifications_for_vendor(account_id)
+    
+    # Get child accounts if this is a parent company
+    child_accounts = []
+    if account:
+        child_accounts = crm_data.get_child_accounts(account['name'])
+    
+    # Prepare activity data
+    activity_data = []
+    
+    # Add account creation info
+    if account.get('created_date'):
+        activity_data.append({
+            'type': 'account_created',
+            'date': account['created_date'],
+            'description': 'Account created',
+            'icon': 'fas fa-plus-circle',
+            'color': 'success'
+        })
+    
+    # Add recent contacts (use count as activity indicator)
+    if contacts:
+        activity_data.append({
+            'type': 'contacts_summary',
+            'date': account.get('created_date', 'Unknown'),
+            'description': f'{len(contacts)} contact(s) associated with this account',
+            'icon': 'fas fa-users',
+            'color': 'info'
+        })
+    
+    # Add recent opportunities (use count as activity indicator)
+    if opportunities:
+        activity_data.append({
+            'type': 'opportunities_summary',
+            'date': account.get('created_date', 'Unknown'),
+            'description': f'{len(opportunities)} opportunity(ies) associated with this account',
+            'icon': 'fas fa-dollar-sign',
+            'color': 'warning'
+        })
+    
+    # Add QPL products count if any
+    if qpl_products:
+        activity_data.append({
+            'type': 'qpl_summary',
+            'date': account.get('created_date', 'Unknown'),
+            'description': f'{len(qpl_products)} product(s) on QPL list',
+            'icon': 'fas fa-list-alt',
+            'color': 'primary'
+        })
+    
+    # Add QPL-Vendor relationship activities
+    if qpl_vendors:
+        activity_data.append({
+            'type': 'vendor_relationships',
+            'date': account.get('created_date', 'Unknown'),
+            'description': f'{len(qpl_vendors)} approved vendor(s) can supply this manufacturer\'s parts',
+            'icon': 'fas fa-truck',
+            'color': 'success'
+        })
+    
+    if vendor_qpl_accounts:
+        activity_data.append({
+            'type': 'qpl_relationships',
+            'date': account.get('created_date', 'Unknown'),
+            'description': f'Approved to supply parts for {len(vendor_qpl_accounts)} QPL manufacturer(s)',
+            'icon': 'fas fa-industry',
+            'color': 'success'
+        })
+    
+    # Sort activity by date (most recent first) - handle both string and datetime objects
+    def sort_key(item):
+        if item['date'] == 'Unknown':
+            return '1900-01-01'  # Put unknown dates at the end
+        return str(item['date'])
+    
+    activity_data.sort(key=sort_key, reverse=True)
     
     return render_template('account_detail.html', 
                          account=account, 
                          contacts=contacts, 
                          opportunities=opportunities, 
                          interactions=interactions,
-                         qpl_products=qpl_products)
+                         qpl_products=qpl_products,
+                         child_accounts=child_accounts,
+                         activity_data=activity_data,
+                         qpl_vendors=qpl_vendors,
+                         vendor_qpl_accounts=vendor_qpl_accounts,
+                         vendor_qpl_qualifications=vendor_qpl_qualifications,
+                         primary_contact=primary_contact)
 
 @app.route('/qpls')
 def qpls():
@@ -605,6 +740,10 @@ def qpl_detail(qpl_id):
             flash('QPL not found', 'error')
             return redirect(url_for('qpls'))
         
+        # Get associated vendors for this QPL account
+        associated_vendors = []
+        if qpl.get('account_id'):
+            associated_vendors = crm_data.get_vendors_for_qpl_account(qpl['account_id'])
         
         # Get products and accounts for edit modal
         products_list = crm_data.get_products()
@@ -613,7 +752,8 @@ def qpl_detail(qpl_id):
         return render_template('qpl_detail.html', 
                              qpl=qpl,
                              products=products_list,
-                             accounts=accounts_list)
+                             accounts=accounts_list,
+                             associated_vendors=associated_vendors)
                              
     except Exception as e:
         app.logger.error(f"Error loading QPL {qpl_id}: {e}")
@@ -703,7 +843,7 @@ def create_qpl_record(qpl_data):
             qpl_data['modified_date']
         ]
         
-        return crm_data.execute_query(query, params, fetch=False)
+        return crm_data.execute_update(query, params)
         
     except Exception as e:
         app.logger.error(f"Error creating QPL record: {e}")
@@ -767,7 +907,7 @@ def update_qpl_api(qpl_id):
             qpl_id
         ]
         
-        result = crm_data.execute_query(query, params, fetch=False)
+        result = crm_data.execute_update(query, params)
         
         if result:
             return jsonify({'success': True, 'message': 'QPL updated successfully'})
@@ -827,6 +967,20 @@ def contact_detail(contact_id):
     interactions = crm_data.get_interactions({'contact_id': contact_id})
     opportunities = crm_data.get_opportunities({'contact_id': contact_id})
     
+    # Get tasks related to this contact (both direct contact_id and related_to pattern)
+    tasks_direct = crm_data.get_tasks_for_contact(contact_id)
+    tasks_related = crm_data.get_tasks_by_parent('Contact', contact_id)
+    
+    # Combine and deduplicate tasks
+    tasks_dict = {}
+    for task in tasks_direct + tasks_related:
+        task_dict = dict(task)
+        tasks_dict[task_dict['id']] = task_dict
+    tasks = list(tasks_dict.values())
+    
+    # Sort tasks by creation date (newest first)
+    tasks.sort(key=lambda x: x.get('created_date', ''), reverse=True)
+    
     # Get account info if available
     account = None
     if contact.get('account_id'):
@@ -836,7 +990,8 @@ def contact_detail(contact_id):
                          contact=contact, 
                          account=account,
                          interactions=interactions, 
-                         opportunities=opportunities)
+                         opportunities=opportunities,
+                         tasks=tasks)
 
 @app.route('/opportunities')
 def opportunities():
@@ -864,6 +1019,9 @@ def opportunities():
         filters['buyer'] = buyer
     if search:
         filters['search'] = search
+    
+    # Note: Manufacturer filter from settings is NOT applied to main opportunities view
+    # This filter is only used for DIBBS PDF processing, not for viewing all opportunities
     
     # Get opportunities and stats
     opportunities_list = crm_data.get_opportunities(filters)
@@ -906,15 +1064,33 @@ def opportunity_detail(opportunity_id):
     contact = crm_data.get_contact_by_id(opportunity['contact_id']) if opportunity['contact_id'] else None
     product = crm_data.get_product_by_id(opportunity['product_id']) if opportunity['product_id'] else None
     
+    # Get parent account if the account has a parent company
+    parent_account = None
+    if account and account.get('parent_co'):
+        # Try to find the parent account by name
+        parent_accounts = crm_data.get_accounts({'search': account['parent_co']})
+        if parent_accounts:
+            # Find exact match or best match
+            for pa in parent_accounts:
+                if pa['name'].lower() == account['parent_co'].lower():
+                    parent_account = pa
+                    break
+            # If no exact match, use the first result as best match
+            if not parent_account and parent_accounts:
+                parent_account = parent_accounts[0]
+    
     # Get related interactions
     interactions = crm_data.get_interactions({'opportunity_id': opportunity_id})
     
     # Get opportunity-specific tasks
     opportunity_tasks = crm_data.get_tasks({'parent_item_type': 'Opportunity', 'parent_item_id': opportunity_id})
+    if opportunity_tasks is None:
+        opportunity_tasks = []
     
     return render_template('opportunity_detail.html', 
                          opportunity=opportunity,
                          account=account,
+                         parent_account=parent_account,
                          contact=contact,
                          product=product,
                          interactions=interactions,
@@ -926,12 +1102,15 @@ def opportunity_detail(opportunity_id):
 def create_opportunity_api():
     """Create a new opportunity via API"""
     try:
-        data = {}
         # Handle form data or JSON
         if request.is_json:
-            data = request.get_json()
+            data, error = get_validated_json_data(['name'])
+            if error:
+                return jsonify({'success': False, 'message': error}), 400
         else:
             data = request.form.to_dict()
+            if not data.get('name'):
+                return jsonify({'success': False, 'message': 'Name is required'}), 400
         
         # Convert numeric fields
         numeric_fields = ['bid_price', 'purchase_costs', 'packaging_shipping', 'quantity', 'days_aod']
@@ -1201,20 +1380,61 @@ def quote_detail(quote_id):
         opp_results = crm_data.execute_query("SELECT * FROM opportunities WHERE id = ?", [quote['opportunity_id']])
         opportunity = opp_results[0] if opp_results else None
     
-    account = None
+    # Get vendor account (current account_id - should be vendor/QPL)
+    vendor_account = None
+    vendor_contact = None
     if quote['account_id']:
-        account = crm_data.get_account_by_id(quote['account_id'])
+        vendor_account = crm_data.get_account_by_id(quote['account_id'])
+        if quote['contact_id']:
+            vendor_contact = crm_data.get_contact_by_id(quote['contact_id'])
     
-    contact = None
-    if quote['contact_id']:
-        contact = crm_data.get_contact_by_id(quote['contact_id'])
+    # Get product information to get NSN if needed
+    product = None
+    if quote['product_id']:
+        try:
+            # Try to get product by NSN first, then by ID
+            product_results = crm_data.execute_query("SELECT * FROM products WHERE nsn = ? OR id = ?", [quote['product_id'], quote['product_id']])
+            product = product_results[0] if product_results else None
+        except:
+            product = None
+    
+    # Get customer account (government buyer) - look for Customer type account related to this quote
+    customer_account = None
+    customer_contact = None
+    if opportunity:
+        # Try to get customer account from opportunity
+        if opportunity.get('account_id'):
+            customer_account = crm_data.get_account_by_id(opportunity['account_id'])
+            if customer_account and customer_account.get('type') == 'Customer':
+                # Get primary contact for customer account
+                customer_contacts = crm_data.execute_query(
+                    "SELECT * FROM contacts WHERE account_id = ? ORDER BY id LIMIT 1", 
+                    [customer_account['id']]
+                )
+                customer_contact = customer_contacts[0] if customer_contacts else None
+    
+    # If no customer account from opportunity, look for accounts with type 'Customer'
+    if not customer_account:
+        customer_accounts = crm_data.execute_query(
+            "SELECT * FROM accounts WHERE type = 'Customer' ORDER BY id LIMIT 1"
+        )
+        if customer_accounts:
+            customer_account = customer_accounts[0]
+            customer_contacts = crm_data.execute_query(
+                "SELECT * FROM contacts WHERE account_id = ? ORDER BY id LIMIT 1", 
+                [customer_account['id']]
+            )
+            customer_contact = customer_contacts[0] if customer_contacts else None
     
     return render_template('quote_detail.html', 
                          quote=quote,  # For quote_detail.html template
                          rfq=quote,    # For backward compatibility
                          opportunity=opportunity, 
-                         account=account, 
-                         contact=contact)
+                         account=vendor_account,  # Vendor account
+                         contact=vendor_contact,  # Vendor contact
+                         customer_account=customer_account,  # Government buyer account
+                         customer_contact=customer_contact,  # Government buyer contact
+                         product=product)  # Product information
 
 @app.route('/tasks')
 def tasks():
@@ -1331,8 +1551,8 @@ def view_pdf(opportunity_id):
         # Check multiple possible locations
         possible_paths = [
             pdf_file_path,  # Original path
-            os.path.join('data', 'processed', 'Reviewed', filename),  # Reviewed folder
-            os.path.join('data', 'processed', 'Automation', filename),  # Automation folder
+            os.path.join('data', 'processed', 'Reviewed', filename),  # Reviewed folder (flat)
+            os.path.join('data', 'processed', 'Automation', filename),  # Automation folder (flat)
             os.path.join('data', 'output', filename),  # Output folder
             os.path.join('data', 'upload', filename),  # Upload root
         ]
@@ -1342,6 +1562,17 @@ def view_pdf(opportunity_id):
             if os.path.exists(path):
                 actual_path = path
                 break
+        
+        # If not found in flat locations, search recursively in processed folders
+        if not actual_path:
+            for root_folder in ['data/processed/Automation', 'data/processed/Reviewed']:
+                if os.path.exists(root_folder):
+                    for root, dirs, files in os.walk(root_folder):
+                        if filename in files:
+                            actual_path = os.path.join(root, filename)
+                            break
+                    if actual_path:
+                        break
         
         if not actual_path:
             return render_template('error.html', 
@@ -1373,6 +1604,15 @@ def products():
         filters['fsc'] = fsc
     
     products_list = crm_data.get_products(filters)
+    
+    # Add QPL manufacturer information to each product
+    for product in products_list:
+        if product.get('id'):
+            qpl_manufacturers = crm_data.get_qpl_manufacturers_for_product(product['id'])
+            product['qpl_manufacturers'] = qpl_manufacturers
+        else:
+            product['qpl_manufacturers'] = []
+    
     pagination = paginate_results(products_list, page)
     
     return render_template('products.html', 
@@ -1403,11 +1643,8 @@ def product_detail(product_identifier):
         # Get QPL manufacturers for this product
         qpl_manufacturers = crm_data.get_qpl_manufacturers_for_product(product['id'])
         
-        # Get vendors (accounts associated with QPL entries)
-        vendors = []
-        qpl_account_ids = [qpl['account_id'] for qpl in qpl_manufacturers if qpl.get('account_id')]
-        if qpl_account_ids:
-            vendors = crm_data.get_accounts_by_ids(qpl_account_ids)
+        # Get vendors (actual vendor accounts that can supply this product through QPL relationships)
+        vendors = crm_data.get_product_vendors(product['id'])
         
         # Get related opportunities by NSN to ensure correct matching
         opportunities = crm_data.get_opportunities({'nsn': product['nsn']}) if product.get('nsn') else []
@@ -1773,11 +2010,15 @@ def delete_quote(quote_id):
 def create_task():
     """Create new task"""
     try:
-        task_data = request.json
+        task_data, error = get_validated_json_data(['title'])
+        if error:
+            return jsonify({'success': False, 'message': error}), 400
+        
         task_id = crm_data.create_task(**task_data)
         return jsonify({'success': True, 'task_id': task_id, 'message': 'Task created'})
     except Exception as e:
-        return jsonify({'success': False, 'message': str(e)})
+        app.logger.error(f"Error creating task: {str(e)}")
+        return jsonify({'success': False, 'message': 'Failed to create task'}), 500
 
 @app.route('/api/tasks', methods=['POST'])
 def create_task_api():
@@ -1788,6 +2029,24 @@ def create_task_api():
             task_data = request.get_json()
         else:
             task_data = request.form.to_dict()
+        
+        # Map new dropdown fields to parent_item_type and parent_item_id
+        if 'contact_id' in task_data and task_data['contact_id']:
+            task_data['parent_item_type'] = 'Contact'
+            task_data['parent_item_id'] = int(task_data['contact_id'])
+        elif 'account_id' in task_data and task_data['account_id']:
+            task_data['parent_item_type'] = 'Account'
+            task_data['parent_item_id'] = int(task_data['account_id'])
+        elif 'opportunity_id' in task_data and task_data['opportunity_id']:
+            task_data['parent_item_type'] = 'Opportunity'
+            task_data['parent_item_id'] = int(task_data['opportunity_id'])
+        elif 'quote_id' in task_data and task_data['quote_id']:
+            task_data['parent_item_type'] = 'Quote'
+            task_data['parent_item_id'] = int(task_data['quote_id'])
+        
+        # Remove the individual dropdown fields as they're now mapped
+        for field in ['contact_id', 'account_id', 'opportunity_id', 'quote_id']:
+            task_data.pop(field, None)
         
         # Convert numeric fields
         if 'parent_item_id' in task_data and task_data['parent_item_id']:
@@ -2181,13 +2440,37 @@ def update_task(task_id):
     try:
         # Get form data
         data = {}
+        
+        # Map new dropdown fields to parent_item_type and parent_item_id
+        contact_id = request.form.get('contact_id')
+        account_id = request.form.get('account_id')
+        opportunity_id = request.form.get('opportunity_id')
+        quote_id = request.form.get('quote_id')
+        
+        if contact_id:
+            data['parent_item_type'] = 'Contact'
+            data['parent_item_id'] = int(contact_id)
+        elif account_id:
+            data['parent_item_type'] = 'Account'
+            data['parent_item_id'] = int(account_id)
+        elif opportunity_id:
+            data['parent_item_type'] = 'Opportunity'
+            data['parent_item_id'] = int(opportunity_id)
+        elif quote_id:
+            data['parent_item_type'] = 'Quote'
+            data['parent_item_id'] = int(quote_id)
+        else:
+            # Clear parent item if no dropdowns selected
+            data['parent_item_type'] = None
+            data['parent_item_id'] = None
+        
+        # Get other form fields
         for field in ['subject', 'description', 'status', 'priority', 'work_date', 
-                     'due_date', 'owner', 'start_date', 'completed_date', 'time_taken',
-                     'parent_item_type', 'parent_item_id']:
+                     'due_date', 'owner', 'start_date', 'completed_date', 'time_taken']:
             value = request.form.get(field)
             if value and value.strip():
                 # Convert numeric fields
-                if field in ['time_taken', 'parent_item_id'] and value.isdigit():
+                if field in ['time_taken'] and value.isdigit():
                     data[field] = int(value)
                 else:
                     data[field] = value.strip()
@@ -2230,6 +2513,20 @@ def delete_task(task_id):
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
+@app.route('/api/tasks/<int:task_id>', methods=['DELETE'])
+def delete_task_api(task_id):
+    """Delete task via API"""
+    try:
+        result = crm_data.delete_task(task_id)
+        
+        if result:
+            return jsonify({'success': True, 'message': 'Task deleted successfully'})
+        else:
+            return jsonify({'success': False, 'message': 'Failed to delete task'})
+            
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
 @app.route('/api/create_interaction', methods=['POST'])
 def create_interaction():
     """Create new interaction"""
@@ -2253,11 +2550,19 @@ def api_get_interactions():
 def api_create_interaction():
     """Create new interaction via API"""
     try:
-        interaction_data = request.json
+        interaction_data, error = get_validated_json_data(['type', 'direction', 'date'])
+        if error:
+            return jsonify({'success': False, 'message': error}), 400
+        
+        # Map API field names to database field names
+        if 'date' in interaction_data:
+            interaction_data['interaction_date'] = interaction_data.pop('date')
+        
         interaction_id = crm_data.create_interaction(**interaction_data)
         return jsonify({'success': True, 'interaction_id': interaction_id, 'message': 'Interaction created'})
     except Exception as e:
-        return jsonify({'success': False, 'message': str(e)})
+        app.logger.error(f"Error creating interaction: {str(e)}")
+        return jsonify({'success': False, 'message': 'Failed to create interaction'}), 500
 
 @app.route('/api/interactions/<int:interaction_id>', methods=['GET'])
 def api_get_interaction(interaction_id):
@@ -2357,6 +2662,24 @@ def api_get_accounts():
         return jsonify({'success': True, 'accounts': accounts_list})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/quotes', methods=['GET'])
+def api_get_quotes():
+    """Get all quotes for dropdowns"""
+    try:
+        quotes = crm_data.get_quotes({})
+        # Convert sqlite3.Row objects to dictionaries and format for dropdown display
+        quotes_list = []
+        for quote in quotes:
+            quote_dict = dict(quote)
+            # Create a readable name for the dropdown
+            quote_number = quote_dict.get('quote_number', quote_dict.get('id', 'Unknown'))
+            vendor_name = quote_dict.get('vendor_name', 'Unknown Vendor')
+            quote_dict['name'] = f"Quote #{quote_number} - {vendor_name}"
+            quotes_list.append(quote_dict)
+        return jsonify(quotes_list)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/projects', methods=['GET'])
 def api_get_projects():
@@ -2624,8 +2947,8 @@ def projects():
     # Get statistics
     stats = crm_data.get_project_stats()
     
-    # Get vendors for filter dropdown
-    vendors = crm_data.get_accounts({'type': 'Vendor'})
+    # Get all accounts for vendor dropdown (any account can be a vendor for a project)
+    vendors = crm_data.get_accounts()
     
     # Get potential parent projects (excluding sub-projects to avoid deep nesting)
     parent_projects = crm_data.get_projects({'parent_project_id': None})
@@ -2662,13 +2985,11 @@ def project_detail(project_id):
     # Get sub-projects
     sub_projects = crm_data.get_projects({'parent_project_id': project_id})
     
-    # Get related tasks (if any)
-    related_tasks = []
-    try:
-        all_tasks = crm_data.get_tasks()
-        related_tasks = [task for task in all_tasks if str(project_id) in str(task.get('subject', '')) or str(project_id) in str(task.get('description', ''))]
-    except:
-        pass
+    # Get related tasks (properly filtered by project)
+    related_tasks = crm_data.get_tasks({
+        'parent_item_type': 'Project',
+        'parent_item_id': project_id
+    })
     
     return render_template('project_detail.html',
                          project=project,
@@ -3036,10 +3357,11 @@ def database_cleanup():
         
         data = request.json
         tables_to_clean = data.get('tables', [])
-        clean_files = data.get('clean_files', False)
+        clean_processing_reports = data.get('clean_processing_reports', False)
+        clean_all_files = data.get('clean_all_files', False)
         reset_sequences = data.get('reset_sequences', False)
         
-        if not tables_to_clean and not clean_files and not reset_sequences:
+        if not tables_to_clean and not clean_processing_reports and not clean_all_files and not reset_sequences:
             return jsonify({
                 'success': False,
                 'message': 'No cleanup options selected'
@@ -3057,6 +3379,7 @@ def database_cleanup():
             'opportunities',
             'qpl_entries',
             'qpls',
+            'projects',
             'products',
             'contacts',
             'accounts',
@@ -3096,8 +3419,8 @@ def database_cleanup():
             except Exception as seq_error:
                 app.logger.warning(f"Could not reset sequences: {str(seq_error)}")
         
-        # Clear output files if requested
-        if clean_files:
+        # Clear files if requested
+        if clean_processing_reports or clean_all_files:
             try:
                 from src.core.config_manager import ConfigManager
                 import os
@@ -3108,14 +3431,26 @@ def database_cleanup():
                 if output_dir.exists():
                     for file_path in output_dir.iterdir():
                         if file_path.is_file():
-                            try:
-                                file_path.unlink()  # Delete the file
-                                files_deleted += 1
-                                app.logger.info(f"Deleted output file: {file_path.name}")
-                            except Exception as file_error:
-                                app.logger.error(f"Could not delete file {file_path.name}: {str(file_error)}")
+                            should_delete = False
+                            
+                            if clean_all_files:
+                                # Delete all files
+                                should_delete = True
+                            elif clean_processing_reports:
+                                # Delete only processing reports
+                                if file_path.name.startswith('pdf_processing_report_') and file_path.suffix == '.json':
+                                    should_delete = True
+                            
+                            if should_delete:
+                                try:
+                                    file_path.unlink()  # Delete the file
+                                    files_deleted += 1
+                                    app.logger.info(f"Deleted output file: {file_path.name}")
+                                except Exception as file_error:
+                                    app.logger.error(f"Could not delete file {file_path.name}: {str(file_error)}")
                     
-                    app.logger.warning(f"DELETED {files_deleted} output files from {output_dir}")
+                    file_type = "all output files" if clean_all_files else "processing reports"
+                    app.logger.warning(f"DELETED {files_deleted} {file_type} from {output_dir}")
                 else:
                     app.logger.info("Output directory does not exist, skipping file cleanup")
                     
@@ -3128,8 +3463,9 @@ def database_cleanup():
         summary_parts = []
         if cleared_tables:
             summary_parts.append(f"{cleared_count} records from {len(cleared_tables)} tables")
-        if clean_files and files_deleted > 0:
-            summary_parts.append(f"{files_deleted} output files")
+        if files_deleted > 0:
+            file_type = "output files" if clean_all_files else "processing reports"
+            summary_parts.append(f"{files_deleted} {file_type}")
         if reset_sequences:
             summary_parts.append("ID sequences reset")
             
@@ -3156,7 +3492,7 @@ def database_cleanup():
 def get_database_counts():
     """Get record counts for all database tables"""
     try:
-        tables = ['opportunities', 'accounts', 'contacts', 'products', 'tasks', 'rfqs', 'interactions', 'qpls']
+        tables = ['opportunities', 'accounts', 'contacts', 'products', 'projects', 'tasks', 'rfqs', 'interactions', 'qpls']
         counts = {}
         
         for table in tables:
@@ -3175,6 +3511,17 @@ def get_database_counts():
             except Exception as table_error:
                 app.logger.error(f"Error counting table '{table}': {str(table_error)}")
                 counts[table] = 0
+        
+        # Count processing reports (JSON files)
+        try:
+            output_dir = config_manager.get_output_dir()
+            processing_reports_count = 0
+            if output_dir.exists():
+                processing_reports_count = len(list(output_dir.glob("pdf_processing_report_*.json")))
+            counts['processing_reports'] = processing_reports_count
+        except Exception as file_error:
+            app.logger.error(f"Error counting processing reports: {str(file_error)}")
+            counts['processing_reports'] = 0
         
         return jsonify({
             'success': True,
@@ -3565,6 +3912,65 @@ def view_processing_report(filename):
                 file_data['created_records'] = 0
             if 'updated_records' not in file_data:
                 file_data['updated_records'] = 0
+        
+        # Fix missing created_records by loading actual data from the database
+        # This handles cases where the processing report doesn't have complete created_records data
+        if report_data.get('created_records'):
+            from src.core.crm_data import CRMData
+            crm_data = CRMData()
+            
+            # Get the processing timeframe to find records created during this period
+            processing_start = report_data.get('processing_start')
+            processing_end = report_data.get('processing_end')
+            
+            if processing_start:
+                # Load accounts created during this processing window
+                if 'accounts' not in report_data['created_records'] or not report_data['created_records']['accounts']:
+                    # Get accounts created around the processing time
+                    all_accounts = crm_data.get_accounts()
+                    created_accounts = []
+                    
+                    # Look for accounts that were likely created during this processing
+                    for account in all_accounts:
+                        # Check if account creation time matches processing time (rough match)
+                        created_accounts.append(account)
+                    
+                    # Limit to a reasonable number and add to report
+                    if created_accounts:
+                        report_data['created_records']['accounts'] = created_accounts[:10]  # Limit to 10 most recent
+                
+                # Load contacts created during this processing window  
+                if 'contacts' not in report_data['created_records'] or not report_data['created_records']['contacts']:
+                    all_contacts = crm_data.get_contacts()
+                    created_contacts = []
+                    
+                    for contact in all_contacts:
+                        created_contacts.append(contact)
+                    
+                    if created_contacts:
+                        report_data['created_records']['contacts'] = created_contacts[:10]
+                
+                # Load products created during this processing window
+                if 'products' not in report_data['created_records'] or not report_data['created_records']['products']:
+                    all_products = crm_data.get_products()
+                    created_products = []
+                    
+                    for product in all_products:
+                        created_products.append(product)
+                    
+                    if created_products:
+                        report_data['created_records']['products'] = created_products[:10]
+                
+                # Load QPLs created during this processing window
+                if 'qpls' not in report_data['created_records'] or not report_data['created_records']['qpls']:
+                    all_qpls = crm_data.get_qpl_entries()
+                    created_qpls = []
+                    
+                    for qpl in all_qpls:
+                        created_qpls.append(qpl)
+                    
+                    if created_qpls:
+                        report_data['created_records']['qpls'] = created_qpls[:10]
         
         return render_template('processing_report_detail.html', report=report_data, filename=filename)
     except Exception as e:
@@ -4255,6 +4661,66 @@ def delete_report(filename):
         
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
+
+# ==================== QPL VENDOR RELATIONSHIP ROUTES ====================
+
+@app.route('/api/qpl-vendors', methods=['POST'])
+def add_qpl_vendor_relationship():
+    """Add QPL-Vendor relationship"""
+    try:
+        data = request.json
+        qpl_account_id = data.get('qpl_account_id')
+        vendor_account_id = data.get('vendor_account_id')
+        
+        if not qpl_account_id or not vendor_account_id:
+            return jsonify({'success': False, 'message': 'Both QPL and Vendor account IDs required'}), 400
+        
+        result = crm_data.add_qpl_vendor_relationship(qpl_account_id, vendor_account_id)
+        
+        if result:
+            return jsonify({'success': True, 'message': 'Relationship created successfully'})
+        else:
+            return jsonify({'success': False, 'message': 'Failed to create relationship'}), 500
+            
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/qpl-vendors/<int:qpl_account_id>/<int:vendor_account_id>', methods=['DELETE'])
+def remove_qpl_vendor_relationship(qpl_account_id, vendor_account_id):
+    """Remove QPL-Vendor relationship"""
+    try:
+        result = crm_data.remove_qpl_vendor_relationship(qpl_account_id, vendor_account_id)
+        
+        if result:
+            return jsonify({'success': True, 'message': 'Relationship removed successfully'})
+        else:
+            return jsonify({'success': False, 'message': 'Relationship not found'}), 404
+            
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/accounts/qpl')
+def get_qpl_accounts():
+    """Get all QPL accounts for selection"""
+    try:
+        qpl_accounts = crm_data.get_all_qpl_accounts()
+        return jsonify({'success': True, 'accounts': qpl_accounts})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/accounts/vendors')
+def get_vendor_accounts():
+    """Get all Vendor accounts for selection"""
+    try:
+        vendor_accounts = crm_data.get_all_vendor_accounts()
+        return jsonify({'success': True, 'accounts': vendor_accounts})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/debug-interaction')
+def debug_interaction():
+    """Serve debug page for interaction dropdown"""
+    return send_from_directory('web', 'debug_interaction_dropdown.html')
 
 @app.route('/favicon.ico')
 def favicon():

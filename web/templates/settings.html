@@ -10,6 +10,12 @@
         height: 12px;
         display: inline-block;
     }
+    .bg-purple {
+        background-color: #6f42c1 !important;
+    }
+    .text-purple {
+        color: #6f42c1 !important;
+    }
 </style>
 {% endblock %}
 
@@ -952,6 +958,14 @@
                                                 <br><small class="text-muted">Product catalog and specifications</small>
                                             </label>
                                         </div>
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="checkbox" id="cleanProjects" name="tables" value="projects">
+                                            <label class="form-check-label" for="cleanProjects">
+                                                <i class="fas fa-project-diagram me-1 text-purple"></i>
+                                                <strong>Projects</strong>
+                                                <br><small class="text-muted">Project records and related data</small>
+                                            </label>
+                                        </div>
                                     </div>
                                     <div class="col-md-6">
                                         <h6 class="fw-semibold mb-3">Activity & Reference Data</h6>
@@ -1023,11 +1037,19 @@
                                     <div class="col-md-6">
                                         <h6 class="fw-semibold mb-3">System Data</h6>
                                         <div class="form-check mb-2">
-                                            <input class="form-check-input" type="checkbox" id="cleanOutputFiles" name="clean_files" value="true">
+                                            <input class="form-check-input" type="checkbox" id="cleanProcessingReports" name="clean_files" value="processing_reports">
+                                            <label class="form-check-label" for="cleanProcessingReports">
+                                                <i class="fas fa-file-alt me-1 text-info"></i>
+                                                <strong>Processing Reports</strong>
+                                                <br><small class="text-muted">PDF processing reports and logs</small>
+                                            </label>
+                                        </div>
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="checkbox" id="cleanOutputFiles" name="clean_files" value="all_files">
                                             <label class="form-check-label" for="cleanOutputFiles">
                                                 <i class="fas fa-folder me-1 text-warning"></i>
-                                                <strong>Output Files</strong>
-                                                <br><small class="text-muted">Generated CSV/JSON reports and exports</small>
+                                                <strong>All Output Files</strong>
+                                                <br><small class="text-muted">All generated CSV/JSON reports and exports</small>
                                             </label>
                                         </div>
                                         <div class="form-check mb-2">
@@ -1098,12 +1120,20 @@
                                         <span class="badge bg-warning text-dark" id="countProducts">-</span>
                                     </div>
                                     <div class="d-flex justify-content-between mb-1">
+                                        <span>Projects:</span>
+                                        <span class="badge bg-purple text-white" id="countProjects">-</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-1">
                                         <span>Tasks:</span>
                                         <span class="badge bg-primary" id="countTasks">-</span>
                                     </div>
                                     <div class="d-flex justify-content-between mb-1">
                                         <span>RFQs:</span>
                                         <span class="badge bg-success" id="countRfqs">-</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <span>Processing Reports:</span>
+                                        <span class="badge bg-info" id="countProcessingReports">-</span>
                                     </div>
                                 </div>
                             </div>
@@ -1407,9 +1437,18 @@ document.addEventListener('DOMContentLoaded', function() {
         // Handle select all tables checkbox
         selectAllTables.addEventListener('change', function() {
             const tableCheckboxes = document.querySelectorAll('input[name="tables"]');
+            const fileCheckboxes = document.querySelectorAll('input[name="clean_files"]');
+            
             tableCheckboxes.forEach(checkbox => {
                 checkbox.checked = this.checked;
             });
+            
+            // Also check file cleanup options when selecting all
+            if (this.checked) {
+                fileCheckboxes.forEach(checkbox => {
+                    checkbox.checked = true;
+                });
+            }
         });
 
         // Enable/disable cleanup button based on confirmation
@@ -1423,17 +1462,35 @@ document.addEventListener('DOMContentLoaded', function() {
             
             const formData = new FormData(this);
             const selectedTables = formData.getAll('tables');
-            const cleanFiles = formData.get('clean_files') === 'true';
+            const cleanFilesOptions = formData.getAll('clean_files');
             const resetSequences = formData.get('reset_sequences') === 'true';
             
-            if (selectedTables.length === 0 && !cleanFiles && !resetSequences) {
+            // Process file cleanup options
+            let cleanProcessingReports = false;
+            let cleanAllFiles = false;
+            
+            if (cleanFilesOptions.includes('processing_reports')) {
+                cleanProcessingReports = true;
+            }
+            if (cleanFilesOptions.includes('all_files')) {
+                cleanAllFiles = true;
+            }
+            
+            if (selectedTables.length === 0 && !cleanProcessingReports && !cleanAllFiles && !resetSequences) {
                 showAlert('warning', 'Please select at least one cleanup option.');
                 return;
             }
             
             // Final confirmation
             const tablesList = selectedTables.length > 0 ? selectedTables.join(', ') : 'none';
-            const message = `This will permanently delete data from:\n\nTables: ${tablesList}\n${cleanFiles ? '• Output files\n' : ''}${resetSequences ? '• Reset ID sequences\n' : ''}\nThis action cannot be undone!\n\nAre you sure you want to continue?`;
+            let fileCleanupDesc = '';
+            if (cleanAllFiles) {
+                fileCleanupDesc = '• All output files\n';
+            } else if (cleanProcessingReports) {
+                fileCleanupDesc = '• Processing reports\n';
+            }
+            
+            const message = `This will permanently delete data from:\n\nTables: ${tablesList}\n${fileCleanupDesc}${resetSequences ? '• Reset ID sequences\n' : ''}\nThis action cannot be undone!\n\nAre you sure you want to continue?`;
             
             if (!confirm(message)) {
                 return;
@@ -1446,7 +1503,8 @@ document.addEventListener('DOMContentLoaded', function() {
             
             const requestData = {
                 tables: selectedTables,
-                clean_files: cleanFiles,
+                clean_processing_reports: cleanProcessingReports,
+                clean_all_files: cleanAllFiles,
                 reset_sequences: resetSequences
             };
             
@@ -1495,8 +1553,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('countAccounts').textContent = data.counts.accounts || 0;
                 document.getElementById('countContacts').textContent = data.counts.contacts || 0;
                 document.getElementById('countProducts').textContent = data.counts.products || 0;
+                document.getElementById('countProjects').textContent = data.counts.projects || 0;
                 document.getElementById('countTasks').textContent = data.counts.tasks || 0;
                 document.getElementById('countRfqs').textContent = data.counts.rfqs || 0;
+                document.getElementById('countProcessingReports').textContent = data.counts.processing_reports || 0;
             }
         })
         .catch(error => {

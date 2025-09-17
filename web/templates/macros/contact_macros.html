@@ -1,0 +1,635 @@
+{# Contact Detail Macros #}
+{% from 'macros/account_macros.html' import account_type_badge %}
+
+{# Quick Actions Card Macro #}
+{% macro quick_actions_card(contact) %}
+<div class="card mb-4 border-0 shadow-sm">
+    <div class="card-header bg-primary text-white border-0">
+        <h6 class="card-title mb-0 fw-bold">
+            <i class="fas fa-bolt me-2"></i>Quick Actions
+        </h6>
+    </div>
+    <div class="card-body">
+        <div class="d-grid gap-2">
+            {% if contact.email %}
+            <a href="mailto:{{ contact.email }}" class="btn btn-outline-primary fw-medium">
+                <i class="fas fa-envelope me-1"></i>
+                Send Email
+            </a>
+            {% endif %}
+            {% if contact.phone %}
+            <a href="tel:{{ contact.phone }}" class="btn btn-outline-success fw-medium">
+                <i class="fas fa-phone me-1"></i>
+                Call Contact
+            </a>
+            {% endif %}
+            <button class="btn btn-outline-info fw-medium">
+                <i class="fas fa-calendar me-1"></i>
+                Schedule Meeting
+            </button>
+            <button class="btn btn-outline-warning fw-medium">
+                <i class="fas fa-sticky-note me-1"></i>
+                Add Note
+            </button>
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
+{# Contact Statistics Card Macro #}
+{% macro contact_stats_card(interactions_count, opportunities_count) %}
+<div class="card mb-4 border-0 shadow-sm">
+    <div class="card-header bg-success text-white border-0">
+        <h6 class="card-title mb-0 fw-bold">
+            <i class="fas fa-chart-bar me-2"></i>Contact Statistics
+        </h6>
+    </div>
+    <div class="card-body">
+        <div class="row text-center">
+            <div class="col-6">
+                <div class="border-end border-secondary border-opacity-25 pe-3">
+                    <div class="bg-success bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-2" style="width: 55px; height: 55px;">
+                        <i class="fas fa-comments text-success fs-5"></i>
+                    </div>
+                    <h4 class="text-dark mb-1 fw-bold">{{ interactions_count }}</h4>
+                    <small class="text-muted fw-medium">Interactions</small>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="ps-3">
+                    <div class="bg-success bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-2" style="width: 55px; height: 55px;">
+                        <i class="fas fa-dollar-sign text-success fs-5"></i>
+                    </div>
+                    <h4 class="text-dark mb-1 fw-bold">{{ opportunities_count }}</h4>
+                    <small class="text-muted fw-medium">Opportunities</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
+{# Account Information Card Macro #}
+{% macro account_info_card(account) %}
+{% if account %}
+<div class="card mb-4 border-0 shadow-sm">
+    <div class="card-header bg-warning text-dark border-0">
+        <h6 class="card-title mb-0 fw-bold">
+            <i class="fas fa-building me-2"></i>Account Information
+        </h6>
+    </div>
+    <div class="card-body">
+        <div class="d-flex align-items-center mb-3">
+            <div class="bg-warning bg-opacity-10 rounded-circle p-2 me-3">
+                <i class="fas fa-building text-warning fs-5"></i>
+            </div>
+            <div class="flex-grow-1">
+                <h6 class="mb-1 text-dark fw-bold">
+                    <a href="{{ url_for('account_detail', account_id=account.id) }}" class="text-decoration-none text-dark">
+                        {{ account.name }}
+                    </a>
+                </h6>
+                {{ account_type_badge(account.type) }}
+            </div>
+        </div>
+        
+        <div class="small text-muted">
+            {% if account.address %}
+            <div class="mb-1">
+                <i class="fas fa-map-marker-alt me-1"></i>
+                {{ account.address }}
+                {% if account.city or account.state %}
+                <br>{{ account.city }}{% if account.city and account.state %}, {% endif %}{{ account.state }} {{ account.zip_code }}
+                {% endif %}
+            </div>
+            {% endif %}
+            
+            {% if account.phone %}
+            <div class="mb-1">
+                <i class="fas fa-phone me-1"></i>
+                <a href="tel:{{ account.phone }}" class="text-decoration-none">{{ account.phone }}</a>
+            </div>
+            {% endif %}
+            
+            {% if account.email %}
+            <div class="mb-1">
+                <i class="fas fa-envelope me-1"></i>
+                <a href="mailto:{{ account.email }}" class="text-decoration-none">{{ account.email }}</a>
+            </div>
+            {% endif %}
+            
+            {% if account.website %}
+            <div class="mb-1">
+                <i class="fas fa-globe me-1"></i>
+                <a href="{{ account.website }}" target="_blank" class="text-decoration-none">{{ account.website }}</a>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="d-grid mt-3">
+            <a href="{{ url_for('account_detail', account_id=account.id) }}" class="btn btn-outline-warning btn-sm fw-medium">
+                <i class="fas fa-external-link-alt me-1"></i>
+                View Account Details
+            </a>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="card mb-4 border-0 shadow-sm">
+    <div class="card-header bg-secondary text-white border-0">
+        <h6 class="card-title mb-0 fw-bold">
+            <i class="fas fa-building me-2"></i>Account Information
+        </h6>
+    </div>
+    <div class="card-body text-center">
+        <div class="bg-secondary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+            <i class="fas fa-building text-secondary fa-2x"></i>
+        </div>
+        <h6 class="text-dark fw-bold mb-2">No Account Assigned</h6>
+        <p class="text-muted small mb-3">This contact is not associated with any account.</p>
+        <button class="btn btn-outline-secondary btn-sm fw-medium" data-bs-toggle="modal" data-bs-target="#assignAccountModal">
+            <i class="fas fa-plus me-1"></i>
+            Assign Account
+        </button>
+    </div>
+</div>
+{% endif %}
+{% endmacro %}
+
+{# Edit Contact Modal Macro #}
+{% macro edit_contact_modal() %}
+<div class="modal fade" id="editContactModal" tabindex="-1" aria-labelledby="editContactModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editContactModalLabel">Edit Contact</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="editContactForm">
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="editFirstName" class="form-label">First Name *</label>
+                            <input type="text" class="form-control" id="editFirstName" name="first_name" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="editLastName" class="form-label">Last Name *</label>
+                            <input type="text" class="form-control" id="editLastName" name="last_name" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="editEmail" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="editEmail" name="email">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="editPhone" class="form-label">Phone</label>
+                            <input type="tel" class="form-control" id="editPhone" name="phone">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="editTitle" class="form-label">Title</label>
+                            <input type="text" class="form-control" id="editTitle" name="title">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="editDepartment" class="form-label">Department</label>
+                            <input type="text" class="form-control" id="editDepartment" name="department">
+                        </div>
+                        
+                        <!-- Account Assignment Section -->
+                        <div class="col-12">
+                            <hr class="my-3">
+                            <h6 class="mb-3">Account Association</h6>
+                        </div>
+                        
+                        <div class="col-12">
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="accountOption" id="editAccountOptionExisting" value="existing" checked>
+                                <label class="form-check-label" for="editAccountOptionExisting">
+                                    Link to Existing Account
+                                </label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="accountOption" id="editAccountOptionNew" value="new">
+                                <label class="form-check-label" for="editAccountOptionNew">
+                                    Create New Account
+                                </label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="accountOption" id="editAccountOptionNone" value="none">
+                                <label class="form-check-label" for="editAccountOptionNone">
+                                    No Account
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Existing Account Selection -->
+                        <div class="col-12" id="editExistingAccountSection">
+                            <label for="editAccountId" class="form-label">Select Account</label>
+                            <select class="form-select" id="editAccountId" name="account_id">
+                                <option value="">Select an account...</option>
+                                <!-- Options will be populated by JavaScript -->
+                            </select>
+                        </div>
+                        
+                        <!-- New Account Creation Fields -->
+                        <div class="col-12 d-none" id="editNewAccountSection">
+                            <div class="card">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0">New Account Details</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label for="editNewAccountName" class="form-label">Account Name *</label>
+                                            <input type="text" class="form-control" id="editNewAccountName" name="new_account_name">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="editNewAccountType" class="form-label">Account Type</label>
+                                            <select class="form-select" id="editNewAccountType" name="new_account_type">
+                                                <option value="Customer">Customer</option>
+                                                <option value="Prospect">Prospect</option>
+                                                <option value="Vendor">Vendor</option>
+                                                <option value="Partner">Partner</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="editNewAccountIndustry" class="form-label">Industry</label>
+                                            <input type="text" class="form-control" id="editNewAccountIndustry" name="new_account_industry">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="editNewAccountWebsite" class="form-label">Website</label>
+                                            <input type="url" class="form-control" id="editNewAccountWebsite" name="new_account_website">
+                                        </div>
+                                        <div class="col-12">
+                                            <label for="editNewAccountDescription" class="form-label">Description</label>
+                                            <textarea class="form-control" id="editNewAccountDescription" name="new_account_description" rows="2"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-12">
+                            <label for="editDescription" class="form-label">Contact Description</label>
+                            <textarea class="form-control" id="editDescription" name="description" rows="3"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
+{# Add Interaction Modal Macro #}
+{% macro add_interaction_modal() %}
+<div class="modal fade" id="addInteractionModal" tabindex="-1" aria-labelledby="addInteractionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addInteractionModalLabel">Add Interaction</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="addInteractionForm">
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="interactionType" class="form-label">Type *</label>
+                            <select class="form-select" id="interactionType" name="type" required>
+                                <option value="">Select Type</option>
+                                <option value="Call">Call</option>
+                                <option value="Email">Email</option>
+                                <option value="LinkedIn">LinkedIn</option>
+                                <option value="Text">Text</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="interactionDirection" class="form-label">Direction *</label>
+                            <select class="form-select" id="interactionDirection" name="direction" required>
+                                <option value="">Select Direction</option>
+                                <option value="Out Going">Out Going</option>
+                                <option value="In Coming">In Coming</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="interactionDate" class="form-label">Date/Time *</label>
+                            <input type="datetime-local" class="form-control" id="interactionDate" name="interaction_date" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="interactionStatus" class="form-label">Status</label>
+                            <select class="form-select" id="interactionStatus" name="status">
+                                <option value="Pending">Pending</option>
+                                <option value="Completed">Completed</option>
+                                <option value="Failed">Failed</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label for="interactionSubject" class="form-label">Subject</label>
+                            <input type="text" class="form-control" id="interactionSubject" name="subject">
+                        </div>
+                        <div class="col-12">
+                            <label for="interactionMessage" class="form-label">Message/Notes</label>
+                            <textarea class="form-control" id="interactionMessage" name="message" rows="4"></textarea>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="interactionOpportunity" class="form-label">Opportunity</label>
+                            <select class="form-select" id="interactionOpportunity" name="opportunity_id">
+                                <option value="">Select Opportunity</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="interactionProject" class="form-label">Project</label>
+                            <select class="form-select" id="interactionProject" name="project_id">
+                                <option value="">Select Project</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="interactionDuration" class="form-label">Duration (minutes)</label>
+                            <input type="number" class="form-control" id="interactionDuration" name="duration_minutes" min="0">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Interaction</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
+{# Assign Account Modal Macro #}
+{% macro assign_account_modal() %}
+<div class="modal fade" id="assignAccountModal" tabindex="-1" aria-labelledby="assignAccountModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="assignAccountModalLabel">Assign Account</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="assignAccountForm">
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="assignmentType" id="existingAccount" value="existing" checked>
+                                <label class="form-check-label" for="existingAccount">
+                                    <strong>Assign to Existing Account</strong>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-12" id="existingAccountSection">
+                            <label for="accountSelect" class="form-label">Select Account *</label>
+                            <select class="form-select" id="accountSelect" name="account_id" required>
+                                <option value="">Loading accounts...</option>
+                            </select>
+                        </div>
+                        <div class="col-12 mt-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="assignmentType" id="newAccount" value="new">
+                                <label class="form-check-label" for="newAccount">
+                                    <strong>Create New Account</strong>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-12" id="newAccountSection" style="display: none;">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label for="newAccountName" class="form-label">Account Name *</label>
+                                    <input type="text" class="form-control" id="newAccountName" name="name">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="newAccountType" class="form-label">Account Type *</label>
+                                    <select class="form-select" id="newAccountType" name="type">
+                                        <option value="">Select Type</option>
+                                        <option value="Customer">Customer</option>
+                                        <option value="Prospect Customer">Prospect Customer</option>
+                                        <option value="Vendor">Vendor</option>
+                                        <option value="Prospect Vendor">Prospect Vendor</option>
+                                        <option value="QPL">QPL</option>
+                                        <option value="Competitor">Competitor</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="newAccountEmail" class="form-label">Email</label>
+                                    <input type="email" class="form-control" id="newAccountEmail" name="email">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="newAccountWebsite" class="form-label">Website</label>
+                                    <input type="url" class="form-control" id="newAccountWebsite" name="website">
+                                </div>
+                                <div class="col-12">
+                                    <label for="newAccountLocation" class="form-label">Location</label>
+                                    <input type="text" class="form-control" id="newAccountLocation" name="location">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Assign Account</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
+{# Activity Timeline Card Macro #}
+{% macro activity_timeline_card(contact, interactions, tasks, opportunities) %}
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-secondary text-white border-0">
+        <h6 class="card-title mb-0 fw-bold">
+            <i class="fas fa-clock me-2"></i>Activity Timeline
+        </h6>
+    </div>
+    <div class="card-body p-3" style="max-height: 400px; overflow-y: auto;">
+        <div class="timeline">
+            <!-- Contact Created -->
+            <div class="timeline-item">
+                <div class="timeline-marker bg-primary shadow"></div>
+                <div class="timeline-content">
+                    <h6 class="mb-1 fw-bold text-primary">
+                        <i class="fas fa-user-plus me-1"></i>Contact Created
+                    </h6>
+                    <small class="text-muted">{{ contact.created_date | date if contact.created_date else 'Unknown' }}</small>
+                </div>
+            </div>
+            
+            <!-- Recent Interactions -->
+            {% if interactions and interactions|length > 0 %}
+                {% for interaction in interactions[:5] %}
+                <div class="timeline-item">
+                    <div class="timeline-marker bg-success shadow"></div>
+                    <div class="timeline-content">
+                        <h6 class="mb-1 fw-bold text-success">
+                            <i class="fas fa-{{ 'envelope' if interaction.type == 'Email' else 'phone' if interaction.type == 'Phone Call' else 'handshake' if interaction.type == 'Meeting' else 'sticky-note' }} me-1"></i>
+                            {{ interaction.subject or 'Interaction' }}
+                        </h6>
+                        <small class="text-muted">{{ interaction.type or 'Interaction' }} • {{ interaction.interaction_date | date if interaction.interaction_date else 'No date' }}</small>
+                        {% if interaction.description %}
+                        <p class="mb-0 small text-secondary mt-1">{{ interaction.description[:80] }}{% if interaction.description|length > 80 %}...{% endif %}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            {% endif %}
+            
+            <!-- Recent Tasks -->
+            {% if tasks and tasks|length > 0 %}
+                {% for task in tasks[:5] %}
+                <div class="timeline-item">
+                    <div class="timeline-marker shadow {{ 'bg-success' if task.status == 'Completed' else 'bg-warning' if task.get('overdue') else 'bg-info' }}"></div>
+                    <div class="timeline-content">
+                        <h6 class="mb-1 fw-bold {{ 'text-success' if task.status == 'Completed' else 'text-danger' if task.get('overdue') else 'text-info' }}">
+                            <i class="fas fa-{{ 'check' if task.status == 'Completed' else 'exclamation-triangle' if task.get('overdue') else 'tasks' }} me-1"></i>
+                            {{ task.subject or 'Task' }}
+                        </h6>
+                        <small class="text-muted">
+                            Task • 
+                            {% if task.status == 'Completed' %}
+                                <span class="text-success fw-bold">Completed</span>
+                            {% elif task.get('overdue') %}
+                                <span class="text-danger fw-bold">Overdue</span>
+                            {% elif task.due_date %}
+                                Due {{ task.due_date | date }}
+                            {% else %}
+                                No due date
+                            {% endif %}
+                        </small>
+                        {% if task.description %}
+                        <p class="mb-0 small text-secondary mt-1">{{ task.description[:80] }}{% if task.description|length > 80 %}...{% endif %}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            {% endif %}
+            
+            <!-- Recent Opportunities -->
+            {% if opportunities and opportunities|length > 0 %}
+                {% for opportunity in opportunities[:3] %}
+                <div class="timeline-item">
+                    <div class="timeline-marker bg-warning shadow"></div>
+                    <div class="timeline-content">
+                        <h6 class="mb-1 fw-bold text-warning">
+                            <i class="fas fa-handshake me-1"></i>
+                            {{ opportunity.name or 'Opportunity' }}
+                        </h6>
+                        <small class="text-muted">
+                            {{ opportunity.stage or 'Opportunity' }} • 
+                            {% if opportunity.amount %}
+                                ${{ "{:,.0f}".format(opportunity.amount) }} • 
+                            {% endif %}
+                            {{ opportunity.close_date | date if opportunity.close_date else 'No close date' }}
+                        </small>
+                    </div>
+                </div>
+                {% endfor %}
+            {% endif %}
+            
+            <!-- Contact Last Modified -->
+            {% if contact.modified_date and contact.modified_date != contact.created_date %}
+            <div class="timeline-item">
+                <div class="timeline-marker bg-info"></div>
+                <div class="timeline-content">
+                    <h6 class="mb-1 text-info">
+                        <i class="fas fa-edit me-1"></i>Contact Updated
+                    </h6>
+                    <small class="text-muted">{{ contact.modified_date | date }}</small>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Show more message if there are many items -->
+            {% set total_items = (interactions|length) + (tasks|length) + (opportunities|length) %}
+            {% if total_items > 13 %}
+            <div class="timeline-item">
+                <div class="timeline-marker bg-light"></div>
+                <div class="timeline-content">
+                    <small class="text-muted">
+                        <i class="fas fa-ellipsis-h me-1"></i>
+                        {{ total_items - 13 }} more activities available
+                    </small>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Empty state -->
+            {% if not interactions and not tasks and not opportunities %}
+            <div class="timeline-item">
+                <div class="timeline-marker bg-light"></div>
+                <div class="timeline-content">
+                    <div class="text-center py-2">
+                        <i class="fas fa-calendar-alt fa-2x text-muted mb-2"></i>
+                        <p class="text-muted mb-0 small">No recent activities</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Timeline CSS -->
+<style>
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 12px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #e9ecef;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.timeline-item:last-child {
+    margin-bottom: 0;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -25px;
+    top: 2px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 2px currentColor;
+}
+
+.timeline-content {
+    background: #f8f9fa;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border-left: 3px solid #dee2e6;
+}
+
+.timeline-content h6 {
+    font-size: 0.85rem;
+    margin-bottom: 0.25rem;
+}
+
+.timeline-content small {
+    font-size: 0.75rem;
+}
+
+.timeline-content p {
+    font-size: 0.75rem;
+    line-height: 1.3;
+}
+</style>
+{% endmacro %}

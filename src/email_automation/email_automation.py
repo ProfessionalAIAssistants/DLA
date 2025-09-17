@@ -189,7 +189,7 @@ Reference ID: {rfq_email_id}""",
         # Get opportunity details
         cursor.execute("""
             SELECT o.*, p.name as product_name, p.manufacturer, p.part_number, 
-                   p.nsn, p.description as product_description,
+                   COALESCE(p.nsn, o.nsn) as nsn, p.description as product_description,
                    a.name as account_name
             FROM opportunities o
             LEFT JOIN products p ON o.product_id = p.id
@@ -267,7 +267,7 @@ Reference ID: {rfq_email_id}""",
             'product_name': opportunity['product_name'] if opportunity['product_name'] else 'Product Name Not Available',
             'manufacturer': manufacturer,
             'part_number': part_number,
-            'nsn': opportunity['nsn'] if opportunity['nsn'] else 'TBD',
+            'nsn': opportunity['nsn'] if opportunity['nsn'] and opportunity['nsn'].strip() else 'TBD',
             'quantity': opportunity['quantity'] if opportunity['quantity'] else 1,
             'delivery_address': 'DLA Distribution Center (Address to be provided)',
             'product_description': opportunity['product_description'] if opportunity['product_description'] else opportunity['description'] if opportunity['description'] else 'Description not available',

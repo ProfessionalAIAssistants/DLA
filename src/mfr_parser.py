@@ -28,7 +28,8 @@ class MFRParser:
             
         # Pattern to match manufacturer entries
         # Looks for: [MANUFACTURER NAME] [CAGE CODE] P/N [PART NUMBER]
-        pattern = r'([A-Z][A-Z\s\-&.,()]+?)\s+(\d{5})\s+P/N\s+([\w\-\/]+)'
+        # CAGE codes can be 5 digits or alphanumeric (like 5F573)
+        pattern = r'([A-Z][A-Z\s\-&.,()]+?)\s+([A-Z0-9]{5})\s+P/N\s+([\w\-\/]+)'
         
         matches = re.findall(pattern, mfr_string)
         

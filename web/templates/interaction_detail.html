@@ -1,312 +1,323 @@
 {% extends "base.html" %}
 
-{% block title %}Interaction Details - CDE Prosperity{% endblock %}
+{% block title %}{{ interaction.subject or 'Interaction Details' }} - CDE Prosperity{% endblock %}
 
 {% block content %}
-<div class="container-fluid mt-4">
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="display-6 fw-bold mb-2">{{ interaction.subject or 'Interaction Details' }}</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="/interactions">Interactions</a></li>
+                    <li class="breadcrumb-item active">{{ interaction.subject or 'Interaction Details' }}</li>
+                </ol>
+            </nav>
+        </div>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-primary" onclick="editInteraction()">
+                <i class="fas fa-edit me-2"></i>Edit
+            </button>
+            <div class="dropdown">
+                <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <i class="fas fa-cog me-2"></i>Actions
+                </button>
+                <ul class="dropdown-menu">
+                    {% if interaction.contact_id %}
+                    <li><a class="dropdown-item" href="#" onclick="createFollowUp()">
+                        <i class="fas fa-plus me-2"></i>Create Follow-up
+                    </a></li>
+                    {% endif %}
+                    <li><a class="dropdown-item" href="#" onclick="duplicateInteraction()">
+                        <i class="fas fa-copy me-2"></i>Duplicate
+                    </a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item text-danger" href="#" onclick="deleteInteraction()">
+                        <i class="fas fa-trash me-2"></i>Delete
+                    </a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
     <div class="row">
-        <div class="col-12">
-            <!-- Header -->
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <div>
-                    <nav aria-label="breadcrumb">
-                        <ol class="breadcrumb">
-                            <li class="breadcrumb-item"><a href="{{ url_for('interactions') }}">Interactions</a></li>
-                            <li class="breadcrumb-item active" aria-current="page">{{ interaction.subject or 'Interaction Details' }}</li>
-                        </ol>
-                    </nav>
-                    <h1 class="display-6 fw-bold mb-2">
-                        <i class="fas fa-comments me-3" style="background: var(--gradient-primary); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;"></i>
-                        {{ interaction.subject or 'Interaction Details' }}
-                    </h1>
-                    <p class="text-muted mb-0 fs-5">{{ interaction.type }} interaction {% if interaction.contact_name %}with {{ interaction.contact_name }}{% endif %}</p>
+        <!-- Main Information -->
+        <div class="col-lg-8">
+            <!-- Interaction Details Card -->
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-comments me-2"></i>Interaction Details
+                    </h5>
                 </div>
-                <div class="d-flex gap-2">
-                    <button type="button" class="btn btn-outline-primary" onclick="editInteraction()">
-                        <i class="fas fa-edit me-2"></i>Edit
-                    </button>
-                    <button type="button" class="btn btn-outline-secondary" onclick="window.history.back()">
-                        <i class="fas fa-arrow-left me-2"></i>Back
-                    </button>
-                </div>
-            </div>
-
-            <!-- Main Content -->
-            <div class="row">
-                <!-- Left Column - Main Details -->
-                <div class="col-lg-8">
-                    <!-- Overview Card -->
-                    <div class="card mb-4">
-                        <div class="card-header bg-light">
-                            <h5 class="card-title mb-0">
-                                <i class="fas fa-info-circle me-2"></i>Interaction Overview
-                            </h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label class="form-label fw-bold text-muted">Type</label>
-                                        <div>
-                                            {% if interaction.type == 'Call' %}
-                                                <span class="badge bg-primary fs-6"><i class="fas fa-phone"></i> {{ interaction.type }}</span>
-                                            {% elif interaction.type == 'Email' %}
-                                                <span class="badge bg-info fs-6"><i class="fas fa-envelope"></i> {{ interaction.type }}</span>
-                                            {% elif interaction.type == 'LinkedIn' %}
-                                                <span class="badge bg-secondary fs-6"><i class="fab fa-linkedin"></i> {{ interaction.type }}</span>
-                                            {% elif interaction.type == 'Text' %}
-                                                <span class="badge bg-success fs-6"><i class="fas fa-sms"></i> {{ interaction.type }}</span>
-                                            {% else %}
-                                                <span class="badge bg-light text-dark fs-6">{{ interaction.type or 'N/A' }}</span>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label class="form-label fw-bold text-muted">Direction</label>
-                                        <div>
-                                            {% if interaction.direction == 'Sent' %}
-                                                <span class="badge bg-warning fs-6"><i class="fas fa-arrow-up"></i> Sent</span>
-                                            {% elif interaction.direction == 'Received' %}
-                                                <span class="badge bg-success fs-6"><i class="fas fa-arrow-down"></i> Received</span>
-                                            {% else %}
-                                                <span class="badge bg-light text-dark fs-6">{{ interaction.direction or 'N/A' }}</span>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label class="form-label fw-bold text-muted">Date & Time</label>
-                                        <div class="fs-6">
-                                            {% if interaction.interaction_date %}
-                                                {{ interaction.interaction_date|replace('T', ' ')|replace('.000Z', '') }}
-                                            {% else %}
-                                                <span class="text-muted">Not specified</span>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label class="form-label fw-bold text-muted">Duration</label>
-                                        <div class="fs-6">
-                                            {% if interaction.duration_minutes %}
-                                                {{ interaction.duration_minutes }} minutes
-                                            {% else %}
-                                                <span class="text-muted">Not recorded</span>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label class="form-label fw-bold text-muted">Status</label>
-                                        <div>
-                                            {% if interaction.status == 'Completed' %}
-                                                <span class="badge bg-success fs-6">{{ interaction.status }}</span>
-                                            {% elif interaction.status == 'Pending' %}
-                                                <span class="badge bg-warning fs-6">{{ interaction.status }}</span>
-                                            {% elif interaction.status == 'Failed' %}
-                                                <span class="badge bg-danger fs-6">{{ interaction.status }}</span>
-                                            {% else %}
-                                                <span class="badge bg-light text-dark fs-6">{{ interaction.status or 'N/A' }}</span>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label class="form-label fw-bold text-muted">Location</label>
-                                        <div class="fs-6">
-                                            {{ interaction.location or 'Not specified' }}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Content Card -->
-                    <div class="card mb-4">
-                        <div class="card-header bg-light">
-                            <h5 class="card-title mb-0">
-                                <i class="fas fa-comment-alt me-2"></i>Content & Details
-                            </h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="mb-4">
-                                <label class="form-label fw-bold text-muted">Subject</label>
-                                <p class="fs-5 mb-0">{{ interaction.subject or 'No subject specified' }}</p>
-                            </div>
-                            
-                            <div class="mb-4">
-                                <label class="form-label fw-bold text-muted">Message/Notes</label>
-                                <div class="card border-0 bg-light p-3">
-                                    {% if interaction.message %}
-                                        <p class="mb-0" style="white-space: pre-wrap;">{{ interaction.message }}</p>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold text-muted">Type</label>
+                                <div>
+                                    {% if interaction.type == 'Call' %}
+                                        <span class="badge bg-primary fs-6"><i class="fas fa-phone"></i> {{ interaction.type }}</span>
+                                    {% elif interaction.type == 'Email' %}
+                                        <span class="badge bg-info fs-6"><i class="fas fa-envelope"></i> {{ interaction.type }}</span>
+                                    {% elif interaction.type == 'LinkedIn' %}
+                                        <span class="badge bg-secondary fs-6"><i class="fab fa-linkedin"></i> {{ interaction.type }}</span>
+                                    {% elif interaction.type == 'Text' %}
+                                        <span class="badge bg-success fs-6"><i class="fas fa-sms"></i> {{ interaction.type }}</span>
+                                    {% elif interaction.type == 'Meeting' %}
+                                        <span class="badge bg-warning fs-6"><i class="fas fa-users"></i> {{ interaction.type }}</span>
                                     {% else %}
-                                        <p class="text-muted mb-0 fst-italic">No message content recorded</p>
+                                        <span class="badge bg-light text-dark fs-6">{{ interaction.type or 'N/A' }}</span>
                                     {% endif %}
                                 </div>
                             </div>
-                            
-                            {% if interaction.outcome %}
-                            <div class="mb-4">
-                                <label class="form-label fw-bold text-muted">Outcome</label>
-                                <div class="card border-0 bg-light p-3">
-                                    <p class="mb-0" style="white-space: pre-wrap;">{{ interaction.outcome }}</p>
-                                </div>
-                            </div>
-                            {% endif %}
                         </div>
-                    </div>
-                </div>
-
-                <!-- Right Column - Related Information -->
-                <div class="col-lg-4">
-                    <!-- Contact Information -->
-                    <div class="card mb-4">
-                        <div class="card-header bg-light">
-                            <h6 class="card-title mb-0">
-                                <i class="fas fa-user me-2"></i>Contact Information
-                            </h6>
-                        </div>
-                        <div class="card-body">
-                            {% if interaction.contact_name %}
-                                <div class="d-flex align-items-center mb-3">
-                                    <div class="avatar-circle me-3">
-                                        <i class="fas fa-user"></i>
-                                    </div>
-                                    <div>
-                                        <div class="fw-bold">{{ interaction.contact_name }}</div>
-                                        {% if interaction.contact_email_addr %}
-                                            <small class="text-muted">{{ interaction.contact_email_addr }}</small>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                                {% if interaction.contact_id %}
-                                    <a href="/contact/{{ interaction.contact_id }}" class="btn btn-sm btn-outline-primary">
-                                        <i class="fas fa-external-link-alt me-1"></i>View Contact
-                                    </a>
-                                {% endif %}
-                            {% else %}
-                                <p class="text-muted">No contact associated with this interaction</p>
-                            {% endif %}
-                        </div>
-                    </div>
-
-                    <!-- Opportunity Information -->
-                    {% if interaction.opportunity_name or interaction.opportunity_id %}
-                    <div class="card mb-4">
-                        <div class="card-header bg-light">
-                            <h6 class="card-title mb-0">
-                                <i class="fas fa-handshake me-2"></i>Related Opportunity
-                            </h6>
-                        </div>
-                        <div class="card-body">
-                            <div class="d-flex align-items-center mb-3">
-                                <div class="avatar-circle me-3">
-                                    <i class="fas fa-handshake"></i>
-                                </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold text-muted">Direction</label>
                                 <div>
-                                    <div class="fw-bold">{{ interaction.opportunity_name or 'Unnamed Opportunity' }}</div>
-                                    {% if interaction.account_name %}
-                                        <small class="text-muted">{{ interaction.account_name }}</small>
+                                    {% if interaction.direction == 'Out Going' %}
+                                        <span class="badge bg-warning fs-6"><i class="fas fa-arrow-up"></i> Out Going</span>
+                                    {% elif interaction.direction == 'In Coming' %}
+                                        <span class="badge bg-success fs-6"><i class="fas fa-arrow-down"></i> In Coming</span>
+                                    {% else %}
+                                        <span class="badge bg-light text-dark fs-6">{{ interaction.direction or 'N/A' }}</span>
                                     {% endif %}
                                 </div>
                             </div>
-                            {% if interaction.opportunity_id %}
-                                <a href="/opportunity/{{ interaction.opportunity_id }}" class="btn btn-sm btn-outline-primary">
-                                    <i class="fas fa-external-link-alt me-1"></i>View Opportunity
-                                </a>
-                            {% endif %}
                         </div>
-                    </div>
-                    {% endif %}
-
-                    <!-- Account Information -->
-                    {% if interaction.account_name or interaction.account_id %}
-                    <div class="card mb-4">
-                        <div class="card-header bg-light">
-                            <h6 class="card-title mb-0">
-                                <i class="fas fa-building me-2"></i>Related Account
-                            </h6>
-                        </div>
-                        <div class="card-body">
-                            <div class="d-flex align-items-center mb-3">
-                                <div class="avatar-circle me-3">
-                                    <i class="fas fa-building"></i>
-                                </div>
-                                <div>
-                                    <div class="fw-bold">{{ interaction.account_name or 'Unnamed Account' }}</div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold text-muted">Date & Time</label>
+                                <div class="fs-6">
+                                    {% if interaction.interaction_date %}
+                                        {{ interaction.interaction_date|replace('T', ' ') }}
+                                    {% else %}
+                                        <span class="text-muted">Not specified</span>
+                                    {% endif %}
                                 </div>
                             </div>
-                            {% if interaction.account_id %}
-                                <a href="/accounts/{{ interaction.account_id }}" class="btn btn-sm btn-outline-primary">
-                                    <i class="fas fa-external-link-alt me-1"></i>View Account
-                                </a>
-                            {% endif %}
                         </div>
-                    </div>
-                    {% endif %}
-
-                    <!-- Project Information -->
-                    {% if interaction.project_name or interaction.project_id %}
-                    <div class="card mb-4">
-                        <div class="card-header bg-light">
-                            <h6 class="card-title mb-0">
-                                <i class="fas fa-project-diagram me-2"></i>Related Project
-                            </h6>
-                        </div>
-                        <div class="card-body">
-                            <div class="d-flex align-items-center mb-3">
-                                <div class="avatar-circle me-3">
-                                    <i class="fas fa-project-diagram"></i>
-                                </div>
-                                <div>
-                                    <div class="fw-bold">{{ interaction.project_name or 'Unnamed Project' }}</div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold text-muted">Duration</label>
+                                <div class="fs-6">
+                                    {% if interaction.duration_minutes %}
+                                        {{ interaction.duration_minutes }} minutes
+                                    {% else %}
+                                        <span class="text-muted">Not recorded</span>
+                                    {% endif %}
                                 </div>
                             </div>
-                            {% if interaction.project_id %}
-                                <a href="/projects/{{ interaction.project_id }}" class="btn btn-sm btn-outline-primary">
-                                    <i class="fas fa-external-link-alt me-1"></i>View Project
-                                </a>
-                            {% endif %}
                         </div>
-                    </div>
-                    {% endif %}
-
-                    <!-- Quick Actions -->
-                    <div class="card">
-                        <div class="card-header bg-light">
-                            <h6 class="card-title mb-0">
-                                <i class="fas fa-bolt me-2"></i>Quick Actions
-                            </h6>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold text-muted">Status</label>
+                                <div>
+                                    {% if interaction.status == 'Completed' %}
+                                        <span class="badge bg-success fs-6">{{ interaction.status }}</span>
+                                    {% elif interaction.status == 'Pending' %}
+                                        <span class="badge bg-warning fs-6">{{ interaction.status }}</span>
+                                    {% elif interaction.status == 'Failed' %}
+                                        <span class="badge bg-danger fs-6">{{ interaction.status }}</span>
+                                    {% else %}
+                                        <span class="badge bg-light text-dark fs-6">{{ interaction.status or 'N/A' }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
                         </div>
-                        <div class="card-body">
-                            <div class="d-grid gap-2">
-                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="editInteraction()">
-                                    <i class="fas fa-edit me-2"></i>Edit Interaction
-                                </button>
-                                {% if interaction.contact_id %}
-                                <button type="button" class="btn btn-outline-success btn-sm" onclick="createFollowUp()">
-                                    <i class="fas fa-plus me-2"></i>Create Follow-up
-                                </button>
-                                {% endif %}
-                                <button type="button" class="btn btn-outline-info btn-sm" onclick="duplicateInteraction()">
-                                    <i class="fas fa-copy me-2"></i>Duplicate
-                                </button>
-                                <hr class="my-2">
-                                <button type="button" class="btn btn-outline-danger btn-sm" onclick="deleteInteraction()">
-                                    <i class="fas fa-trash me-2"></i>Delete
-                                </button>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold text-muted">Location</label>
+                                <div class="fs-6">
+                                    {{ interaction.location or 'Not specified' }}
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+
+            <!-- Content Card -->
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-comment-alt me-2"></i>Content & Details
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <label class="form-label fw-bold text-muted">Subject</label>
+                        <p class="fs-5 mb-0">{{ interaction.subject or 'No subject specified' }}</p>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="form-label fw-bold text-muted">Description/Notes</label>
+                        <div class="card border-0 bg-light p-3">
+                            {% if interaction.description %}
+                                <p class="mb-0" style="white-space: pre-wrap;">{{ interaction.description }}</p>
+                            {% else %}
+                                <p class="text-muted mb-0 fst-italic">No description recorded</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    {% if interaction.outcome %}
+                    <div class="mb-4">
+                        <label class="form-label fw-bold text-muted">Outcome</label>
+                        <div class="card border-0 bg-light p-3">
+                            <p class="mb-0" style="white-space: pre-wrap;">{{ interaction.outcome }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column - Related Information -->
+        <div class="col-lg-4">
+            <!-- Quick Actions -->
+            <div class="card mb-4 border-0 shadow-sm">
+                <div class="card-header bg-warning text-white border-0">
+                    <h6 class="card-title mb-0 fw-bold">
+                        <i class="fas fa-bolt me-2"></i>Quick Actions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="editInteraction()">
+                            <i class="fas fa-edit me-2"></i>Edit Interaction
+                        </button>
+                        {% if interaction.contact_id %}
+                        <button type="button" class="btn btn-outline-success btn-sm" onclick="createFollowUp()">
+                            <i class="fas fa-plus me-2"></i>Create Follow-up
+                        </button>
+                        {% endif %}
+                        <button type="button" class="btn btn-outline-info btn-sm" onclick="duplicateInteraction()">
+                            <i class="fas fa-copy me-2"></i>Duplicate
+                        </button>
+                        <hr class="my-2">
+                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="deleteInteraction()">
+                            <i class="fas fa-trash me-2"></i>Delete
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contact Information -->
+            <div class="card mb-4 border-0 shadow-sm">
+                <div class="card-header bg-primary text-white border-0">
+                    <h6 class="card-title mb-0 fw-bold">
+                        <i class="fas fa-user me-2"></i>Contact Information
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if interaction.contact_name %}
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-3">
+                                <i class="fas fa-user text-primary fs-5"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold text-dark">{{ interaction.contact_name }}</div>
+                                {% if interaction.contact_email_addr %}
+                                    <small class="text-muted">{{ interaction.contact_email_addr }}</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% if interaction.contact_id %}
+                            <a href="/contact/{{ interaction.contact_id }}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-external-link-alt me-1"></i>View Contact
+                            </a>
+                        {% endif %}
+                    {% else %}
+                        <p class="text-muted">No contact associated with this interaction</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Opportunity Information -->
+            {% if interaction.opportunity_name or interaction.opportunity_id %}
+            <div class="card mb-4 border-0 shadow-sm">
+                <div class="card-header bg-success text-white border-0">
+                    <h6 class="card-title mb-0 fw-bold">
+                        <i class="fas fa-handshake me-2"></i>Related Opportunity
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-success bg-opacity-10 rounded-circle p-2 me-3">
+                            <i class="fas fa-handshake text-success fs-5"></i>
+                        </div>
+                        <div>
+                            <div class="fw-bold text-dark">{{ interaction.opportunity_name or 'Unnamed Opportunity' }}</div>
+                            {% if interaction.account_name %}
+                                <small class="text-muted">{{ interaction.account_name }}</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% if interaction.opportunity_id %}
+                        <a href="/opportunity/{{ interaction.opportunity_id }}" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-external-link-alt me-1"></i>View Opportunity
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Account Information -->
+            {% if interaction.account_name or interaction.account_id %}
+            <div class="card mb-4 border-0 shadow-sm">
+                <div class="card-header bg-info text-white border-0">
+                    <h6 class="card-title mb-0 fw-bold">
+                        <i class="fas fa-building me-2"></i>Related Account
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-info bg-opacity-10 rounded-circle p-2 me-3">
+                            <i class="fas fa-building text-info fs-5"></i>
+                        </div>
+                        <div>
+                            <div class="fw-bold text-dark">{{ interaction.account_name or 'Unnamed Account' }}</div>
+                        </div>
+                    </div>
+                    {% if interaction.account_id %}
+                        <a href="/accounts/{{ interaction.account_id }}" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-external-link-alt me-1"></i>View Account
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Project Information -->
+            {% if interaction.project_name or interaction.project_id %}
+            <div class="card mb-4 border-0 shadow-sm">
+                <div class="card-header bg-secondary text-white border-0">
+                    <h6 class="card-title mb-0 fw-bold">
+                        <i class="fas fa-project-diagram me-2"></i>Related Project
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-secondary bg-opacity-10 rounded-circle p-2 me-3">
+                            <i class="fas fa-project-diagram text-secondary fs-5"></i>
+                        </div>
+                        <div>
+                            <div class="fw-bold text-dark">{{ interaction.project_name or 'Unnamed Project' }}</div>
+                        </div>
+                    </div>
+                    {% if interaction.project_id %}
+                        <a href="/projects/{{ interaction.project_id }}" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-external-link-alt me-1"></i>View Project
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
         </div>
     </div>
 </div>
@@ -339,7 +350,7 @@
         width: 40px;
         height: 40px;
         border-radius: 50%;
-        background: var(--gradient-primary);
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -399,8 +410,8 @@ function editInteraction() {
                         <div class="mb-3">
                             <label class="form-label">Direction</label>
                             <select class="form-select" name="direction" id="editDirection" required>
-                                <option value="Sent" ${interaction.direction === 'Sent' ? 'selected' : ''}>Sent</option>
-                                <option value="Received" ${interaction.direction === 'Received' ? 'selected' : ''}>Received</option>
+                                <option value="Out Going" ${interaction.direction === 'Out Going' ? 'selected' : ''}>Out Going</option>
+                                <option value="In Coming" ${interaction.direction === 'In Coming' ? 'selected' : ''}>In Coming</option>
                             </select>
                         </div>
                     </div>
@@ -408,7 +419,7 @@ function editInteraction() {
                         <div class="mb-3">
                             <label class="form-label">Date & Time</label>
                             <input type="datetime-local" class="form-control" name="interaction_date" 
-                                   value="${interaction.interaction_date ? new Date(interaction.interaction_date).toISOString().slice(0, 16) : ''}" required>
+                                   value="${interaction.interaction_date ? interaction.interaction_date.replace('T', 'T').slice(0, 16) : ''}" required>
                         </div>
                     </div>
                     <div class="col-md-6">
@@ -471,8 +482,8 @@ function editInteraction() {
                     </div>
                     <div class="col-12">
                         <div class="mb-3">
-                            <label class="form-label">Message/Notes</label>
-                            <textarea class="form-control" name="message" rows="4">${interaction.message || ''}</textarea>
+                            <label class="form-label">Description/Notes</label>
+                            <textarea class="form-control" name="description" rows="4">${interaction.description || ''}</textarea>
                         </div>
                     </div>
                     <div class="col-12">
@@ -485,12 +496,52 @@ function editInteraction() {
             `;
             
             document.getElementById('editInteractionContent').innerHTML = html;
+            
+            // Load dropdown options
+            loadDropdownOptions(interaction);
+            
             new bootstrap.Modal(document.getElementById('editInteractionModal')).show();
         })
         .catch(error => {
             console.error('Error:', error);
             alert('Error loading interaction for editing');
         });
+}
+
+function loadDropdownOptions(interaction) {
+    // Load contacts
+    fetch('/api/contacts')
+        .then(response => response.json())
+        .then(contacts => {
+            const contactSelect = document.getElementById('editContactId');
+            contacts.forEach(contact => {
+                const option = document.createElement('option');
+                option.value = contact.id;
+                option.textContent = `${contact.first_name} ${contact.last_name}`;
+                if (contact.id == interaction.contact_id) {
+                    option.selected = true;
+                }
+                contactSelect.appendChild(option);
+            });
+        })
+        .catch(error => console.error('Error loading contacts:', error));
+
+    // Load opportunities
+    fetch('/api/opportunities')
+        .then(response => response.json())
+        .then(opportunities => {
+            const opportunitySelect = document.getElementById('editOpportunityId');
+            opportunities.forEach(opportunity => {
+                const option = document.createElement('option');
+                option.value = opportunity.id;
+                option.textContent = opportunity.name;
+                if (opportunity.id == interaction.opportunity_id) {
+                    option.selected = true;
+                }
+                opportunitySelect.appendChild(option);
+            });
+        })
+        .catch(error => console.error('Error loading opportunities:', error));
 }
 
 // Handle edit form submission
@@ -524,24 +575,15 @@ document.getElementById('editInteractionForm').addEventListener('submit', functi
 
 function createFollowUp() {
     // Redirect to interactions page with prefilled data based on current interaction
-    const params = new URLSearchParams({
-        contact_id: {{ interaction.contact_id or 'null' }},
-        opportunity_id: {{ interaction.opportunity_id or 'null' }},
-        account_id: {{ interaction.account_id or 'null' }},
-        subject: 'Follow-up: {{ interaction.subject or "" }}',
-        type: 'Call'
-    });
-    
-    window.location.href = `/interactions?${params.toString()}#add`;
+    const contactId = {{ interaction.contact_id or 'null' }};
+    const opportunityId = {{ interaction.opportunity_id or 'null' }};
+    const followUpSubject = 'Follow-up: {{ interaction.subject or "" }}';
+    window.location.href = `/interactions?contact_id=${contactId}&opportunity_id=${opportunityId}&subject=${encodeURIComponent(followUpSubject)}&type=Call#add`;
 }
 
 function duplicateInteraction() {
     if (confirm('Create a duplicate of this interaction?')) {
-        const params = new URLSearchParams({
-            duplicate_from: interactionId
-        });
-        
-        window.location.href = `/interactions?${params.toString()}#add`;
+        window.location.href = `/interactions?duplicate_from=${interactionId}#add`;
     }
 }
 

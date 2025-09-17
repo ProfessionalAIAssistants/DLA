@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "processing_report_macros.html" import summary_card, badge_with_change, file_table, record_type_card, updated_record_card, card_section %}
 
 {% block title %}Processing Report Details - DLA CRM{% endblock %}
 
@@ -30,48 +31,11 @@
 
     <!-- Summary Cards -->
     <div class="row mb-4">
-        <div class="col-md-2">
-            <div class="card text-center">
-                <div class="card-body">
-                    <h3 class="text-primary mb-1">{{ report.processed or 0 }}</h3>
-                    <small class="text-muted">Files Processed</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-2">
-            <div class="card text-center">
-                <div class="card-body">
-                    <h3 class="text-success mb-1">{{ report.summary.opportunities_created if report.summary else (report.created or 0) }}</h3>
-                    <small class="text-muted">Opportunities Created</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-2">
-            <div class="card text-center">
-                <div class="card-body">
-                    <h3 class="text-info mb-1">
-                        {{ (report.summary.contacts_updated + report.summary.accounts_updated) if report.summary else (report.updated or 0) }}
-                    </h3>
-                    <small class="text-muted">Records Updated</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-2">
-            <div class="card text-center">
-                <div class="card-body">
-                    <h3 class="text-warning mb-1">{{ report.skipped or 0 }}</h3>
-                    <small class="text-muted">Files Skipped</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-2">
-            <div class="card text-center">
-                <div class="card-body">
-                    <h3 class="text-danger mb-1">{{ report.errors|length if report.errors else 0 }}</h3>
-                    <small class="text-muted">Errors</small>
-                </div>
-            </div>
-        </div>
+        {{ summary_card("Files Processed", report.processed or 0, "primary") }}
+        {{ summary_card("Opportunities Created", report.summary.opportunities_created if report.summary else (report.created or 0), "success") }}
+        {{ summary_card("Records Updated", (report.summary.contacts_updated + report.summary.accounts_updated) if report.summary else (report.updated or 0), "info") }}
+        {{ summary_card("Files Skipped", report.skipped or 0, "warning") }}
+        {{ summary_card("Errors", report.errors|length if report.errors else 0, "danger") }}
         <div class="col-md-2">
             <div class="card text-center">
                 <div class="card-body">
@@ -83,6 +47,30 @@
                         {% endif %}
                     </h3>
                     <small class="text-muted">Processing Time</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Record Summary -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>Detailed Processing Summary
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {{ summary_card("Opportunities Created", report.summary.opportunities_created if report.summary else 0, "success") }}
+                        {{ summary_card("Contacts Created", report.summary.contacts_created if report.summary else 0, "success") }}
+                        {{ summary_card("Accounts Created", report.summary.accounts_created if report.summary else 0, "success") }}
+                        {{ summary_card("Products Created", report.summary.products_created if report.summary else 0, "success") }}
+                        {{ summary_card("QPLs Created", report.summary.qpls_created if report.summary else 0, "success") }}
+                        {{ summary_card("Contacts Updated", report.summary.contacts_updated if report.summary else 0, "info") }}
+                        {{ summary_card("Accounts Updated", report.summary.accounts_updated if report.summary else 0, "info") }}
+                    </div>
                 </div>
             </div>
         </div>
@@ -103,30 +91,8 @@
                         {% for table, before_count in report.database_stats_before.items() %}
                         {% if table != 'error' %}
                         {% set after_count = report.database_stats_after.get(table, before_count) %}
-                        {% set change = after_count - before_count %}
-                        <div class="col-md-2 mb-3">
-                            <div class="text-center">
-                                <h6 class="text-capitalize">
-                                    {% if table == 'rfqs' %}
-                                        DLA RFQs
-                                    {% else %}
-                                        {{ table }}
-                                    {% endif %}
-                                </h6>
-                                <div class="d-flex justify-content-center align-items-center">
-                                    <span class="me-2">{{ before_count }}</span>
-                                    <i class="fas fa-arrow-right text-muted me-2"></i>
-                                    <span class="me-2">{{ after_count }}</span>
-                                    {% if change > 0 %}
-                                    <span class="badge bg-success">+{{ change }}</span>
-                                    {% elif change < 0 %}
-                                    <span class="badge bg-danger">{{ change }}</span>
-                                    {% else %}
-                                    <span class="text-muted">±0</span>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
+                        {% set label = "DLA RFQs" if table == 'rfqs' else table %}
+                        {{ badge_with_change(before_count, after_count, label) }}
                         {% endif %}
                         {% endfor %}
                     </div>
@@ -183,266 +149,54 @@
 
     <!-- Processed Files Details -->
     {% if report.processed_files %}
-    <div class="card mb-4">
-        <div class="card-header">
-            <h5 class="card-title mb-0">
-                <i class="fas fa-check-circle me-2 text-success"></i>
-                Successfully Processed Files ({{ report.processed_files|length }})
-            </h5>
-        </div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-sm mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Filename</th>
-                            <th>DLA RFQ Number</th>
-                            <th>Manufacturer</th>
-                            <th>Delivery Days</th>
-                            <th>Records Created</th>
-                            <th>Records Updated</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for file in report.processed_files %}
-                        <tr>
-                            <td class="fw-bold">{{ file.filename }}</td>
-                            <td>{{ file.rfq_data.get('request_number', 'N/A') }}</td>
-                            <td>{{ file.rfq_data.get('mfr', 'N/A') }}</td>
-                            <td>{{ file.rfq_data.get('delivery_days', 'N/A') }}</td>
-                            <td>
-                                {% if file.created_records > 0 %}
-                                <span class="badge bg-success">{{ file.created_records }}</span>
-                                {% else %}
-                                <span class="text-muted">-</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if file.updated_records > 0 %}
-                                <span class="badge bg-info">{{ file.updated_records }}</span>
-                                {% else %}
-                                <span class="text-muted">-</span>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
+    {% call card_section("Successfully Processed Files (" + report.processed_files|length|string + ")", "check-circle", "success") %}
+        {{ file_table(report.processed_files, "processed") }}
+    {% endcall %}
     {% endif %}
 
     <!-- Skipped Files Details -->
     {% if report.skipped_files %}
-    <div class="card mb-4">
-        <div class="card-header">
-            <h5 class="card-title mb-0">
-                <i class="fas fa-exclamation-triangle me-2 text-warning"></i>
-                Skipped Files ({{ report.skipped_files|length }})
-            </h5>
-        </div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-sm mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Filename</th>
-                            <th>DLA RFQ Number</th>
-                            <th>Skip Reason</th>
-                            <th>Delivery Days</th>
-                            <th>ISO</th>
-                            <th>Sampling</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for file in report.skipped_files %}
-                        <tr>
-                            <td class="fw-bold">{{ file.filename }}</td>
-                            <td>{{ file.rfq_data.get('request_number', 'N/A') }}</td>
-                            <td>
-                                <small class="text-warning">{{ file.reason | replace('\n', '<br>') | safe }}</small>
-                            </td>
-                            <td>{{ file.rfq_data.get('delivery_days', 'N/A') }}</td>
-                            <td>{{ file.rfq_data.get('iso', 'N/A') }}</td>
-                            <td>{{ file.rfq_data.get('sampling', 'N/A') }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
+    {% call card_section("Skipped Files (" + report.skipped_files|length|string + ")", "exclamation-triangle", "warning") %}
+        {{ file_table(report.skipped_files, "skipped") }}
+    {% endcall %}
     {% endif %}
 
     <!-- Error Files Details -->
     {% if report.error_files %}
-    <div class="card mb-4">
-        <div class="card-header">
-            <h5 class="card-title mb-0">
-                <i class="fas fa-times-circle me-2 text-danger"></i>
-                Error Files ({{ report.error_files|length }})
-            </h5>
-        </div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-sm mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Filename</th>
-                            <th>Error</th>
-                            <th>Timestamp</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for file in report.error_files %}
-                        <tr>
-                            <td class="fw-bold">{{ file.filename }}</td>
-                            <td>
-                                <small class="text-danger">{{ file.error }}</small>
-                            </td>
-                            <td>{{ file.timestamp[:19] | replace('T', ' ') }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
+    {% call card_section("Error Files (" + report.error_files|length|string + ")", "times-circle", "danger") %}
+        {{ file_table(report.error_files, "error") }}
+    {% endcall %}
     {% endif %}
 
     <!-- Created Records Summary -->
     {% if report.created_records %}
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-plus-circle me-2 text-success"></i>
-                        Records Created During Processing
-                    </h5>
-                    <small class="text-muted">Double-click any record to view details</small>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        {% for record_type, records in report.created_records.items() %}
-                        {% if records %}
-                        <div class="col-md-6 mb-3">
-                            <div class="card border-success">
-                                <div class="card-header bg-light">
-                                    <h6 class="card-title mb-0 text-capitalize text-success">
-                                        <i class="fas fa-{% if record_type == 'opportunities' %}handshake{% elif record_type == 'contacts' %}user{% elif record_type == 'accounts' %}building{% elif record_type == 'products' %}box{% elif record_type == 'tasks' %}tasks{% else %}plus{% endif %} me-2"></i>
-                                        {{ record_type.title() }} ({{ records|length }})
-                                    </h6>
-                                </div>
-                                <div class="card-body p-0" style="max-height: 200px; overflow-y: auto;">
-                                    <ul class="list-group list-group-flush">
-                                        {% for record in records %}
-                                        <li class="list-group-item py-2 record-item" 
-                                            data-record-type="{{ record_type }}" 
-                                            data-record-id="{{ record.get('id', '') }}"
-                                            style="cursor: pointer;"
-                                            ondblclick="viewRecord('{{ record_type }}', '{{ record.get('id', '') }}')"
-                                            title="Double-click to view details">
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <div>
-                                                    <strong>
-                                                        {% if record_type == 'opportunities' %}
-                                                            {{ record.get('request_number', 'Unknown') }}
-                                                        {% elif record_type == 'contacts' %}
-                                                            {{ record.get('name', 'Unknown') }}
-                                                        {% elif record_type == 'accounts' %}
-                                                            {{ record.get('name', 'Unknown') }}
-                                                        {% elif record_type == 'products' %}
-                                                            {{ record.get('name', 'Unknown') }}
-                                                        {% elif record_type == 'tasks' %}
-                                                            {{ record.get('subject', 'Unknown') }}
-                                                        {% else %}
-                                                            {{ record.get('name', record.get('id', 'Unknown')) }}
-                                                        {% endif %}
-                                                    </strong>
-                                                    {% if record_type == 'opportunities' and record.get('nsn') %}
-                                                    <br><small class="text-muted">NSN: {{ record.nsn }}</small>
-                                                    {% elif record_type == 'contacts' and record.get('email') %}
-                                                    <br><small class="text-muted">{{ record.email }}</small>
-                                                    {% elif record_type == 'products' and record.get('nsn') %}
-                                                    <br><small class="text-muted">NSN: {{ record.nsn }}</small>
-                                                    {% endif %}
-                                                </div>
-                                                <span class="badge bg-success">ID: {{ record.get('id', 'N/A') }}</span>
-                                            </div>
-                                        </li>
-                                        {% endfor %}
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                        {% endif %}
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
+    {% call card_section("Records Created During Processing", "plus-circle", "success", "created-records") %}
+        <div class="row">
+            {% for record_type, records in report.created_records.items() %}
+            {% if records %}
+            {{ record_type_card(record_type, records, "success") }}
+            {% endif %}
+            {% endfor %}
         </div>
-    </div>
+    {% endcall %}
     {% endif %}
 
     <!-- Updated Records Summary -->
     {% if report.updated_records %}
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-edit me-2 text-info"></i>
-                        Records Updated During Processing
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        {% for record_type, records in report.updated_records.items() %}
-                        {% if records %}
-                        <div class="col-md-6 mb-3">
-                            <div class="card border-info">
-                                <div class="card-header bg-light">
-                                    <h6 class="card-title mb-0 text-capitalize text-info">
-                                        <i class="fas fa-{% if record_type == 'contacts' %}user{% elif record_type == 'accounts' %}building{% else %}edit{% endif %} me-2"></i>
-                                        {{ record_type.title() }} ({{ records|length }})
-                                    </h6>
-                                </div>
-                                <div class="card-body p-0" style="max-height: 200px; overflow-y: auto;">
-                                    <ul class="list-group list-group-flush">
-                                        {% for record in records %}
-                                        <li class="list-group-item py-2">
-                                            <div class="d-flex justify-content-between align-items-start">
-                                                <div>
-                                                    <strong>{{ record.get('name', 'Unknown') }}</strong>
-                                                    {% if record.get('email') %}
-                                                    <br><small class="text-muted">{{ record.email }}</small>
-                                                    {% endif %}
-                                                    {% if record.get('updates') %}
-                                                    <br><small class="text-success">Updated: {{ record.updates | join(', ') }}</small>
-                                                    {% endif %}
-                                                </div>
-                                                <span class="badge bg-info">ID: {{ record.get('id', 'N/A') }}</span>
-                                            </div>
-                                        </li>
-                                        {% endfor %}
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                        {% endif %}
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
+    {% call card_section("Records Updated During Processing", "edit", "info") %}
+        <div class="row">
+            {% for record_type, records in report.updated_records.items() %}
+            {% if records %}
+            {{ updated_record_card(record_type, records) }}
+            {% endif %}
+            {% endfor %}
         </div>
-    </div>
+    {% endcall %}
     {% endif %}
 </div>
 {% endblock %}
 
-{% block scripts %}
+{% block styles %}
 <style>
 @media print {
     .btn, .card-header { print-color-adjust: exact; }
@@ -456,362 +210,6 @@
     font-size: 0.75em;
     padding: 0.25rem 0.5rem;
 }
-</style>
-
-<!-- Edit Opportunity Modal -->
-<div class="modal fade" id="editOpportunityModal" tabindex="-1" aria-labelledby="editOpportunityModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="editOpportunityModalLabel">Edit Opportunity</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <form id="editOpportunityForm">
-                    <input type="hidden" id="edit-opportunity-id">
-                    <div class="mb-3">
-                        <label for="edit-opportunity-name" class="form-label">RFQ Number</label>
-                        <input type="text" class="form-control" id="edit-opportunity-name" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="edit-opportunity-stage" class="form-label">Stage</label>
-                        <select class="form-select" id="edit-opportunity-stage">
-                            <option value="New">New</option>
-                            <option value="Qualified">Qualified</option>
-                            <option value="Quote Sent">Quote Sent</option>
-                            <option value="Proposal">Proposal</option>
-                            <option value="Negotiation">Negotiation</option>
-                            <option value="Closed Won">Closed Won</option>
-                            <option value="Closed Lost">Closed Lost</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label for="edit-opportunity-amount" class="form-label">Amount</label>
-                        <div class="input-group">
-                            <span class="input-group-text">$</span>
-                            <input type="number" class="form-control" id="edit-opportunity-amount" step="0.01" min="0">
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label for="edit-opportunity-assigned" class="form-label">Assigned To</label>
-                        <input type="text" class="form-control" id="edit-opportunity-assigned">
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="saveOpportunityChanges()">Save Changes</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-let currentOpportunitiesPage = 1;
-let currentReportFilename = '{{ filename }}';
-
-// Load opportunities on page load
-document.addEventListener('DOMContentLoaded', function() {
-    loadOpportunities();
-});
-
-function loadOpportunities(page = 1) {
-    currentOpportunitiesPage = page;
-    
-    fetch(`/api/processing-report/${currentReportFilename}/opportunities?page=${page}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                showOpportunityError(data.error);
-                return;
-            }
-            
-            const tbody = document.getElementById('opportunities-tbody');
-            const loading = document.getElementById('opportunities-loading');
-            const content = document.getElementById('opportunities-content');
-            const empty = document.getElementById('opportunities-empty');
-            const pagination = document.getElementById('opportunities-pagination');
-            
-            // Hide loading
-            loading.style.display = 'none';
-            content.style.display = 'block';
-            
-            if (data.opportunities.length === 0) {
-                empty.style.display = 'block';
-                document.getElementById('opportunities-table').style.display = 'none';
-                pagination.style.display = 'none';
-                return;
-            }
-            
-            // Show table and populate
-            empty.style.display = 'none';
-            document.getElementById('opportunities-table').style.display = 'table';
-            
-            tbody.innerHTML = data.opportunities.map(opp => `
-                <tr>
-                    <td>
-                        <a href="/opportunity/${opp.id}" class="text-decoration-none">
-                            <strong>${opp.name}</strong>
-                        </a>
-                    </td>
-                    <td>
-                        <code class="text-muted">${opp.nsn || 'N/A'}</code>
-                    </td>
-                    <td>
-                        <span class="badge badge-stage ${getStageBadgeClass(opp.stage)}">${opp.stage}</span>
-                    </td>
-                    <td>
-                        ${opp.amount ? '$' + parseFloat(opp.amount).toLocaleString() : 'N/A'}
-                    </td>
-                    <td>
-                        ${opp.assigned_to || 'Unassigned'}
-                    </td>
-                    <td>
-                        <small class="text-muted">${formatDate(opp.created_at)}</small>
-                    </td>
-                    <td>
-                        <button class="btn btn-sm btn-outline-primary btn-action me-1" 
-                                onclick="editOpportunity(${opp.id}, '${opp.name}', '${opp.stage}', ${opp.amount || 0}, '${opp.assigned_to || ''}')"
-                                title="Edit">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="btn btn-sm btn-outline-danger btn-action" 
-                                onclick="deleteOpportunity(${opp.id}, '${opp.name}')"
-                                title="Delete">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </td>
-                </tr>
-            `).join('');
-            
-            // Update pagination
-            if (data.total_pages > 1) {
-                updatePagination(data.page, data.total_pages);
-                pagination.style.display = 'block';
-            } else {
-                pagination.style.display = 'none';
-            }
-        })
-        .catch(error => {
-            console.error('Error loading opportunities:', error);
-            showOpportunityError('Failed to load opportunities');
-        });
-}
-
-function getStageBadgeClass(stage) {
-    const stageClasses = {
-        'New': 'bg-primary',
-        'Qualified': 'bg-info',
-        'Quote Sent': 'bg-warning text-dark',
-        'Proposal': 'bg-secondary',
-        'Negotiation': 'bg-warning text-dark',
-        'Closed Won': 'bg-success',
-        'Closed Lost': 'bg-danger'
-    };
-    return stageClasses[stage] || 'bg-light text-dark';
-}
-
-function formatDate(dateString) {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString();
-}
-
-function updatePagination(currentPage, totalPages) {
-    const pagination = document.querySelector('#opportunities-pagination .pagination');
-    let paginationHTML = '';
-    
-    // Previous button
-    if (currentPage > 1) {
-        paginationHTML += `
-            <li class="page-item">
-                <a class="page-link" href="#" onclick="loadOpportunities(${currentPage - 1}); return false;">Previous</a>
-            </li>
-        `;
-    }
-    
-    // Page numbers
-    for (let i = Math.max(1, currentPage - 2); i <= Math.min(totalPages, currentPage + 2); i++) {
-        paginationHTML += `
-            <li class="page-item ${i === currentPage ? 'active' : ''}">
-                <a class="page-link" href="#" onclick="loadOpportunities(${i}); return false;">${i}</a>
-            </li>
-        `;
-    }
-    
-    // Next button
-    if (currentPage < totalPages) {
-        paginationHTML += `
-            <li class="page-item">
-                <a class="page-link" href="#" onclick="loadOpportunities(${currentPage + 1}); return false;">Next</a>
-            </li>
-        `;
-    }
-    
-    pagination.innerHTML = paginationHTML;
-}
-
-function editOpportunity(id, name, stage, amount, assignedTo) {
-    document.getElementById('edit-opportunity-id').value = id;
-    document.getElementById('edit-opportunity-name').value = name;
-    document.getElementById('edit-opportunity-stage').value = stage;
-    document.getElementById('edit-opportunity-amount').value = amount || '';
-    document.getElementById('edit-opportunity-assigned').value = assignedTo;
-    
-    const modal = new bootstrap.Modal(document.getElementById('editOpportunityModal'));
-    modal.show();
-}
-
-function saveOpportunityChanges() {
-    const id = document.getElementById('edit-opportunity-id').value;
-    const name = document.getElementById('edit-opportunity-name').value;
-    const stage = document.getElementById('edit-opportunity-stage').value;
-    const amount = document.getElementById('edit-opportunity-amount').value;
-    const assignedTo = document.getElementById('edit-opportunity-assigned').value;
-    
-    if (!name.trim()) {
-        alert('RFQ Number is required');
-        return;
-    }
-    
-    const data = {
-        name: name,
-        stage: stage,
-        amount: amount || null,
-        assigned_to: assignedTo || null
-    };
-    
-    fetch(`/api/processing-report/opportunities/${id}`, {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
-    })
-    .then(response => response.json())
-    .then(result => {
-        if (result.success) {
-            const modal = bootstrap.Modal.getInstance(document.getElementById('editOpportunityModal'));
-            modal.hide();
-            loadOpportunities(currentOpportunitiesPage);
-            showSuccessToast('Opportunity updated successfully');
-        } else {
-            alert('Error: ' + (result.error || 'Failed to update opportunity'));
-        }
-    })
-    .catch(error => {
-        console.error('Error updating opportunity:', error);
-        alert('Failed to update opportunity');
-    });
-}
-
-function deleteOpportunity(id, name) {
-    if (!confirm(`Are you sure you want to delete the opportunity "${name}"?\n\nThis action cannot be undone and will also delete all related records (contacts, tasks, etc.).`)) {
-        return;
-    }
-    
-    fetch(`/api/processing-report/opportunities/${id}`, {
-        method: 'DELETE'
-    })
-    .then(response => response.json())
-    .then(result => {
-        if (result.success) {
-            loadOpportunities(currentOpportunitiesPage);
-            showSuccessToast('Opportunity deleted successfully');
-        } else {
-            alert('Error: ' + (result.error || 'Failed to delete opportunity'));
-        }
-    })
-    .catch(error => {
-        console.error('Error deleting opportunity:', error);
-        alert('Failed to delete opportunity');
-    });
-}
-
-function showOpportunityError(message) {
-    const loading = document.getElementById('opportunities-loading');
-    const content = document.getElementById('opportunities-content');
-    
-    loading.style.display = 'none';
-    content.style.display = 'block';
-    content.innerHTML = `
-        <div class="alert alert-danger" role="alert">
-            <i class="fas fa-exclamation-triangle me-2"></i>
-            Error loading opportunities: ${message}
-        </div>
-    `;
-}
-
-function showSuccessToast(message) {
-    // Create toast if it doesn't exist
-    let toastContainer = document.getElementById('toast-container');
-    if (!toastContainer) {
-        toastContainer = document.createElement('div');
-        toastContainer.id = 'toast-container';
-        toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
-        toastContainer.style.zIndex = '9999';
-        document.body.appendChild(toastContainer);
-    }
-    
-    const toastId = 'toast-' + Date.now();
-    const toastHTML = `
-        <div id="${toastId}" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
-            <div class="toast-header">
-                <i class="fas fa-check-circle text-success me-2"></i>
-                <strong class="me-auto">Success</strong>
-                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
-            </div>
-            <div class="toast-body">
-                ${message}
-            </div>
-        </div>
-    `;
-    
-    toastContainer.insertAdjacentHTML('beforeend', toastHTML);
-    const toast = new bootstrap.Toast(document.getElementById(toastId));
-    toast.show();
-    
-    // Remove toast element after it's hidden
-    document.getElementById(toastId).addEventListener('hidden.bs.toast', function() {
-        this.remove();
-    });
-}
-
-// Function to view record details
-function viewRecord(recordType, recordId) {
-    if (!recordId || recordId === 'null' || recordId === '') {
-        showToast('error', 'Error', 'Record ID not available');
-        return;
-    }
-    
-    let url = '';
-    switch(recordType) {
-        case 'opportunities':
-            url = `/opportunity/${recordId}`;
-            break;
-        case 'contacts':
-            url = `/contact/${recordId}`;
-            break;
-        case 'accounts':
-            url = `/account/${recordId}`;
-            break;
-        case 'products':
-            url = `/product/${recordId}`;
-            break;
-        case 'tasks':
-            url = `/tasks/${recordId}`;
-            break;
-        default:
-            showToast('error', 'Error', `Unknown record type: ${recordType}`);
-            return;
-    }
-    
-    // Open in new tab for better user experience
-    window.open(url, '_blank');
-}
-</script>
-
-{% block styles %}
-<style>
 .record-item:hover {
     background-color: #f8f9fa !important;
     transform: translateY(-1px);
@@ -827,5 +225,13 @@ function viewRecord(recordType, recordId) {
 }
 </style>
 {% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/processing_report_detail.js') }}"></script>
+<script>
+// Initialize processing report functionality
+document.addEventListener('DOMContentLoaded', function() {
+    ProcessingReportJS.init('{{ filename }}');
+});
 </script>
 {% endblock %}

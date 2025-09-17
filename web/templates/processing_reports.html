@@ -2,6 +2,29 @@
 
 {% block title %}Processing Reports - DLA CRM{% endblock %}
 
+{% block head %}
+{{ super() }}
+<style>
+    .report-row {
+        transition: background-color 0.2s ease;
+    }
+    
+    .report-row:hover {
+        background-color: #f8f9fa !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .report-row:active {
+        background-color: #e9ecef !important;
+    }
+    
+    .clickable-hint {
+        font-size: 0.85em;
+        opacity: 0.8;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid">
     <!-- Header -->
@@ -12,6 +35,7 @@
                 PDF Processing Reports
             </h1>
             <p class="text-muted mb-0">View detailed reports from PDF processing sessions</p>
+            <small class="text-info clickable-hint"><i class="fas fa-mouse-pointer me-1"></i>Double-click any row to view detailed report</small>
         </div>
         <div>
             <button class="btn btn-danger me-2" onclick="clearAllReports()" id="clearAllBtn">
@@ -48,7 +72,7 @@
                     </thead>
                     <tbody>
                         {% for report in reports %}
-                        <tr>
+                        <tr class="report-row" data-filename="{{ report.filename }}" style="cursor: pointer;" title="Double-click to view details">
                             <td>
                                 <div class="fw-bold">{{ report.timestamp[:19] | replace('T', ' ') }}</div>
                                 <small class="text-muted">{{ report.filename }}</small>
@@ -177,6 +201,22 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+    
+    // Add double-click functionality to report rows
+    document.querySelectorAll('.report-row').forEach(row => {
+        row.addEventListener('dblclick', function(e) {
+            // Prevent double-click if user clicked on action buttons
+            if (e.target.closest('button') || e.target.closest('a')) {
+                return;
+            }
+            
+            const filename = this.getAttribute('data-filename');
+            if (filename) {
+                // Navigate to the report detail page
+                window.location.href = `/processing-reports/${encodeURIComponent(filename)}`;
+            }
+        });
+    });
 });
 
 // Function to clear all reports

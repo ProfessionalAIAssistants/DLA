@@ -471,8 +471,13 @@ class CRMAutomation:
             'next_week_tasks': crm_data.get_tasks({'due_date_range': 'next_week'}),
             'new_rfqs': crm_data.get_rfqs({'status': 'New'}, limit=10),
             'closing_opportunities': crm_data.execute_query(
-                "SELECT * FROM opportunities WHERE close_date <= ? AND stage NOT IN ('Closed Won', 'Closed Lost') ORDER BY close_date",
-                [today + timedelta(days=7)]
+                """SELECT * FROM opportunities 
+                   WHERE close_date > date('now') 
+                   AND close_date <= date('now', '+7 days')
+                   AND stage NOT IN ('Closed Won', 'Closed Lost') 
+                   AND state NOT IN ('Won', 'Bid Lost', 'No Bid')
+                   ORDER BY close_date ASC""",
+                []
             ),
             'recent_opportunities': crm_data.execute_query(
                 "SELECT * FROM opportunities ORDER BY created_date DESC LIMIT 6"

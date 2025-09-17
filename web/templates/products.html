@@ -93,7 +93,24 @@ tbody tr {
                         <td>{{ product.fsc or 'N/A' }}</td>
                         <td>{{ product.category or product.name or 'N/A' }}</td>
                         <td>
-                            {% if product.manufacturer %}
+                            {% if product.qpl_manufacturers and product.qpl_manufacturers|length > 0 %}
+                                <!-- Display QPL manufacturers as clickable links -->
+                                {% for manufacturer in product.qpl_manufacturers %}
+                                    <div class="mb-1">
+                                        <a href="/account/{{ manufacturer.account_id }}" class="text-decoration-none fw-bold text-primary" title="View {{ manufacturer.manufacturer_name }} account">
+                                            {{ manufacturer.manufacturer_name }}
+                                        </a>
+                                        {% if manufacturer.cage_code %}
+                                        <br><small class="text-muted fw-bold text-info">CAGE: {{ manufacturer.cage_code }}</small>
+                                        {% endif %}
+                                        {% if manufacturer.part_number %}
+                                        <br><small class="text-muted">P/N: {{ manufacturer.part_number }}</small>
+                                        {% endif %}
+                                    </div>
+                                    {% if not loop.last %}<hr class="my-1">{% endif %}
+                                {% endfor %}
+                            {% elif product.manufacturer %}
+                                <!-- Fallback to original manufacturer display -->
                                 {% set mfr_parts = product.manufacturer.split(' P/N ') %}
                                 {{ mfr_parts[0] }}
                                 {% if mfr_parts|length > 1 %}

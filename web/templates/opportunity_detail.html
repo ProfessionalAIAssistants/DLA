@@ -73,12 +73,12 @@
                             <div class="text-center p-3 bg-light rounded">
                                 <div class="fw-bold text-muted small">STAGE</div>
                                 <div class="mt-2">
-                                    <select class="form-select form-select-sm stage-select" id="stageSelect" onchange="autoSaveStage()">
-                                        <option value="Prospecting" {{ 'selected' if opportunity.stage == 'Prospecting' }}>Prospecting</option>
-                                        <option value="RFQ Requested" {{ 'selected' if opportunity.stage == 'RFQ Requested' }}>Quote Requested</option>
-                                        <option value="RFQ Received" {{ 'selected' if opportunity.stage == 'RFQ Received' }}>Quote Received</option>
-                                        <option value="Submit Bid" {{ 'selected' if opportunity.stage == 'Submit Bid' }}>Submit Bid</option>
-                                        <option value="Project Started" {{ 'selected' if opportunity.stage == 'Project Started' }}>Project Started</option>
+                                    <select class="form-select form-select-sm stage-select" id="stageSelect" onchange="autoSaveStage()" style="color: #212529 !important; background-color: #fff !important;">
+                                        <option value="Prospecting" {{ 'selected' if opportunity.stage == 'Prospecting' }} style="color: #212529 !important;">Prospecting</option>
+                                        <option value="RFQ Requested" {{ 'selected' if opportunity.stage == 'RFQ Requested' }} style="color: #212529 !important;">Quote Requested</option>
+                                        <option value="RFQ Received" {{ 'selected' if opportunity.stage == 'RFQ Received' }} style="color: #212529 !important;">Quote Received</option>
+                                        <option value="Submit Bid" {{ 'selected' if opportunity.stage == 'Submit Bid' }} style="color: #212529 !important;">Submit Bid</option>
+                                        <option value="Project Started" {{ 'selected' if opportunity.stage == 'Project Started' }} style="color: #212529 !important;">Project Started</option>
                                     </select>
                                 </div>
                             </div>
@@ -87,12 +87,12 @@
                             <div class="text-center p-3 bg-light rounded">
                                 <div class="fw-bold text-muted small">STATE</div>
                                 <div class="mt-2">
-                                    <select class="form-select form-select-sm state-select" id="stateSelect" onchange="autoSaveState()">
-                                        <option value="Active" {{ 'selected' if opportunity.state == 'Active' }}>Active</option>
-                                        <option value="No Bid" {{ 'selected' if opportunity.state == 'No Bid' }}>No Bid</option>
-                                        <option value="Past Due" {{ 'selected' if opportunity.state == 'Past Due' }}>Past Due</option>
-                                        <option value="Bid Lost" {{ 'selected' if opportunity.state == 'Bid Lost' }}>Bid Lost</option>
-                                        <option value="Won" {{ 'selected' if opportunity.state == 'Won' }}>Won</option>
+                                    <select class="form-select form-select-sm state-select" id="stateSelect" onchange="autoSaveState()" style="color: #212529 !important; background-color: #fff !important;">
+                                        <option value="Active" {{ 'selected' if opportunity.state == 'Active' }} style="color: #212529 !important;">Active</option>
+                                        <option value="No Bid" {{ 'selected' if opportunity.state == 'No Bid' }} style="color: #212529 !important;">No Bid</option>
+                                        <option value="Past Due" {{ 'selected' if opportunity.state == 'Past Due' }} style="color: #212529 !important;">Past Due</option>
+                                        <option value="Bid Lost" {{ 'selected' if opportunity.state == 'Bid Lost' }} style="color: #212529 !important;">Bid Lost</option>
+                                        <option value="Won" {{ 'selected' if opportunity.state == 'Won' }} style="color: #212529 !important;">Won</option>
                                     </select>
                                 </div>
                             </div>
@@ -376,6 +376,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
+                                    {% if opportunity_tasks %}
                                     {% for task in opportunity_tasks %}
                                     <tr>
                                         <td>
@@ -452,6 +453,14 @@
                                         </td>
                                     </tr>
                                     {% endfor %}
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="6" class="text-center py-4">
+                                            <i class="fas fa-tasks fa-2x text-muted mb-2"></i>
+                                            <p class="text-muted mb-0">No tasks found for this opportunity.</p>
+                                        </td>
+                                    </tr>
+                                    {% endif %}
                                 </tbody>
                             </table>
                         </div>
@@ -702,6 +711,19 @@
                             <i class="fas fa-building text-info fs-5"></i>
                         </div>
                         <div class="flex-grow-1">
+                            <!-- Parent Company (appears above main company) -->
+                            {% if parent_account %}
+                            <div class="mb-1">
+                                <a href="/account/{{ parent_account.id }}" class="text-muted text-decoration-none small">
+                                    {{ parent_account.name }}
+                                </a>
+                            </div>
+                            {% elif account.parent_co %}
+                            <div class="mb-1">
+                                <span class="text-muted small">{{ account.parent_co }}</span>
+                            </div>
+                            {% endif %}
+                            
                             <h6 class="mb-1 fw-bold">
                                 <a href="/account/{{ account.id }}" class="text-primary text-decoration-none">
                                     {{ account.name }}
@@ -722,6 +744,7 @@
                         </div>
                     </div>
                     {% endif %}
+                    
                     <div class="d-grid">
                         <a href="/account/{{ account.id }}" class="btn btn-info btn-sm">
                             <i class="fas fa-eye me-1"></i>View Account Details
@@ -851,7 +874,7 @@
                         {% endif %}
                         
                         <!-- Recent Tasks -->
-                        {% if opportunity_tasks %}
+                        {% if opportunity_tasks and opportunity_tasks|length > 0 %}
                             {% for task in opportunity_tasks[:5] %}
                             <div class="timeline-item">
                                 <div class="timeline-marker shadow {{ 'bg-success' if task.status == 'Completed' else 'bg-warning' if task.overdue else 'bg-info' }}"></div>
@@ -1180,18 +1203,18 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <form id="addTaskForm">
+                <div id="addTaskFormContainer">
                     <div class="row">
                         <div class="col-md-8">
                             <div class="mb-3">
-                                <label for="taskSubject" class="form-label">Subject *</label>
-                                <input type="text" class="form-control" id="taskSubject" required>
+                                <label for="taskSubject" class="form-label">Task Subject *</label>
+                                <input type="text" class="form-control" id="taskSubject" name="subject" placeholder="Enter task subject" required>
                             </div>
                         </div>
                         <div class="col-md-4">
                             <div class="mb-3">
                                 <label for="taskPriority" class="form-label">Priority</label>
-                                <select class="form-select" id="taskPriority">
+                                <select class="form-select" id="taskPriority" name="priority">
                                     <option value="Low">Low</option>
                                     <option value="Medium" selected>Medium</option>
                                     <option value="High">High</option>
@@ -1200,10 +1223,10 @@
                         </div>
                     </div>
                     <div class="row">
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <div class="mb-3">
                                 <label for="taskStatus" class="form-label">Status</label>
-                                <select class="form-select" id="taskStatus">
+                                <select class="form-select" id="taskStatus" name="status">
                                     <option value="Not Started" selected>Not Started</option>
                                     <option value="In Progress">In Progress</option>
                                     <option value="Completed">Completed</option>
@@ -1211,26 +1234,82 @@
                                 </select>
                             </div>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="taskWorkDate" class="form-label">Work Date</label>
+                                <input type="date" class="form-control" id="taskWorkDate" name="work_date">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
                             <div class="mb-3">
                                 <label for="taskDueDate" class="form-label">Due Date</label>
-                                <input type="date" class="form-control" id="taskDueDate">
+                                <input type="date" class="form-control" id="taskDueDate" name="due_date">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="mb-3">
+                                <label for="taskAssignedTo" class="form-label">Assigned To</label>
+                                <input type="text" class="form-control" id="taskAssignedTo" name="assigned_to" placeholder="Task assignee">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="taskOwner" class="form-label">Owner</label>
+                                <input type="text" class="form-control" id="taskOwner" name="owner" placeholder="Task owner">
                             </div>
                         </div>
                     </div>
                     <div class="mb-3">
-                        <label for="taskAssignedTo" class="form-label">Assigned To</label>
-                        <input type="text" class="form-control" id="taskAssignedTo" placeholder="Enter assignee name">
-                    </div>
-                    <div class="mb-3">
                         <label for="taskDescription" class="form-label">Description</label>
-                        <textarea class="form-control" id="taskDescription" rows="4" placeholder="Enter task details..."></textarea>
+                        <textarea class="form-control" id="taskDescription" name="description" rows="4" placeholder="Detailed task description"></textarea>
                     </div>
-                </form>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="task_contact_id" class="form-label">Contact</label>
+                                <select class="form-select" id="task_contact_id" name="contact_id">
+                                    <option value="">Select Contact</option>
+                                    <!-- Contacts will be loaded via JavaScript -->
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="task_account_id" class="form-label">Account</label>
+                                <select class="form-select" id="task_account_id" name="account_id">
+                                    <option value="">Select Account</option>
+                                    <!-- Accounts will be loaded via JavaScript -->
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="task_opportunity_id" class="form-label">Opportunity</label>
+                                <select class="form-select" id="task_opportunity_id" name="opportunity_id">
+                                    <option value="">Select Opportunity</option>
+                                    <!-- Opportunities will be loaded via JavaScript -->
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="task_quote_id" class="form-label">Quote</label>
+                                <select class="form-select" id="task_quote_id" name="quote_id">
+                                    <option value="">Select Quote</option>
+                                    <!-- Quotes will be loaded via JavaScript -->
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="saveTask()">Add Task</button>
+                <button type="button" class="btn btn-primary" id="saveTaskBtn">Add Task</button>
             </div>
         </div>
     </div>
@@ -1267,6 +1346,23 @@
 </div>
 
 <style>
+/* Fix dropdown text visibility */
+.form-select, .form-select option {
+    color: #212529 !important;
+    background-color: #fff !important;
+}
+
+.form-select:focus {
+    color: #212529 !important;
+    background-color: #fff !important;
+}
+
+/* Ensure dropdown options are visible */
+select option {
+    color: #212529 !important;
+    background-color: #fff !important;
+}
+
 .timeline {
     position: relative;
     padding-left: 30px;
@@ -2505,7 +2601,7 @@ function saveInteraction() {
         description: description.trim() || null,
         type: type,
         direction: direction,
-        interaction_date: interactionDate || null,
+        date: interactionDate || null,  // Use 'date' instead of 'interaction_date' for API compatibility
         duration_minutes: duration ? parseInt(duration) : null,
         outcome: outcome.trim() || null,
         status: status,
@@ -2558,71 +2654,120 @@ function createTask(opportunityId) {
 }
 
 function saveTask() {
-    const opportunityId = {{ opportunity.id }};
+    console.log('=== SAVETASK FUNCTION STARTED ===');
     
-    // Get form values
-    const subject = document.getElementById('taskSubject').value;
-    const priority = document.getElementById('taskPriority').value;
-    const status = document.getElementById('taskStatus').value;
-    const dueDate = document.getElementById('taskDueDate').value;
-    const assignedTo = document.getElementById('taskAssignedTo').value;
-    const description = document.getElementById('taskDescription').value;
-    
-    // Validate required fields
-    if (!subject.trim()) {
-        alert('Subject is required');
-        return;
+    try {
+        const opportunityId = {{ opportunity.id }};
+        console.log('Opportunity ID:', opportunityId);
+        
+        // Get form values
+        const subject = document.getElementById('taskSubject')?.value || '';
+        const priority = document.getElementById('taskPriority')?.value || 'Medium';
+        const status = document.getElementById('taskStatus')?.value || 'Not Started';
+        const workDate = document.getElementById('taskWorkDate')?.value || '';
+        const dueDate = document.getElementById('taskDueDate')?.value || '';
+        const assignedTo = document.getElementById('taskAssignedTo')?.value || '';
+        const owner = document.getElementById('taskOwner')?.value || '';
+        const description = document.getElementById('taskDescription')?.value || '';
+        
+        console.log('Form values extracted:', { subject, priority, status, workDate, dueDate, assignedTo, owner, description });
+        
+        // Get relationship selections
+        const contactId = document.getElementById('task_contact_id')?.value || '';
+        const accountId = document.getElementById('task_account_id')?.value || '';
+        const opportunityIdSelected = document.getElementById('task_opportunity_id')?.value || '';
+        const quoteId = document.getElementById('task_quote_id')?.value || '';
+        
+        console.log('Relationship selections:', { contactId, accountId, opportunityIdSelected, quoteId });
+        
+        // Validate required fields
+        if (!subject.trim()) {
+            console.error('Subject is required');
+            alert('Subject is required');
+            return false;
+        }
+        
+        // Prepare data - if created from opportunity page, default to this opportunity
+        const taskData = {
+            subject: subject.trim(),
+            description: description.trim() || null,
+            status: status,
+            priority: priority,
+            work_date: workDate || null,
+            due_date: dueDate || null,
+            assigned_to: assignedTo.trim() || null,
+            owner: owner.trim() || null,
+            contact_id: contactId || null,
+            account_id: accountId || null,
+            opportunity_id: opportunityIdSelected || opportunityId, // Default to current opportunity
+            quote_id: quoteId || null
+        };
+        
+        console.log('Creating task with data:', taskData);
+        
+        // Create task via API
+        console.log('About to make fetch request to /api/tasks');
+        fetch('/api/tasks', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(taskData)
+        })
+        .then(response => {
+            console.log('Response received:', response);
+            console.log('Response status:', response.status);
+            console.log('Response ok:', response.ok);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Response data:', data);
+            if (data.success) {
+                console.log('Task created successfully, closing modal');
+                // Close modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('addTaskModal'));
+                if (modal) {
+                    modal.hide();
+                }
+                
+                // Reset form fields individually
+                document.getElementById('taskSubject').value = '';
+                document.getElementById('taskPriority').value = 'Medium';
+                document.getElementById('taskStatus').value = 'Not Started';
+                document.getElementById('taskWorkDate').value = '';
+                document.getElementById('taskDueDate').value = '';
+                document.getElementById('taskAssignedTo').value = '';
+                document.getElementById('taskOwner').value = '';
+                document.getElementById('taskDescription').value = '';
+                document.getElementById('task_contact_id').value = '';
+                document.getElementById('task_account_id').value = '';
+                document.getElementById('task_opportunity_id').value = '';
+                document.getElementById('task_quote_id').value = '';
+                
+                // Reload page to show new task
+                console.log('Reloading page');
+                location.reload();
+            } else {
+                console.error('Task creation failed:', data);
+                alert('Error creating task: ' + (data.message || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Fetch error:', error);
+            alert('Error creating task. Please try again. Error: ' + error.message);
+        });
+        
+    } catch (error) {
+        console.error('Error in saveTask function:', error);
+        alert('An error occurred while saving the task: ' + error.message);
     }
     
-    // Prepare data
-    const taskData = {
-        subject: subject.trim(),
-        description: description.trim() || null,
-        status: status,
-        priority: priority,
-        due_date: dueDate || null,
-        assigned_to: assignedTo.trim() || null,
-        parent_item_type: 'Opportunity',
-        parent_item_id: opportunityId
-    };
-    
-    console.log('Creating task with data:', taskData);
-    
-    // Create task via API
-    fetch('/api/tasks', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(taskData)
-    })
-    .then(response => {
-        console.log('Response status:', response.status);
-        return response.json();
-    })
-    .then(data => {
-        console.log('Response data:', data);
-        if (data.success) {
-            // Close modal
-            const modal = bootstrap.Modal.getInstance(document.getElementById('addTaskModal'));
-            modal.hide();
-            
-            // Reset form
-            document.getElementById('addTaskForm').reset();
-            
-            // Reload page to show new task
-            location.reload();
-        } else {
-            alert('Error creating task: ' + (data.message || 'Unknown error'));
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Error creating task. Please try again.');
-    });
-}
-
-function completeTask(taskId) {
+    console.log('=== SAVETASK FUNCTION COMPLETED ===');
+    return false; // Prevent any form submission
+}function completeTask(taskId) {
     console.log('completeTask called for task:', taskId);
     
     fetch(`/api/tasks/${taskId}/complete`, {
@@ -2675,13 +2820,120 @@ function deleteTask(taskId) {
     });
 }
 
+// Load dropdown data for task form
+function loadTaskDropdowns() {
+    // Load contacts
+    fetch('/api/contacts')
+        .then(response => response.json())
+        .then(contacts => {
+            const contactSelect = document.getElementById('task_contact_id');
+            if (contactSelect) {
+                contactSelect.innerHTML = '<option value="">Select Contact</option>';
+                contacts.forEach(contact => {
+                    const option = document.createElement('option');
+                    option.value = contact.id;
+                    option.textContent = `${contact.first_name || ''} ${contact.last_name || ''}`.trim() + 
+                                       (contact.email ? ` (${contact.email})` : '');
+                    contactSelect.appendChild(option);
+                });
+            }
+        })
+        .catch(error => console.error('Error loading contacts:', error));
+    
+    // Load accounts
+    fetch('/api/accounts')
+        .then(response => response.json())
+        .then(data => {
+            const accountSelect = document.getElementById('task_account_id');
+            if (accountSelect) {
+                accountSelect.innerHTML = '<option value="">Select Account</option>';
+                const accounts = data.success && data.accounts ? data.accounts : (Array.isArray(data) ? data : []);
+                accounts.forEach(account => {
+                    const option = document.createElement('option');
+                    option.value = account.id;
+                    option.textContent = account.name || `Account #${account.id}`;
+                    accountSelect.appendChild(option);
+                });
+            }
+        })
+        .catch(error => console.error('Error loading accounts:', error));
+    
+    // Load opportunities
+    fetch('/api/opportunities')
+        .then(response => response.json())
+        .then(opportunities => {
+            const opportunitySelect = document.getElementById('task_opportunity_id');
+            if (opportunitySelect) {
+                opportunitySelect.innerHTML = '<option value="">Select Opportunity</option>';
+                opportunities.forEach(opportunity => {
+                    const option = document.createElement('option');
+                    option.value = opportunity.id;
+                    option.textContent = opportunity.name || `Opportunity #${opportunity.id}`;
+                    // Pre-select current opportunity
+                    if (opportunity.id == {{ opportunity.id }}) {
+                        option.selected = true;
+                    }
+                    opportunitySelect.appendChild(option);
+                });
+            }
+        })
+        .catch(error => console.error('Error loading opportunities:', error));
+    
+    // Load quotes
+    fetch('/api/quotes')
+        .then(response => response.json())
+        .then(quotes => {
+            const quoteSelect = document.getElementById('task_quote_id');
+            if (quoteSelect) {
+                quoteSelect.innerHTML = '<option value="">Select Quote</option>';
+                quotes.forEach(quote => {
+                    const option = document.createElement('option');
+                    option.value = quote.id;
+                    option.textContent = quote.name || `Quote #${quote.id}`;
+                    quoteSelect.appendChild(option);
+                });
+            }
+        })
+        .catch(error => console.error('Error loading quotes:', error));
+}
+
 // Load vendor emails when page loads
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('=== DOMContentLoaded event fired ===');
+    console.log('Page loaded, starting initialization...');
+    
     loadVendorEmailsList({{ opportunity.id }});
+    loadTaskDropdowns(); // Load task form dropdowns
     
     // Apply dynamic colors to stage and state selects
     updateStageColors();
     updateStateColors();
+    
+    // Add event listener for Save Task button
+    const saveTaskBtn = document.getElementById('saveTaskBtn');
+    console.log('Save Task button element:', saveTaskBtn);
+    if (saveTaskBtn) {
+        console.log('Adding click event listener to Save Task button');
+        saveTaskBtn.addEventListener('click', function(event) {
+            console.log('=== SAVE TASK BUTTON CLICKED ===');
+            console.log('Event object:', event);
+            event.preventDefault();
+            event.stopPropagation();
+            event.stopImmediatePropagation();
+            console.log('Event prevented, calling saveTask() in 100ms...');
+            
+            // Add a small delay to ensure we can see the logs
+            setTimeout(function() {
+                saveTask();
+            }, 100);
+            
+            return false; // Extra prevention
+        });
+    } else {
+        console.error('Save Task button not found!');
+    }
+    
+    console.log('=== DOMContentLoaded initialization complete ===');
 });
 
 // Function to update stage colors based on selected value

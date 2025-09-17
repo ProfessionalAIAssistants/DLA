@@ -178,9 +178,15 @@
     <!-- Quotes Table -->
     <div class="card">
         <div class="card-header">
-            <h5 class="mb-0 d-flex align-items-center">
-                <i class="fas fa-table me-2"></i>
-                Quotes ({{ rfqs|length }} found)
+            <h5 class="mb-0 d-flex align-items-center justify-content-between">
+                <span>
+                    <i class="fas fa-table me-2"></i>
+                    Quotes ({{ rfqs|length }} found)
+                </span>
+                <small class="text-muted">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Double-click any row to view details
+                </small>
             </h5>
         </div>
         <div class="card-body">
@@ -202,7 +208,10 @@
                     </thead>
                     <tbody>
                         {% for rfq in rfqs %}
-                        <tr class="{{ 'table-warning' if rfq.close_date and rfq.close_date < current_date else '' }}">
+                        <tr class="quote-row {{ 'table-warning' if rfq.close_date and rfq.close_date < current_date else '' }}" data-quote-id="{{ rfq.id }}" style="cursor: pointer;"
+                            onmouseover="this.style.backgroundColor='#f8f9fa'" 
+                            onmouseout="this.style.backgroundColor='{{ 'rgba(255, 193, 7, 0.2)' if rfq.close_date and rfq.close_date < current_date else '' }}'"
+                            ondblclick="viewQuote({{ rfq.id }})">
                             <td>
                                 <strong>{{ rfq.request_number }}</strong>
                                 {% if rfq.purchase_number %}
@@ -448,7 +457,7 @@ function loadProducts() {
         select.innerHTML = '<option value="">Select Product</option>';
         products.forEach(product => {
             const option = document.createElement('option');
-            option.value = product.nsn || product.id;
+            option.value = product.id;
             option.textContent = `${product.nsn || product.id} - ${product.name}`;
             select.appendChild(option);
         });
@@ -659,6 +668,34 @@ document.addEventListener('DOMContentLoaded', function() {
             applyFilters();
         });
     }
+    
+    // Add double-click functionality to quote rows
+    const quoteRows = document.querySelectorAll('tr.quote-row');
+    quoteRows.forEach(row => {
+        row.addEventListener('dblclick', function(e) {
+            // Prevent double-click on action buttons
+            if (!e.target.closest('.btn-group')) {
+                const quoteId = this.getAttribute('data-quote-id');
+                if (quoteId) {
+                    console.log('Double-clicking quote row, navigating to quote:', quoteId);
+                    viewQuote(quoteId);
+                }
+            }
+        });
+        
+        // Add visual feedback for hover
+        row.addEventListener('mouseenter', function() {
+            if (!this.classList.contains('table-warning')) {
+                this.style.backgroundColor = '#f8f9fa';
+            }
+        });
+        
+        row.addEventListener('mouseleave', function() {
+            if (!this.classList.contains('table-warning')) {
+                this.style.backgroundColor = '';
+            }
+        });
+    });
 });
 
 // Make functions globally accessible for testing

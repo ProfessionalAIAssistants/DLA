@@ -88,126 +88,120 @@
             </div>
         </div>
 
-        <!-- Associated Product Card -->
-        {% if qpl.name or qpl.nsn %}
+        <!-- Associated Vendors Table -->
         <div class="card mb-4">
             <div class="card-header">
                 <h5 class="card-title mb-0">
-                    <i class="fas fa-box text-info me-2"></i>
-                    Associated Product
+                    <i class="fas fa-truck text-success me-2"></i>
+                    Authorized Vendors
+                    <span class="badge bg-secondary ms-2">{{ associated_vendors|length }}</span>
                 </h5>
             </div>
             <div class="card-body">
-                <div class="row">
-                    <div class="col-md-8">
-                        <div class="d-flex align-items-center">
-                            <div class="me-3">
-                                <i class="fas fa-box fa-2x text-info"></i>
-                            </div>
-                            <div>
-                                <h6 class="mb-1">
-                                    {% if qpl.product_id %}
-                                        <a href="{{ url_for('product_detail', product_identifier=qpl.product_id) }}" class="text-decoration-none">
-                                            {{ qpl.name }}
-                                        </a>
-                                    {% else %}
-                                        {{ qpl.name }}
-                                    {% endif %}
-                                </h6>
-                                {% if qpl.nsn %}
-                                    <div class="text-muted">
-                                        <strong>NSN:</strong> <code class="text-info">{{ qpl.nsn }}</code>
-                                    </div>
-                                {% endif %}
-                            </div>
+                {% if associated_vendors %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Vendor Name</th>
+                                    <th>Location</th>
+                                    <th>Contact</th>
+                                    <th>Relationship Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for vendor in associated_vendors %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="bg-success bg-opacity-10 rounded-circle p-2 me-3">
+                                                <i class="fas fa-building text-success"></i>
+                                            </div>
+                                            <div>
+                                                <a href="/account/{{ vendor.id }}" class="text-decoration-none fw-bold">
+                                                    {{ vendor.name }}
+                                                </a>
+                                                <br><small class="text-muted">{{ vendor.type }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>{{ vendor.location or 'N/A' }}</td>
+                                    <td>
+                                        {% if vendor.email %}
+                                        <a href="mailto:{{ vendor.email }}" class="text-decoration-none">{{ vendor.email }}</a>
+                                        {% else %}
+                                        <span class="text-muted">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ vendor.relationship_created[:10] if vendor.relationship_created else 'N/A' }}</td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a href="/account/{{ vendor.id }}" class="btn btn-outline-primary btn-sm" title="View Vendor">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            {% if vendor.website %}
+                                            <a href="{{ vendor.website }}" target="_blank" class="btn btn-outline-info btn-sm" title="Visit Website">
+                                                <i class="fas fa-external-link-alt"></i>
+                                            </a>
+                                            {% endif %}
+                                            <button class="btn btn-outline-danger btn-sm" 
+                                                    onclick="removeVendorRelationship({{ qpl.account_id }}, {{ vendor.id }})"
+                                                    title="Remove Relationship">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px;">
+                            <i class="fas fa-truck text-muted fs-4"></i>
                         </div>
+                        <h6 class="text-muted mb-2">No Authorized Vendors</h6>
+                        <p class="text-muted small mb-3">No vendors are currently authorized to supply this product.</p>
+                        <button class="btn btn-outline-primary btn-sm" onclick="addVendorRelationship()">
+                            <i class="fas fa-plus me-1"></i>Add Vendor
+                        </button>
                     </div>
-                    <div class="col-md-4 text-end">
-                        {% if qpl.product_id %}
-                            <a href="{{ url_for('product_detail', product_identifier=qpl.product_id) }}" class="btn btn-sm btn-outline-info">
-                                <i class="fas fa-external-link-alt me-1"></i>
-                                View Product
-                            </a>
-                        {% endif %}
-                    </div>
-                </div>
+                {% endif %}
             </div>
         </div>
-        {% endif %}
-
-        <!-- Associated Account Card -->
-        {% if qpl.account_name %}
-        <div class="card mb-4">
-            <div class="card-header">
-                <h5 class="card-title mb-0">
-                    <i class="fas fa-building text-success me-2"></i>
-                    Associated Account
-                </h5>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-8">
-                        <div class="d-flex align-items-center">
-                            <div class="me-3">
-                                <i class="fas fa-building fa-2x text-success"></i>
-                            </div>
-                            <div>
-                                <h6 class="mb-1">
-                                    {% if qpl.account_id %}
-                                        <a href="{{ url_for('account_detail', account_id=qpl.account_id) }}" class="text-decoration-none">
-                                            {{ qpl.account_name }}
-                                        </a>
-                                    {% else %}
-                                        {{ qpl.account_name }}
-                                    {% endif %}
-                                </h6>
-                                <div class="text-muted">Supplier Account</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4 text-end">
-                        {% if qpl.account_id %}
-                            <a href="{{ url_for('account_detail', account_id=qpl.account_id) }}" class="btn btn-sm btn-outline-success">
-                                <i class="fas fa-external-link-alt me-1"></i>
-                                View Account
-                            </a>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-        </div>
-        {% endif %}
     </div>
 
     <!-- Sidebar -->
     <div class="col-lg-4">
         <!-- Quick Actions Card -->
-        <div class="card mb-4">
-            <div class="card-header">
-                <h6 class="card-title mb-0">
-                    <i class="fas fa-bolt text-warning me-2"></i>
+        <div class="card mb-4 border-0 shadow-sm">
+            <div class="card-header bg-primary text-white border-0">
+                <h6 class="card-title mb-0 fw-bold">
+                    <i class="fas fa-bolt me-2"></i>
                     Quick Actions
                 </h6>
             </div>
             <div class="card-body">
                 <div class="d-grid gap-2">
-                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="editQpl({{ qpl.id }})">
+                    <button type="button" class="btn btn-outline-primary btn-sm fw-medium" onclick="editQpl({{ qpl.id }})">
                         <i class="fas fa-edit me-2"></i>
                         Edit QPL Details
                     </button>
                     {% if qpl.product_id %}
-                    <a href="{{ url_for('product_detail', product_identifier=qpl.product_id) }}" class="btn btn-outline-info btn-sm">
+                    <a href="{{ url_for('product_detail', product_identifier=qpl.product_id) }}" class="btn btn-outline-info btn-sm fw-medium">
                         <i class="fas fa-box me-2"></i>
                         View Product Details
                     </a>
                     {% endif %}
                     {% if qpl.account_id %}
-                    <a href="{{ url_for('account_detail', account_id=qpl.account_id) }}" class="btn btn-outline-success btn-sm">
+                    <a href="{{ url_for('account_detail', account_id=qpl.account_id) }}" class="btn btn-outline-success btn-sm fw-medium">
                         <i class="fas fa-building me-2"></i>
                         View Account Details
                     </a>
                     {% endif %}
-                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="deleteQpl({{ qpl.id }}, '{{ qpl.manufacturer_name }}')">
+                    <button type="button" class="btn btn-outline-danger btn-sm fw-medium" onclick="deleteQpl({{ qpl.id }}, '{{ qpl.manufacturer_name }}')">
                         <i class="fas fa-trash me-2"></i>
                         Delete QPL
                     </button>
@@ -215,40 +209,83 @@
             </div>
         </div>
 
-        <!-- Related Information Card -->
-        <div class="card mb-4">
-            <div class="card-header">
-                <h6 class="card-title mb-0">
-                    <i class="fas fa-link text-secondary me-2"></i>
-                    Related Information
+        <!-- Associated Product Card -->
+        {% if qpl.name or qpl.nsn %}
+        <div class="card mb-4 border-0 shadow-sm">
+            <div class="card-header bg-info text-white border-0">
+                <h6 class="card-title mb-0 fw-bold">
+                    <i class="fas fa-box me-2"></i>Associated Product
                 </h6>
             </div>
             <div class="card-body">
-                <div class="small">
-                    <div class="mb-2">
-                        <strong>QPL ID:</strong> {{ qpl.id }}
+                <div class="d-flex align-items-center mb-3">
+                    <div class="bg-info bg-opacity-10 rounded-circle p-2 me-3">
+                        <i class="fas fa-box text-info fs-5"></i>
                     </div>
-                    {% if qpl.product_id %}
-                    <div class="mb-2">
-                        <strong>Product ID:</strong> {{ qpl.product_id }}
-                    </div>
-                    {% endif %}
-                    {% if qpl.account_id %}
-                    <div class="mb-2">
-                        <strong>Account ID:</strong> {{ qpl.account_id }}
-                    </div>
-                    {% endif %}
-                    <div class="mb-2">
-                        <strong>Status:</strong> 
-                        {% if qpl.is_active %}
-                            <span class="text-success">Active</span>
-                        {% else %}
-                            <span class="text-muted">Inactive</span>
+                    <div class="flex-grow-1">
+                        <h6 class="mb-1 text-dark fw-bold">
+                            {% if qpl.product_id %}
+                                <a href="{{ url_for('product_detail', product_identifier=qpl.product_id) }}" class="text-decoration-none text-dark">
+                                    {{ qpl.name }}
+                                </a>
+                            {% else %}
+                                {{ qpl.name }}
+                            {% endif %}
+                        </h6>
+                        {% if qpl.nsn %}
+                            <small class="text-muted">NSN: <code class="text-info">{{ qpl.nsn }}</code></small>
                         {% endif %}
                     </div>
                 </div>
+                {% if qpl.product_id %}
+                <div class="d-grid">
+                    <a href="{{ url_for('product_detail', product_identifier=qpl.product_id) }}" class="btn btn-outline-info btn-sm fw-medium">
+                        <i class="fas fa-external-link-alt me-1"></i>
+                        View Product
+                    </a>
+                </div>
+                {% endif %}
             </div>
         </div>
+        {% endif %}
+
+        <!-- Associated Account Card -->
+        {% if qpl.account_name %}
+        <div class="card mb-4 border-0 shadow-sm">
+            <div class="card-header bg-success text-white border-0">
+                <h6 class="card-title mb-0 fw-bold">
+                    <i class="fas fa-building me-2"></i>Associated Account
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="bg-success bg-opacity-10 rounded-circle p-2 me-3">
+                        <i class="fas fa-building text-success fs-5"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <h6 class="mb-1 text-dark fw-bold">
+                            {% if qpl.account_id %}
+                                <a href="{{ url_for('account_detail', account_id=qpl.account_id) }}" class="text-decoration-none text-dark">
+                                    {{ qpl.account_name }}
+                                </a>
+                            {% else %}
+                                {{ qpl.account_name }}
+                            {% endif %}
+                        </h6>
+                        <small class="text-muted">Supplier Account</small>
+                    </div>
+                </div>
+                {% if qpl.account_id %}
+                <div class="d-grid">
+                    <a href="{{ url_for('account_detail', account_id=qpl.account_id) }}" class="btn btn-outline-success btn-sm fw-medium">
+                        <i class="fas fa-external-link-alt me-1"></i>
+                        View Account
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
     </div>
 </div>
 
@@ -384,6 +421,38 @@ function deleteQpl(qplId, manufacturerName) {
             console.error('Error:', error);
             alert('Error deleting QPL');
         });
+    }
+}
+
+function removeVendorRelationship(qplAccountId, vendorAccountId) {
+    if (confirm('Are you sure you want to remove this vendor relationship?')) {
+        fetch(`/api/qpl-vendors/${qplAccountId}/${vendorAccountId}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Reload the page to update the vendor list
+                location.reload();
+            } else {
+                alert('Error removing vendor relationship: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error removing vendor relationship');
+        });
+    }
+}
+
+function addVendorRelationship() {
+    // For now, redirect to the account page where they can manage relationships
+    // In the future, this could open a modal to select vendors
+    const qplAccountId = {{ qpl.account_id or 'null' }};
+    if (qplAccountId) {
+        window.location.href = `/account/${qplAccountId}`;
+    } else {
+        alert('No account associated with this QPL entry');
     }
 }
 </script>

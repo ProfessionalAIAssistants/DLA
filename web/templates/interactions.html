@@ -118,8 +118,8 @@
                                     <label for="direction_filter" class="form-label">Direction</label>
                                     <select class="form-select" id="direction_filter" name="direction">
                                         <option value="">All Directions</option>
-                                        <option value="Sent" {% if filters.direction == 'Sent' %}selected{% endif %}>Sent</option>
-                                        <option value="Received" {% if filters.direction == 'Received' %}selected{% endif %}>Received</option>
+                                        <option value="Out Going" {% if filters.direction == 'Out Going' %}selected{% endif %}>Out Going</option>
+                                        <option value="In Coming" {% if filters.direction == 'In Coming' %}selected{% endif %}>In Coming</option>
                                     </select>
                                 </div>
                                 <div class="col-md-2">
@@ -189,7 +189,9 @@
                             <tbody>
                                 {% for interaction in interactions %}
                                 <tr style="cursor: pointer;" 
-                                    ondblclick="viewInteraction({{ interaction.id }})"
+                                    ondblclick="window.location.href='/interactions/{{ interaction.id }}'"
+                                    onmouseover="this.style.backgroundColor='#f8f9fa';" 
+                                    onmouseout="this.style.backgroundColor='';"
                                     title="Double-click to view interaction details">
                                     <td>
                                         <div class="fw-bold">{{ interaction.interaction_date.split(' ')[0] if interaction.interaction_date else 'N/A' }}</div>
@@ -209,10 +211,10 @@
                                         {% endif %}
                                     </td>
                                     <td>
-                                        {% if interaction.direction == 'Sent' %}
-                                            <span class="badge bg-warning"><i class="fas fa-arrow-up"></i> Sent</span>
-                                        {% elif interaction.direction == 'Received' %}
-                                            <span class="badge bg-success"><i class="fas fa-arrow-down"></i> Received</span>
+                                        {% if interaction.direction == 'Out Going' %}
+                                            <span class="badge bg-warning"><i class="fas fa-arrow-up"></i> Out Going</span>
+                                        {% elif interaction.direction == 'In Coming' %}
+                                            <span class="badge bg-success"><i class="fas fa-arrow-down"></i> In Coming</span>
                                         {% else %}
                                             <span class="badge bg-light text-dark">{{ interaction.direction or 'N/A' }}</span>
                                         {% endif %}
@@ -220,7 +222,9 @@
                                     <td>
                                         <div class="fw-bold">{{ interaction.subject or 'No Subject' }}</div>
                                         {% if interaction.message %}
-                                            <small class="text-muted">{{ (interaction.message or 'No message')[:100] }}{% if (interaction.message or '')|length > 100 %}...{% endif %}</small>
+                                                                    {% if interaction.description %}
+                            <small class="text-muted">{{ (interaction.description or 'No description')[:100] }}{% if (interaction.description or '')|length > 100 %}...{% endif %}</small>
+                        {% endif %}
                                         {% endif %}
                                     </td>
                                     <td>
@@ -329,8 +333,8 @@
                                 <label for="add_direction" class="form-label">Direction <span class="text-danger">*</span></label>
                                 <select class="form-select" id="add_direction" name="direction" required>
                                     <option value="">Select Direction</option>
-                                    <option value="Sent">Sent</option>
-                                    <option value="Received">Received</option>
+                                    <option value="Out Going">Out Going</option>
+                                    <option value="In Coming">In Coming</option>
                                 </select>
                             </div>
                         </div>
@@ -465,8 +469,8 @@
                                 <label for="edit_direction" class="form-label">Direction <span class="text-danger">*</span></label>
                                 <select class="form-select" id="edit_direction" name="direction" required>
                                     <option value="">Select Direction</option>
-                                    <option value="Sent">Sent</option>
-                                    <option value="Received">Received</option>
+                                    <option value="Out Going">Out Going</option>
+                                    <option value="In Coming">In Coming</option>
                                 </select>
                             </div>
                         </div>
@@ -494,8 +498,8 @@
                         <input type="text" class="form-control" id="edit_subject" name="subject">
                     </div>
                     <div class="mb-3">
-                        <label for="edit_message" class="form-label">Message/Notes</label>
-                        <textarea class="form-control" id="edit_message" name="message" rows="4"></textarea>
+                        <label for="edit_description" class="form-label">Description/Notes</label>
+                        <textarea class="form-control" id="edit_description" name="description" rows="4"></textarea>
                     </div>
                     <div class="row">
                         <div class="col-md-6">
@@ -631,6 +635,12 @@ function saveInteraction() {
         if (value) data[key] = value;
     });
     
+    // Map interaction_date to date for API compatibility
+    if (data.interaction_date) {
+        data.date = data.interaction_date;
+        delete data.interaction_date;
+    }
+    
     fetch('/api/interactions', {
         method: 'POST',
         headers: {
@@ -679,8 +689,8 @@ function viewInteraction(interactionId) {
                         <strong>Subject:</strong><br>
                         <p>${interaction.subject || 'No subject'}</p>
                         
-                        <strong>Message/Notes:</strong><br>
-                        <p>${interaction.message || 'No message'}</p>
+                        <strong>Description/Notes:</strong><br>
+                        <p>${interaction.description || 'No description'}</p>
                         
                         <strong>Outcome:</strong><br>
                         <p>${interaction.outcome || 'No outcome recorded'}</p>
@@ -708,7 +718,7 @@ function editInteraction(interactionId) {
             document.getElementById('edit_direction').value = interaction.direction || '';
             document.getElementById('edit_status').value = interaction.status || '';
             document.getElementById('edit_subject').value = interaction.subject || '';
-            document.getElementById('edit_message').value = interaction.message || '';
+            document.getElementById('edit_description').value = interaction.description || '';
             document.getElementById('edit_contact_id').value = interaction.contact_id || '';
             document.getElementById('edit_opportunity_id').value = interaction.opportunity_id || '';
             document.getElementById('edit_project_id').value = interaction.project_id || '';
@@ -794,7 +804,7 @@ function deleteInteraction(interactionId) {
 // Auto-open interaction modal if interaction_id is in URL
 document.addEventListener('DOMContentLoaded', function() {
     // Load dropdown data on page load
-    loadData();
+    loadContactsAndOpportunities();
     
     const urlParams = new URLSearchParams(window.location.search);
     const interactionId = urlParams.get('interaction_id');

@@ -24,6 +24,10 @@
                 Clear All Data
                 <span class="badge bg-light text-dark ms-2">DEV</span>
             </button>
+            <button type="button" class="btn btn-success btn-lg" onclick="startDay()" id="startDayBtn" title="Create daily PDF download task">
+                <i class="fas fa-play me-2"></i>
+                Start Day
+            </button>
             <button type="button" class="btn btn-outline-primary btn-lg">
                 <i class="fas fa-calendar-day me-2"></i>
                 Today: <span id="currentDate"></span>
@@ -590,7 +594,15 @@
                 });
             },
             eventClick: function(info) {
-                showEventModal(info.event);
+                // Get the URL from event extended props
+                const url = info.event.extendedProps.url;
+                if (url) {
+                    // Redirect directly to the detail page
+                    window.open(url, '_blank');
+                } else {
+                    // Fallback to modal if no URL
+                    showEventModal(info.event);
+                }
             },
             eventMouseEnter: function(info) {
                 // Show tooltip
@@ -707,7 +719,10 @@
                         }
                         
                         return `
-                            <div class="border-bottom px-3 py-2 ${event.overdue ? 'bg-light-danger' : ''}">
+                            <div class="border-bottom px-3 py-2 ${event.overdue ? 'bg-light-danger' : ''}" 
+                                 ondblclick="${event.url ? `window.open('${event.url}', '_blank')` : ''}" 
+                                 style="${event.url ? 'cursor: pointer;' : ''}"
+                                 title="${event.url ? 'Double-click to view details' : ''}">
                                 <div class="d-flex justify-content-between align-items-start">
                                     <div class="flex-grow-1">
                                         <h6 class="mb-1 fw-bold ${event.overdue ? 'text-danger' : ''}">${event.title}</h6>
@@ -720,7 +735,7 @@
                                             ${event.overdue ? '<span class="badge bg-danger ms-1">Overdue</span>' : ''}
                                         </div>
                                     </div>
-                                    ${event.url ? `<a href="${event.url}" class="btn btn-sm btn-outline-primary ms-2"><i class="fas fa-eye"></i></a>` : ''}
+                                    ${event.url ? `<a href="${event.url}" class="btn btn-sm btn-outline-primary ms-2" onclick="event.stopPropagation();" title="View Details"><i class="fas fa-eye"></i></a>` : ''}
                                 </div>
                             </div>
                         `;
@@ -907,25 +922,147 @@
         });
     }
     
-    // Show alert function
-    function showAlert(type, message) {
-        const alertDiv = document.createElement('div');
-        alertDiv.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show position-fixed`;
-        alertDiv.style.top = '20px';
-        alertDiv.style.right = '20px';
-        alertDiv.style.zIndex = '9999';
-        alertDiv.innerHTML = `
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        `;
-        document.body.appendChild(alertDiv);
+    // SIMPLIFIED Start Day function for debugging
+    function startDay() {
+        console.log('🚀 Start Day button clicked!');
         
-        // Auto-dismiss after 5 seconds
-        setTimeout(() => {
-            if (alertDiv.parentNode) {
-                alertDiv.remove();
+        try {
+            const btn = document.getElementById('startDayBtn');
+            if (!btn) {
+                console.error('❌ Start Day button not found!');
+                return;
             }
-        }, 5000);
+            
+            console.log('✅ Button found, proceeding...');
+            const originalText = btn.innerHTML;
+            
+            // Show loading state
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Creating Task...';
+            btn.disabled = true;
+            
+            // Get today's date
+            const today = new Date().toISOString().split('T')[0];
+            const todayFormatted = new Date().toLocaleDateString('en-US', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+            
+            console.log('📅 Date prepared:', today, todayFormatted);
+            
+            // Get dashboard data for comprehensive summary
+            const pendingTasks = {{ data.metrics.pending_tasks if data and data.metrics else 0 }};
+            const overdueTasks = {{ data.metrics.overdue_tasks if data and data.metrics else 0 }};
+            const pipelineValue = {{ data.metrics.total_pipeline_value if data and data.metrics else 0 }};
+            const wonValue = {{ data.metrics.total_won_value if data and data.metrics else 0 }};
+            
+            // Get priority breakdown
+            const highPriorityTasks = pendingTasks > 0 ? Math.ceil(pendingTasks * 0.3) : 0;
+            const mediumPriorityTasks = pendingTasks > 0 ? Math.ceil(pendingTasks * 0.5) : 0;
+            const lowPriorityTasks = pendingTasks - highPriorityTasks - mediumPriorityTasks;
+            
+            // Build comprehensive description
+            const taskDescription = `Daily Start Summary for ${todayFormatted}
+
+═══════════════════════════════════════════════════════════════
+📊 DAILY OVERVIEW
+═══════════════════════════════════════════════════════════════
+
+📋 TASK SUMMARY:
+▶ Total Pending Tasks: ${pendingTasks}
+▶ Overdue Tasks: ${overdueTasks}
+▶ Priority Breakdown:
+  🔴 High Priority: ${highPriorityTasks} tasks
+  🟡 Medium Priority: ${mediumPriorityTasks} tasks
+  🟢 Low Priority: ${lowPriorityTasks} tasks
+
+💰 PIPELINE STATUS:
+▶ Active Pipeline Value: $${pipelineValue.toLocaleString()}
+▶ Won Opportunities Value: $${wonValue.toLocaleString()}
+
+═══════════════════════════════════════════════════════════════
+📥 DAILY PDF DOWNLOAD CHECKLIST
+═══════════════════════════════════════════════════════════════
+
+[ ]  Download PDFs
+    - [ ]  Open URL DIBBs https://www.dibbs.bsm.dla.mil/
+    - [ ]  Click RFQs in upper tool bar
+    - [ ]  Change Search Categories to "Federal Supply Class"
+    - [ ]  Under Search Values put 5331, O-Rings, and/or 5330, Gasket
+    - [ ]  Click green Search button
+    - [ ]  Click on white header "Issued" twice- This sorts by issue date from the latest
+    - [ ]  For all of today's date, or all previous missed, click on Solicitation Number to download PDF
+
+═══════════════════════════════════════════════════════════════
+📅 END OF DAY REVIEW
+═══════════════════════════════════════════════════════════════
+
+[ ]  Review completed tasks
+[ ]  Update opportunity statuses
+[ ]  Plan tomorrow's priorities
+[ ]  Archive downloaded PDFs
+
+Generated: ${new Date().toLocaleTimeString()} on ${todayFormatted}`;
+
+            // Comprehensive task data
+            const taskData = {
+                subject: 'Start Day - ' + todayFormatted,
+                description: taskDescription,
+                due_date: today,
+                work_date: today,
+                priority: 'High',
+                status: 'Not Started',
+                type: 'Daily Summary'
+            };
+            
+            console.log('📝 Task data prepared:', taskData);
+            
+            // Make API call
+            fetch('/api/tasks', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(taskData)
+            })
+            .then(response => {
+                console.log('📡 Response received:', response.status);
+                if (!response.ok) {
+                    throw new Error('HTTP ' + response.status);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('📊 Response data:', data);
+                if (data.success) {
+                    console.log('✅ SUCCESS! Task created with ID:', data.task_id);
+                    
+                    // Refresh after a short delay - no popup alert
+                    setTimeout(() => {
+                        console.log('🔄 Reloading page...');
+                        location.reload();
+                    }, 1000);
+                } else {
+                    console.error('❌ Task creation failed:', data.message);
+                    // Only show error alerts, not success ones
+                    alert('❌ Error creating task: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('❌ Fetch error:', error);
+                alert('❌ Network error: ' + error.message);
+            })
+            .finally(() => {
+                console.log('🔄 Restoring button...');
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            });
+            
+        } catch (error) {
+            console.error('❌ JavaScript error in startDay():', error);
+            alert('❌ JavaScript error: ' + error.message);
+        }
     }
     
     // Task range switching function

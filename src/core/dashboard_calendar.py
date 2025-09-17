@@ -59,9 +59,11 @@ class DashboardCalendar:
                             'extendedProps': {
                                 'type': 'task',
                                 'taskId': task['id'],
-                                'description': task.get('description', ''),
-                                'priority': task.get('priority', 'Medium'),
-                                'status': task.get('status', 'Not Started')
+                                'description': f"{task.get('priority', 'Medium')} priority - {task.get('status', 'Not Started')}",
+                                'priority': task.get('priority', 'Medium').lower(),
+                                'status': task.get('status', 'Not Started'),
+                                'overdue': is_overdue,
+                                'url': f"/tasks/{task['id']}"
                             }
                         })
                 except (ValueError, TypeError):
@@ -100,7 +102,8 @@ class DashboardCalendar:
                                 'opportunityId': opp['id'],
                                 'stage': opp.get('stage', ''),
                                 'value': opp.get('value', 0),
-                                'probability': opp.get('probability', 0)
+                                'description': f"{opp.get('stage', 'Unknown stage')} - ${opp.get('value', 0):,.2f}",
+                                'url': f"/opportunity/{opp['id']}"
                             }
                         })
                 except (ValueError, TypeError):
@@ -123,7 +126,9 @@ class DashboardCalendar:
                             'extendedProps': {
                                 'type': 'project',
                                 'projectId': project['id'],
-                                'eventType': 'start'
+                                'eventType': 'start',
+                                'description': f"Project start date",
+                                'url': f"/project/{project['id']}"
                             }
                         })
                 except (ValueError, TypeError):
@@ -146,7 +151,10 @@ class DashboardCalendar:
                             'extendedProps': {
                                 'type': 'project',
                                 'projectId': project['id'],
-                                'eventType': 'due'
+                                'eventType': 'due',
+                                'description': f"Project due date{'- OVERDUE' if is_overdue else ''}",
+                                'overdue': is_overdue,
+                                'url': f"/project/{project['id']}"
                             }
                         })
                 except (ValueError, TypeError):
@@ -196,7 +204,24 @@ class DashboardCalendar:
         # Sort by date
         events.sort(key=lambda x: x['start'])
         
-        return events
+        # Transform to format expected by frontend
+        upcoming_events = []
+        for event in events:
+            try:
+                event_date = datetime.fromisoformat(event['start'].replace('Z', '+00:00'))
+                upcoming_events.append({
+                    'title': event['title'],
+                    'date': event['start'],
+                    'description': event.get('extendedProps', {}).get('description', 'No description'),
+                    'priority': event.get('extendedProps', {}).get('priority', 'medium'),
+                    'type': event.get('extendedProps', {}).get('type', 'event'),
+                    'overdue': event.get('extendedProps', {}).get('overdue', False),
+                    'url': event.get('extendedProps', {}).get('url', None)
+                })
+            except (ValueError, TypeError):
+                continue
+        
+        return upcoming_events
     
     def get_overdue_events(self):
         """Get overdue tasks and projects"""

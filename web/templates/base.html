@@ -336,6 +336,12 @@
             filter: brightness(0) invert(1);
         }
 
+        /* Ensure modal body is scrollable for large forms */
+        .modal-dialog-scrollable .modal-body {
+            max-height: calc(100vh - 200px);
+            overflow-y: auto;
+        }
+
         /* Status Indicators */
         .status-indicator {
             width: 12px;
