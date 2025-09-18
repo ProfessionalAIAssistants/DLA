@@ -1,0 +1,233 @@
+<script>
+function resetModalForAdd() {
+    // Reset the form
+    document.getElementById('addOpportunityForm').reset();
+    // Remove edit ID if present
+    document.getElementById('addOpportunityForm').removeAttribute('data-edit-id');
+    // Reset modal title
+    document.querySelector('#addOpportunityModal .modal-title').textContent = 'Add New Opportunity';
+}
+
+function saveOpportunity() {
+    const form = document.getElementById('addOpportunityForm');
+    const formData = new FormData(form);
+    const editId = form.getAttribute('data-edit-id');
+    
+    if (editId) {
+        // Edit existing opportunity
+        const updateData = {};
+        for (let [key, value] of formData.entries()) {
+            updateData[key] = value;
+        }
+        
+        fetch(`/api/opportunities/${editId}`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(updateData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Reset form and modal for next use
+                form.reset();
+                form.removeAttribute('data-edit-id');
+                document.querySelector('#addOpportunityModal .modal-title').textContent = 'Add New Opportunity';
+                location.reload();
+            } else {
+                alert('Error updating opportunity: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while updating the opportunity');
+        });
+    } else {
+        // Add new opportunity
+        fetch('/api/opportunities', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while saving the opportunity');
+        });
+    }
+}
+
+function advanceStage(opportunityId) {
+    fetch(`/api/opportunities/${opportunityId}/advance`, {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    });
+}
+
+function markWon(opportunityId) {
+    if (confirm('Mark this opportunity as Won?')) {
+        fetch(`/api/opportunities/${opportunityId}/won`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        });
+    }
+}
+
+function markLost(opportunityId) {
+    const reason = prompt('Reason for losing this opportunity (optional):');
+    fetch(`/api/opportunities/${opportunityId}/lost`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({reason: reason})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    });
+}
+
+function editOpportunity(opportunityId) {
+    console.log('Edit opportunity:', opportunityId);
+    
+    // Fetch the opportunity data
+    fetch(`/api/opportunities/${opportunityId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.opportunity) {
+                const opp = data.opportunity;
+                
+                // Change modal title to Edit
+                document.querySelector('#addOpportunityModal .modal-title').textContent = 'Edit Opportunity';
+                
+                // Populate form fields with existing data
+                document.getElementById('name').value = opp.name || '';
+                document.getElementById('opp_stage').value = opp.stage || 'Prospecting';
+                document.getElementById('opp_state').value = opp.state || 'Active';
+                document.getElementById('bid_price').value = opp.bid_price || '';
+                document.getElementById('purchase_costs').value = opp.purchase_costs || '';
+                document.getElementById('packaging_shipping').value = opp.packaging_shipping || '';
+                document.getElementById('bid_date').value = opp.bid_date || '';
+                document.getElementById('close_date').value = opp.close_date || '';
+                document.getElementById('opp_quantity').value = opp.quantity || '';
+                document.getElementById('opp_unit').value = opp.unit || '';
+                document.getElementById('mfr').value = opp.mfr || '';
+                document.getElementById('opp_fob').value = opp.fob || 'Origin';
+                document.getElementById('packaging_type').value = opp.packaging_type || 'MIL-STD-2073-1E';
+                document.getElementById('opp_iso').value = opp.iso || 'No';
+                document.getElementById('sampling').value = opp.sampling || 'No';
+                document.getElementById('days_aod').value = opp.days_aod || '';
+                document.getElementById('opp_buyer').value = opp.buyer || '';
+                document.getElementById('payment').value = opp.payment || '';
+                document.getElementById('document').value = opp.document || '';
+                document.getElementById('opp_description').value = opp.description || '';
+                document.getElementById('packaging_info').value = opp.packaging_info || '';
+                document.getElementById('opp_account_id').value = opp.account_id || '';
+                document.getElementById('opp_contact_id').value = opp.contact_id || '';
+                document.getElementById('opp_product_id').value = opp.product_id || '';
+                
+                // Store the opportunity ID for saving
+                document.getElementById('addOpportunityForm').setAttribute('data-edit-id', opportunityId);
+                
+                // Show the modal
+                const modal = new bootstrap.Modal(document.getElementById('addOpportunityModal'));
+                modal.show();
+            } else {
+                alert('Error loading opportunity data: ' + (data.message || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error loading opportunity data');
+        });
+}
+
+function deleteOpportunity(opportunityId) {
+    if (confirm('Are you sure you want to delete this opportunity?')) {
+        fetch(`/api/opportunities/${opportunityId}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while deleting the opportunity');
+        });
+    }
+}
+
+// Auto-calculate profit when financial fields change
+document.addEventListener('DOMContentLoaded', function() {
+    const bidPrice = document.getElementById('bid_price');
+    const purchaseCosts = document.getElementById('purchase_costs');
+    const packagingShipping = document.getElementById('packaging_shipping');
+    const quantity = document.getElementById('opp_quantity');
+    
+    function calculateProfit() {
+        const bid = parseFloat(bidPrice.value) || 0;
+        const purchase = parseFloat(purchaseCosts.value) || 0;
+        const shipping = parseFloat(packagingShipping.value) || 0;
+        const qty = parseFloat(quantity.value) || 0;
+        
+        if (bid && purchase && qty) {
+            const profit = (bid - purchase - shipping) * qty;
+            // Could display calculated profit somewhere in the form
+            console.log('Calculated profit:', profit);
+        }
+    }
+    
+    [bidPrice, purchaseCosts, packagingShipping, quantity].forEach(field => {
+        if (field) {
+            field.addEventListener('input', calculateProfit);
+        }
+    });
+
+    // Handle collapsible search section
+    const searchFiltersCollapse = document.getElementById('searchFilters');
+    const chevronIcon = document.querySelector('[data-bs-target="#searchFilters"] i.fa-chevron-down');
+    
+    if (searchFiltersCollapse && chevronIcon) {
+        searchFiltersCollapse.addEventListener('show.bs.collapse', function () {
+            chevronIcon.classList.remove('fa-chevron-down');
+            chevronIcon.classList.add('fa-chevron-up');
+        });
+        
+        searchFiltersCollapse.addEventListener('hide.bs.collapse', function () {
+            chevronIcon.classList.remove('fa-chevron-up');
+            chevronIcon.classList.add('fa-chevron-down');
+        });
+    }
+});
+</script>

@@ -633,3 +633,305 @@
 }
 </style>
 {% endmacro %}
+
+
+{# ========== CONTACT LIST PAGE MACROS ========== #}
+{# These macros are for the contacts listing page #}
+
+{% macro contacts_page_header() %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Contacts</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#newContactModal">
+                <i class="fas fa-plus me-1"></i>
+                New Contact
+            </button>
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
+{% macro contacts_search_filters(search, account_id, accounts) %}
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-4">
+                <label for="search" class="form-label">Search Contacts</label>
+                <input type="text" class="form-control" id="search" name="search" 
+                       value="{{ search }}" placeholder="Search by name or email...">
+            </div>
+            <div class="col-md-3">
+                <label for="account_id" class="form-label">Account</label>
+                <select class="form-select" id="account_id" name="account_id">
+                    <option value="">All Accounts</option>
+                    {% for account in accounts %}
+                    <option value="{{ account.id }}" {{ 'selected' if account_id|string == account.id|string }}>
+                        {{ account.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary me-2">
+                    <i class="fas fa-search me-1"></i>
+                    Search
+                </button>
+                <a href="{{ url_for('contacts') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times me-1"></i>
+                    Clear
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endmacro %}
+
+{% macro contacts_table(contacts, pagination) %}
+<div class="card">
+    <div class="card-body">
+        {% if contacts %}
+        <div class="mb-2">
+            <small class="text-muted">Double-click any contact to view details</small>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th>Account</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for contact in contacts %}
+                    <tr style="cursor: pointer;" 
+                        ondblclick="viewContact({{ contact.id }})"
+                        title="Double-click to view contact details">
+                        <td>
+                            <strong>{{ contact.name }}</strong>
+                            {% if contact.buyer_code %}
+                            <br><small class="text-muted">Code: {{ contact.buyer_code }}</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if contact.email %}
+                                <a href="mailto:{{ contact.email }}">{{ contact.email }}</a>
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if contact.phone %}
+                                {{ contact.phone }}
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if contact.account_name %}
+                                <a href="{{ url_for('account_detail', account_id=contact.account_id) }}" class="text-decoration-none">
+                                    {{ contact.account_name }}
+                                </a>
+                            {% else %}
+                                <span class="text-muted">No Account</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <button class="btn btn-outline-primary" onclick="viewContact({{ contact.id }})">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="btn btn-outline-secondary" onclick="editContact({{ contact.id }})">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-outline-danger" onclick="deleteContact({{ contact.id }})">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-users fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">No Contacts Found</h5>
+            <p class="text-muted">No contacts match your current search criteria.</p>
+        </div>
+        {% endif %}
+        
+        <!-- Pagination -->
+        {% if pagination %}{% include 'pagination.html' %}{% endif %}
+    </div>
+</div>
+{% endmacro %}
+
+{% macro new_contact_modal(accounts) %}
+<div class="modal fade" id="newContactModal" tabindex="-1" aria-labelledby="newContactModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="newContactModalLabel">New Contact</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="newContactForm">
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <label for="name" class="form-label">Name *</label>
+                            <input type="text" class="form-control" id="name" name="name" required>
+                            <div class="invalid-feedback"></div>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="quality" class="form-label">Quality (1-5)</label>
+                            <select class="form-select" id="quality" name="quality">
+                                <option value="">Select Quality</option>
+                                <option value="5">5 - Excellent</option>
+                                <option value="4">4 - Good</option>
+                                <option value="3">3 - Average</option>
+                                <option value="2">2 - Poor</option>
+                                <option value="1">1 - Very Poor</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" name="email">
+                            <div class="invalid-feedback"></div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="phone" class="form-label">Phone</label>
+                            <input type="tel" class="form-control" id="phone" name="phone">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="title" class="form-label">Title</label>
+                            <input type="text" class="form-control" id="title" name="title">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="fax" class="form-label">Fax</label>
+                            <input type="tel" class="form-control" id="fax" name="fax">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="contact_account_id" class="form-label">Account</label>
+                            <select class="form-select" id="contact_account_id" name="account_id">
+                                <option value="">Select Account</option>
+                                {% for account in accounts %}
+                                <option value="{{ account.id }}">{{ account.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="buyer_code" class="form-label">Buyer Code</label>
+                            <input type="text" class="form-control" id="buyer_code" name="buyer_code">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="frequency_days" class="form-label">Contact Frequency (Days)</label>
+                            <input type="number" class="form-control" id="frequency_days" name="frequency_days" min="1">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="linkedin" class="form-label">LinkedIn</label>
+                            <input type="url" class="form-control" id="linkedin" name="linkedin" placeholder="https://linkedin.com/in/...">
+                        </div>
+                    </div>
+                    <div id="duplicateAlert" class="alert alert-warning mt-3" style="display: none;">
+                        <strong>Warning:</strong> <span id="duplicateMessage"></span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Contact</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
+{% macro edit_contact_modal(accounts) %}
+<div class="modal fade" id="editContactModal" tabindex="-1" aria-labelledby="editContactModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editContactModalLabel">Edit Contact</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="editContactForm">
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <label for="editName" class="form-label">Name *</label>
+                            <input type="text" class="form-control" id="editName" name="name" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="editQuality" class="form-label">Quality (1-5)</label>
+                            <select class="form-select" id="editQuality" name="quality">
+                                <option value="">Select Quality</option>
+                                <option value="5">5 - Excellent</option>
+                                <option value="4">4 - Good</option>
+                                <option value="3">3 - Average</option>
+                                <option value="2">2 - Poor</option>
+                                <option value="1">1 - Very Poor</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="editEmail" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="editEmail" name="email">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="editPhone" class="form-label">Phone</label>
+                            <input type="tel" class="form-control" id="editPhone" name="phone">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="editTitle" class="form-label">Title</label>
+                            <input type="text" class="form-control" id="editTitle" name="title">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="editFax" class="form-label">Fax</label>
+                            <input type="tel" class="form-control" id="editFax" name="fax">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="editAccountId" class="form-label">Account</label>
+                            <select class="form-select" id="editAccountId" name="account_id">
+                                <option value="">Select Account</option>
+                                {% for account in accounts %}
+                                <option value="{{ account.id }}">{{ account.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="editStatus" class="form-label">Status</label>
+                            <select class="form-select" id="editStatus" name="status">
+                                <option value="">Select Status</option>
+                                <option value="Active">Active</option>
+                                <option value="Inactive">Inactive</option>
+                                <option value="Prospect">Prospect</option>
+                                <option value="Lost">Lost</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="editNextCommunication" class="form-label">Next Communication Date</label>
+                            <input type="date" class="form-control" id="editNextCommunication" name="next_communication">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="editFrequencyDays" class="form-label">Communication Frequency (Days)</label>
+                            <input type="number" class="form-control" id="editFrequencyDays" name="frequency_days" min="1">
+                        </div>
+                        <div class="col-12">
+                            <label for="editDescription" class="form-label">Description</label>
+                            <textarea class="form-control" id="editDescription" name="description" rows="3"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endmacro %}

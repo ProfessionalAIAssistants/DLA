@@ -1,0 +1,107 @@
+<!-- jQuery -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- DataTables -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">
+<script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+
+<script>
+// Auto-refresh if processing is happening
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if there's active processing and refresh periodically
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('refresh') === 'true') {
+        setTimeout(() => {
+            location.reload();
+        }, 5000);
+    }
+    
+    // Initialize DataTables for pagination
+    if ($.fn.DataTable) {
+        $('#reportsTable').DataTable({
+            pageLength: 10,
+            order: [[0, 'desc']], // Sort by processing time descending
+            columnDefs: [
+                { orderable: false, targets: [6] } // Disable sorting for actions column
+            ],
+            language: {
+                search: "Search reports:",
+                lengthMenu: "Show _MENU_ reports per page",
+                info: "Showing _START_ to _END_ of _TOTAL_ reports",
+                paginate: {
+                    first: "First",
+                    last: "Last",
+                    next: "Next",
+                    previous: "Previous"
+                }
+            }
+        });
+    }
+    
+    // Add double-click functionality to report rows
+    document.querySelectorAll('.report-row').forEach(row => {
+        row.addEventListener('dblclick', function(e) {
+            // Prevent double-click if user clicked on action buttons
+            if (e.target.closest('button') || e.target.closest('a')) {
+                return;
+            }
+            
+            const filename = this.getAttribute('data-filename');
+            if (filename) {
+                // Navigate to the report detail page
+                window.location.href = `/processing-reports/${encodeURIComponent(filename)}`;
+            }
+        });
+    });
+});
+
+// Function to clear all reports
+function clearAllReports() {
+    if (confirm('Are you sure you want to delete ALL processing reports? This action cannot be undone.')) {
+        fetch('/api/clear-all-reports', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('All reports have been cleared successfully.');
+                location.reload();
+            } else {
+                alert('Error clearing reports: ' + (data.error || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error clearing reports: ' + error.message);
+        });
+    }
+}
+
+// Function to delete individual report
+function deleteReport(filename) {
+    if (confirm('Are you sure you want to delete this report? This action cannot be undone.')) {
+        fetch(`/api/delete-report/${encodeURIComponent(filename)}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Report deleted successfully.');
+                location.reload();
+            } else {
+                alert('Error deleting report: ' + (data.error || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error deleting report: ' + error.message);
+        });
+    }
+}
+</script>

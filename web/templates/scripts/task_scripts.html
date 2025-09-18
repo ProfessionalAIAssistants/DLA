@@ -1,0 +1,372 @@
+{# 
+=============================================================================
+CONSOLIDATED TASK SCRIPTS
+=============================================================================
+This file combines functionality from both task_scripts.html and tasks_scripts.html
+- Task Detail Page Scripts (individual task functionality)  
+- Task List/Management Scripts (tasks list functionality)
+=============================================================================
+#}
+
+<script>
+// ================================
+// TASK DETAIL FUNCTIONS
+// ================================
+
+// Global variables & configuration
+let saveInProgress = false;
+let originalTask = {}; // Store original task data for reset functionality
+
+// Task status & priority updates
+function updateTaskStatus(newStatus) {
+    if (saveInProgress) {
+        showAlert('Please wait for current operation to complete', 'warning');
+        return;
+    }
+    
+    const taskId = window.location.pathname.split('/')[2];
+    
+    if (!confirm(`Are you sure you want to change the task status to "${newStatus}"?`)) {
+        return;
+    }
+    
+    saveInProgress = true;
+    showAlert('Updating task status...', 'info');
+    
+    fetch(`/api/tasks/${taskId}/status`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: newStatus })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert(`Task status updated to "${newStatus}"`, 'success');
+            location.reload();
+        } else {
+            showAlert(data.message || 'Error updating task status', 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('Error updating task status', 'danger');
+    })
+    .finally(() => {
+        saveInProgress = false;
+    });
+}
+
+function updateTaskPriority(newPriority) {
+    if (saveInProgress) {
+        showAlert('Please wait for current operation to complete', 'warning');
+        return;
+    }
+    
+    const taskId = window.location.pathname.split('/')[2];
+    
+    if (!confirm(`Are you sure you want to change the task priority to "${newPriority}"?`)) {
+        return;
+    }
+    
+    saveInProgress = true;
+    showAlert('Updating task priority...', 'info');
+    
+    fetch(`/api/tasks/${taskId}/priority`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ priority: newPriority })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert(`Task priority updated to "${newPriority}"`, 'success');
+            location.reload();
+        } else {
+            showAlert(data.message || 'Error updating task priority', 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('Error updating task priority', 'danger');
+    })
+    .finally(() => {
+        saveInProgress = false;
+    });
+}
+
+// Task workflow actions
+function startTask(taskId) {
+    const targetTaskId = taskId || window.location.pathname.split('/')[2];
+    updateTaskStatus('In Progress');
+}
+
+function endTask() {
+    if (!confirm('Mark this task as completed?')) {
+        return;
+    }
+    
+    const taskId = window.location.pathname.split('/')[2];
+    
+    saveInProgress = true;
+    showAlert('Completing task...', 'info');
+    
+    fetch(`/api/tasks/${taskId}/complete`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+            completed_date: new Date().toISOString().split('T')[0],
+            status: 'Completed'
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('Task marked as completed', 'success');
+            location.reload();
+        } else {
+            showAlert(data.message || 'Error completing task', 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('Error completing task', 'danger');
+    })
+    .finally(() => {
+        saveInProgress = false;
+    });
+}
+
+function rescheduleTask(taskId) {
+    const targetTaskId = taskId || window.location.pathname.split('/')[2];
+    const newDate = prompt('Enter new due date (YYYY-MM-DD):');
+    
+    if (!newDate) return;
+    
+    // Basic date validation
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(newDate)) {
+        showAlert('Please enter a valid date in YYYY-MM-DD format', 'danger');
+        return;
+    }
+    
+    saveInProgress = true;
+    showAlert('Rescheduling task...', 'info');
+    
+    fetch(`/api/tasks/${targetTaskId}/reschedule`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ due_date: newDate })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('Task rescheduled successfully', 'success');
+            location.reload();
+        } else {
+            showAlert(data.message || 'Error rescheduling task', 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('Error rescheduling task', 'danger');
+    })
+    .finally(() => {
+        saveInProgress = false;
+    });
+}
+
+function duplicateTask(taskId) {
+    const targetTaskId = taskId || window.location.pathname.split('/')[2];
+    
+    if (!confirm('Create a duplicate of this task?')) {
+        return;
+    }
+    
+    saveInProgress = true;
+    showAlert('Duplicating task...', 'info');
+    
+    fetch(`/api/tasks/${targetTaskId}/duplicate`, {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.new_task_id) {
+            showAlert('Task duplicated successfully', 'success');
+            window.location.href = `/tasks/${data.new_task_id}`;
+        } else {
+            showAlert(data.message || 'Error duplicating task', 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('Error duplicating task', 'danger');
+    })
+    .finally(() => {
+        saveInProgress = false;
+    });
+}
+
+function deleteTask(taskId) {
+    const targetTaskId = taskId || window.location.pathname.split('/')[2];
+    
+    if (!confirm('Are you sure you want to delete this task? This action cannot be undone.')) {
+        return;
+    }
+    
+    if (!confirm('This will permanently delete the task and all related data. Are you absolutely sure?')) {
+        return;
+    }
+    
+    saveInProgress = true;
+    showAlert('Deleting task...', 'info');
+    
+    fetch(`/api/tasks/${targetTaskId}`, {
+        method: 'DELETE'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('Task deleted successfully', 'success');
+            window.location.href = '/tasks';
+        } else {
+            showAlert(data.message || 'Error deleting task', 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('Error deleting task', 'danger');
+    })
+    .finally(() => {
+        saveInProgress = false;
+    });
+}
+
+// ================================
+// TASK LIST/MANAGEMENT FUNCTIONS 
+// ================================
+
+function saveTask() {
+    const form = document.getElementById('addTaskForm');
+    if (!form) return;
+    
+    const formData = new FormData(form);
+    
+    fetch('/api/tasks', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while saving the task');
+    });
+}
+
+function completeTask(taskId) {
+    const timeSpent = prompt('How many minutes did this task take? (optional)');
+    const payload = { status: 'Completed' };
+    if (timeSpent && !isNaN(timeSpent)) {
+        payload.time_taken = parseInt(timeSpent);
+    }
+    
+    fetch(`/api/tasks/${taskId}`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    });
+}
+
+function editTask(taskId) {
+    // Redirect to task detail page for editing
+    window.location.href = `/tasks/${taskId}`;
+}
+
+// ================================
+// UTILITY FUNCTIONS
+// ================================
+function showAlert(message, type = 'info', duration = 5000) {
+    // Remove existing alerts
+    const existingAlerts = document.querySelectorAll('.dynamic-alert');
+    existingAlerts.forEach(alert => alert.remove());
+    
+    const alertClass = {
+        'success': 'alert-success',
+        'error': 'alert-danger', 
+        'danger': 'alert-danger',
+        'warning': 'alert-warning',
+        'info': 'alert-info'
+    }[type] || 'alert-info';
+    
+    const alertHtml = `
+        <div class="alert ${alertClass} alert-dismissible fade show dynamic-alert" role="alert" style="position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px;">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', alertHtml);
+    
+    // Auto-dismiss after duration
+    if (duration > 0) {
+        setTimeout(function() {
+            const alert = document.querySelector('.dynamic-alert');
+            if (alert) {
+                alert.remove();
+            }
+        }, duration);
+    }
+}
+
+function viewTaskDetail(taskId) {
+    window.location.href = '/tasks/' + taskId;
+}
+
+// ================================
+// INITIALIZATION AND EVENT HANDLERS
+// ================================
+document.addEventListener('DOMContentLoaded', function() {
+    // Set tomorrow as default due date
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+    const dueDateInput = document.getElementById('due_date');
+    if (dueDateInput) {
+        dueDateInput.value = tomorrowStr;
+    }
+    
+    // Initialize tooltips if available
+    if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function(tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    }
+});
+
+// Console log for debugging
+console.log('Consolidated Task Scripts Loaded Successfully');
+</script>

@@ -1,0 +1,567 @@
+<script>
+// Dynamic dropdown loading
+function loadProducts() {
+    fetch('/api/products')
+        .then(response => response.json())
+        .then(products => {
+            const productSelect = document.getElementById('productId');
+            productSelect.innerHTML = '<option value="">Select Product</option>';
+            products.forEach(product => {
+                const option = document.createElement('option');
+                option.value = product.id;
+                option.textContent = product.name;
+                productSelect.appendChild(option);
+            });
+        })
+        .catch(error => {
+            console.error('Error loading products:', error);
+            showNotification('Error loading products', 'error');
+        });
+}
+
+function loadAccounts() {
+    fetch('/api/accounts')
+        .then(response => response.json())
+        .then(accounts => {
+            const accountSelect = document.getElementById('accountId');
+            accountSelect.innerHTML = '<option value="">Select Account</option>';
+            accounts.forEach(account => {
+                const option = document.createElement('option');
+                option.value = account.id;
+                option.textContent = account.company_name;
+                accountSelect.appendChild(option);
+            });
+        })
+        .catch(error => {
+            console.error('Error loading accounts:', error);
+            showNotification('Error loading accounts', 'error');
+        });
+}
+
+function loadContacts(accountId) {
+    if (!accountId) {
+        const contactSelect = document.getElementById('contactId');
+        contactSelect.innerHTML = '<option value="">Select Contact</option>';
+        return;
+    }
+    
+    fetch(`/api/contacts?account_id=${accountId}`)
+        .then(response => response.json())
+        .then(contacts => {
+            const contactSelect = document.getElementById('contactId');
+            contactSelect.innerHTML = '<option value="">Select Contact</option>';
+            contacts.forEach(contact => {
+                const option = document.createElement('option');
+                option.value = contact.id;
+                option.textContent = `${contact.first_name} ${contact.last_name}`;
+                contactSelect.appendChild(option);
+            });
+        })
+        .catch(error => {
+            console.error('Error loading contacts:', error);
+            showNotification('Error loading contacts', 'error');
+        });
+}
+
+function loadOpportunities() {
+    fetch('/api/opportunities')
+        .then(response => response.json())
+        .then(opportunities => {
+            const opportunitySelect = document.getElementById('opportunityId');
+            opportunitySelect.innerHTML = '<option value="">Select Opportunity</option>';
+            opportunities.forEach(opportunity => {
+                const option = document.createElement('option');
+                option.value = opportunity.id;
+                option.textContent = opportunity.name;
+                opportunitySelect.appendChild(option);
+            });
+        })
+        .catch(error => {
+            console.error('Error loading opportunities:', error);
+            showNotification('Error loading opportunities', 'error');
+        });
+}
+
+// Quote management functions
+function viewQuote(quoteId) {
+    fetch(`/quotes/${quoteId}`)
+        .then(response => {
+            if (response.ok) {
+                window.location.href = `/quotes/${quoteId}`;
+            } else {
+                throw new Error('Quote not found');
+            }
+        })
+        .catch(error => {
+            console.error('Error viewing quote:', error);
+            showNotification('Error viewing quote', 'error');
+        });
+}
+
+function editQuote(quoteId) {
+    // Implement edit functionality
+    window.location.href = `/quotes/${quoteId}/edit`;
+}
+
+function deleteQuote(quoteId, productName) {
+    if (confirm(`Are you sure you want to delete the quote for "${productName}"?`)) {
+        fetch(`/quotes/${quoteId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken()
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                showNotification('Quote deleted successfully', 'success');
+                // Remove the row from the table
+                const row = document.querySelector(`tr[data-quote-id="${quoteId}"]`);
+                if (row) {
+                    row.remove();
+                }
+            } else {
+                throw new Error('Failed to delete quote');
+            }
+        })
+        .catch(error => {
+            console.error('Error deleting quote:', error);
+            showNotification('Error deleting quote', 'error');
+        });
+    }
+}
+
+function viewDocument(quoteId, documentPath) {
+    // Open document in new window
+    window.open(`/quotes/${quoteId}/document`, '_blank');
+}
+
+// Form handling
+function handleAddQuoteForm() {
+    const form = document.getElementById('addQuoteForm');
+    if (!form) return;
+    
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+        
+        fetch('/quotes', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken()
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => {
+            if (response.ok) {
+                return response.json();
+            } else {
+                throw new Error('Failed to create quote');
+            }
+        })
+        .then(data => {
+            showNotification('Quote created successfully', 'success');
+            $('#addQuoteModal').modal('hide');
+            form.reset();
+            // Refresh the page to show the new quote
+            window.location.reload();
+        })
+        .catch(error => {
+            console.error('Error creating quote:', error);
+            showNotification('Error creating quote', 'error');
+        });
+    });
+}
+
+// Filter functions
+function clearFilters() {
+    const url = new URL(window.location);
+    url.search = '';
+    window.location.href = url.toString();
+}
+
+// Utility functions
+function getCSRFToken() {
+    const token = document.querySelector('meta[name="csrf-token"]');
+    return token ? token.getAttribute('content') : '';
+}
+
+function showNotification(message, type = 'info') {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show position-fixed`;
+    notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    notification.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.remove();
+        }
+    }, 5000);
+}
+
+// Row selection and keyboard shortcuts
+let selectedRowId = null;
+
+function handleRowSelection() {
+    const rows = document.querySelectorAll('.quote-row');
+    rows.forEach(row => {
+        row.addEventListener('click', function(e) {
+            // Don't select if clicking on buttons
+            if (e.target.closest('.btn-group')) return;
+            
+            // Remove previous selection
+            document.querySelectorAll('.quote-row.selected').forEach(r => {
+                r.classList.remove('selected');
+            });
+            
+            // Add selection to current row
+            this.classList.add('selected');
+            selectedRowId = this.dataset.quoteId;
+        });
+    });
+}
+
+// Keyboard shortcuts
+function handleKeyboardShortcuts() {
+    document.addEventListener('keydown', function(e) {
+        // Only handle shortcuts when no modal is open and no input is focused
+        if (document.querySelector('.modal.show') || 
+            document.activeElement.tagName === 'INPUT' || 
+            document.activeElement.tagName === 'TEXTAREA' || 
+            document.activeElement.tagName === 'SELECT') {
+            return;
+        }
+        
+        switch(e.key) {
+            case 'n':
+                e.preventDefault();
+                $('#addQuoteModal').modal('show');
+                break;
+            case 'r':
+                e.preventDefault();
+                window.location.reload();
+                break;
+            case 'Enter':
+                if (selectedRowId) {
+                    e.preventDefault();
+                    viewQuote(selectedRowId);
+                }
+                break;
+            case 'Delete':
+                if (selectedRowId) {
+                    e.preventDefault();
+                    const row = document.querySelector(`tr[data-quote-id="${selectedRowId}"]`);
+                    const productName = row ? row.querySelector('td:nth-child(2)').textContent.trim() : 'Unknown';
+                    deleteQuote(selectedRowId, productName);
+                }
+                break;
+        }
+    });
+}
+
+// Search functionality
+function handleSearch() {
+    const searchInputs = document.querySelectorAll('#vendor, #product, #manufacturer');
+    searchInputs.forEach(input => {
+        input.addEventListener('input', debounce(function() {
+            filterTable();
+        }, 300));
+    });
+    
+    const statusSelect = document.getElementById('status');
+    if (statusSelect) {
+        statusSelect.addEventListener('change', filterTable);
+    }
+}
+
+function filterTable() {
+    const vendor = document.getElementById('vendor').value.toLowerCase();
+    const product = document.getElementById('product').value.toLowerCase();
+    const manufacturer = document.getElementById('manufacturer').value.toLowerCase();
+    const status = document.getElementById('status').value.toLowerCase();
+    
+    const rows = document.querySelectorAll('.quote-row');
+    let visibleCount = 0;
+    
+    rows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        const rowVendor = cells[2].textContent.toLowerCase();
+        const rowProduct = cells[1].textContent.toLowerCase();
+        const rowStatus = cells[7].textContent.toLowerCase();
+        
+        const matchesVendor = !vendor || rowVendor.includes(vendor);
+        const matchesProduct = !product || rowProduct.includes(product);
+        const matchesManufacturer = !manufacturer || rowProduct.includes(manufacturer);
+        const matchesStatus = !status || rowStatus.includes(status);
+        
+        const visible = matchesVendor && matchesProduct && matchesManufacturer && matchesStatus;
+        
+        row.style.display = visible ? '' : 'none';
+        if (visible) visibleCount++;
+    });
+    
+    // Show/hide empty state
+    const emptyState = document.querySelector('.empty-state');
+    const table = document.querySelector('.table');
+    
+    if (visibleCount === 0) {
+        if (table) table.style.display = 'none';
+        if (!emptyState) {
+            const container = document.querySelector('.table-responsive');
+            if (container) {
+                container.insertAdjacentHTML('afterend', `
+                    <div class="empty-state text-center py-5">
+                        <i class="fas fa-file-contract fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No Quotes Found</h5>
+                        <p class="text-muted">No quotes match your current filters.</p>
+                    </div>
+                `);
+            }
+        } else {
+            emptyState.style.display = 'block';
+        }
+    } else {
+        if (table) table.style.display = '';
+        if (emptyState) emptyState.style.display = 'none';
+    }
+}
+
+// Debounce utility
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+// Account change handler for contact loading
+function handleAccountChange() {
+    const accountSelect = document.getElementById('accountId');
+    if (accountSelect) {
+        accountSelect.addEventListener('change', function() {
+            loadContacts(this.value);
+        });
+    }
+}
+
+// Initialize everything when the page loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Load initial data for dropdowns
+    loadProducts();
+    loadAccounts();
+    loadOpportunities();
+    
+    // Set up form handling
+    handleAddQuoteForm();
+    handleAccountChange();
+    
+    // Set up interactions
+    handleRowSelection();
+    handleKeyboardShortcuts();
+    handleSearch();
+    
+    // Add CSS for selected rows
+    const style = document.createElement('style');
+    style.textContent = `
+        .quote-row.selected {
+            background-color: #e3f2fd !important;
+            border-left: 4px solid #2196f3;
+        }
+        .empty-state {
+            display: none;
+        }
+    `;
+    document.head.appendChild(style);
+    
+    console.log('Quotes page initialized successfully');
+});
+
+// Refresh data periodically (every 5 minutes)
+setInterval(function() {
+    // Only refresh if no modal is open
+    if (!document.querySelector('.modal.show')) {
+        loadProducts();
+        loadAccounts();
+        loadOpportunities();
+    }
+}, 300000);
+
+// ==================== MERGED from quote_scripts.html for Quote Detail Pages ====================
+
+// Quote Detail Page Functions
+function initQuoteDetail() {
+    // Check URL parameters and auto-open edit modal if requested
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('edit') === 'true') {
+        // Get quote ID from current URL path or data attribute
+        const quoteId = window.location.pathname.split('/').pop();
+        if (quoteId && !isNaN(quoteId)) {
+            editQuote(quoteId);
+        }
+    }
+}
+
+// Enhanced dropdown loading functions for edit modals
+function loadProductsForEdit() {
+    fetch('/api/products')
+    .then(response => response.json())
+    .then(products => {
+        const select = document.getElementById('editProduct');
+        if (select) {
+            select.innerHTML = '<option value="">Select Product</option>';
+            products.forEach(product => {
+                const option = document.createElement('option');
+                option.value = product.nsn || product.id;
+                option.textContent = `${product.nsn || product.id} - ${product.name}`;
+                select.appendChild(option);
+            });
+        }
+    })
+    .catch(error => console.error('Error loading products for edit:', error));
+}
+
+function loadAccountsForEdit() {
+    fetch('/api/accounts')
+    .then(response => response.json())
+    .then(accounts => {
+        const select = document.getElementById('editAccount');
+        if (select) {
+            select.innerHTML = '<option value="">Select Account</option>';
+            accounts.forEach(account => {
+                const option = document.createElement('option');
+                option.value = account.id;
+                option.textContent = account.company_name;
+                select.appendChild(option);
+            });
+        }
+    })
+    .catch(error => console.error('Error loading accounts for edit:', error));
+}
+
+function loadContactsForEdit(accountId) {
+    const select = document.getElementById('editContact');
+    if (!select) return;
+    
+    if (!accountId) {
+        select.innerHTML = '<option value="">Select Contact</option>';
+        return;
+    }
+    
+    fetch(`/api/contacts?account_id=${accountId}`)
+    .then(response => response.json())
+    .then(contacts => {
+        select.innerHTML = '<option value="">Select Contact</option>';
+        contacts.forEach(contact => {
+            const option = document.createElement('option');
+            option.value = contact.id;
+            option.textContent = contact.name;
+            select.appendChild(option);
+        });
+    })
+    .catch(error => console.error('Error loading contacts for edit:', error));
+}
+
+function loadOpportunitiesForEdit() {
+    fetch('/api/opportunities')
+    .then(response => response.json())
+    .then(opportunities => {
+        const select = document.getElementById('editOpportunity');
+        if (select) {
+            select.innerHTML = '<option value="">Select Opportunity</option>';
+            opportunities.forEach(opportunity => {
+                const option = document.createElement('option');
+                option.value = opportunity.id;
+                option.textContent = `${opportunity.request_number} - ${opportunity.title}`;
+                select.appendChild(option);
+            });
+        }
+    })
+    .catch(error => console.error('Error loading opportunities for edit:', error));
+}
+
+// Quote editing functions
+function editQuote(quoteId) {
+    // Load dropdown data for edit modal
+    if (document.getElementById('editQuoteModal')) {
+        loadProductsForEdit();
+        loadAccountsForEdit();
+        loadOpportunitiesForEdit();
+        
+        // Show modal
+        const modal = new bootstrap.Modal(document.getElementById('editQuoteModal'));
+        modal.show();
+    } else {
+        // For list page, navigate to detail page with edit parameter
+        window.location.href = `/quotes/${quoteId}?edit=true`;
+    }
+}
+
+function updateQuote(quoteId) {
+    const formData = new FormData(document.getElementById('editQuoteForm'));
+    const data = Object.fromEntries(formData.entries());
+    
+    fetch(`/api/quotes/${quoteId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            const modal = bootstrap.Modal.getInstance(document.getElementById('editQuoteModal'));
+            modal.hide();
+            showNotification('Quote updated successfully!', 'success');
+            // Reload page to show changes
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showNotification('Error updating quote: ' + result.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Error updating quote', 'error');
+    });
+}
+
+// Initialize quote detail functionality when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    initQuoteDetail();
+    
+    // Setup edit modal event listeners for detail pages
+    const editModal = document.getElementById('editQuoteModal');
+    if (editModal) {
+        editModal.addEventListener('show.bs.modal', function () {
+            loadProductsForEdit();
+            loadAccountsForEdit();
+            loadOpportunitiesForEdit();
+        });
+        
+        // Handle account change to load related contacts
+        const editAccount = document.getElementById('editAccount');
+        if (editAccount) {
+            editAccount.addEventListener('change', function() {
+                loadContactsForEdit(this.value);
+            });
+        }
+    }
+});
+
+// ==================== End merged Quote Detail Functions ====================
+</script>

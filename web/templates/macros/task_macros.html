@@ -1,0 +1,1406 @@
+<!-- Task Detail Page Macros -->
+
+<!-- Header with title, breadcrumb and action buttons -->
+{% macro task_header(task, edit_mode) %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2>Task Details</h2>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="/tasks">Tasks</a></li>
+                <li class="breadcrumb-item active">{{ task.subject[:50] if task.subject else 'Untitled Task' }}...</li>
+            </ol>
+        </nav>
+    </div>
+    <div class="btn-group">
+        <a href="/tasks" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Tasks
+        </a>
+        {% if edit_mode %}
+        <button class="btn btn-success" onclick="saveTask()">
+            <i class="fas fa-save me-2"></i>Save Changes
+        </button>
+        <a href="/tasks/{{ task.id }}" class="btn btn-secondary">
+            <i class="fas fa-times me-2"></i>Cancel
+        </a>
+        {% else %}
+        <a href="/tasks/{{ task.id }}?edit=true" class="btn btn-primary">
+            <i class="fas fa-edit me-2"></i>Edit Task
+        </a>
+        {% endif %}
+    </div>
+</div>
+{% endmacro %}
+
+<!-- Quick Actions sidebar -->
+{% macro quick_actions_card(task) %}
+<div class="card mb-4 border-0 shadow-sm">
+    <div class="card-header bg-primary text-white border-0">
+        <h6 class="card-title mb-0 fw-bold">
+            <i class="fas fa-bolt me-2"></i>Quick Actions
+        </h6>
+    </div>
+    <div class="card-body">
+        <!-- Status Change Actions -->
+        <div class="mb-3">
+            <small class="text-muted d-block mb-2 fw-medium">Task Control</small>
+            {% if task.status == 'Not Started' %}
+            <button class="btn btn-success btn-sm w-100 mb-2" onclick="startTask()">
+                <i class="fas fa-play me-2"></i>Start Task
+            </button>
+            {% elif task.status == 'In Progress' %}
+            <button class="btn btn-primary btn-sm w-100 mb-2" onclick="endTask()">
+                <i class="fas fa-check me-2"></i>Complete Task
+            </button>
+            <div class="d-grid gap-1">
+                <button class="btn btn-warning btn-sm" onclick="updateTaskStatus('Waiting')">
+                    <i class="fas fa-pause me-1"></i>Pause
+                </button>
+                <button class="btn btn-secondary btn-sm" onclick="updateTaskStatus('Deferred')">
+                    <i class="fas fa-clock me-1"></i>Defer
+                </button>
+            </div>
+            {% elif task.status == 'Waiting' or task.status == 'Deferred' %}
+            <button class="btn btn-success btn-sm w-100 mb-2" onclick="updateTaskStatus('In Progress')">
+                <i class="fas fa-play me-2"></i>Resume Task
+            </button>
+            <button class="btn btn-primary btn-sm w-100 mb-2" onclick="endTask()">
+                <i class="fas fa-check me-2"></i>Complete Task
+            </button>
+            <button class="btn btn-outline-secondary btn-sm w-100" onclick="updateTaskStatus('Not Started')">
+                <i class="fas fa-undo me-1"></i>Reset to Not Started
+            </button>
+            {% elif task.status == 'Completed' %}
+            <div class="alert alert-success text-center py-2 mb-2">
+                <i class="fas fa-check-circle me-1"></i>Task Completed
+            </div>
+            <button class="btn btn-outline-primary btn-sm w-100" onclick="updateTaskStatus('In Progress')">
+                <i class="fas fa-undo me-1"></i>Reopen Task
+            </button>
+            {% else %}
+            <button class="btn btn-success btn-sm w-100 mb-2" onclick="updateTaskStatus('In Progress')">
+                <i class="fas fa-play me-2"></i>Start Task
+            </button>
+            <button class="btn btn-primary btn-sm w-100 mb-2" onclick="endTask()">
+                <i class="fas fa-check me-2"></i>Complete Task
+            </button>
+            <button class="btn btn-outline-secondary btn-sm w-100" onclick="updateTaskStatus('Not Started')">
+                <i class="fas fa-undo me-1"></i>Reset
+            </button>
+            {% endif %}
+        </div>
+
+        <!-- Priority Change Actions -->
+        <div class="mb-3">
+            <small class="text-muted d-block mb-2 fw-medium">Change Priority</small>
+            <div class="d-flex gap-1 flex-wrap">
+                {% if task.priority != 'High' %}
+                <button class="btn btn-outline-danger btn-sm flex-fill" onclick="updateTaskPriority('High')">
+                    <i class="fas fa-exclamation me-1"></i>High
+                </button>
+                {% endif %}
+                {% if task.priority != 'Medium' %}
+                <button class="btn btn-outline-warning btn-sm flex-fill" onclick="updateTaskPriority('Medium')">
+                    <i class="fas fa-minus me-1"></i>Medium
+                </button>
+                {% endif %}
+                {% if task.priority != 'Low' %}
+                <button class="btn btn-outline-info btn-sm flex-fill" onclick="updateTaskPriority('Low')">
+                    <i class="fas fa-arrow-down me-1"></i>Low
+                </button>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Quick Tasks Actions -->
+        <div class="mb-3">
+            <small class="text-muted d-block mb-2 fw-medium">Quick Tasks</small>
+            <div class="d-grid gap-2">
+                <button class="btn btn-outline-primary btn-sm" onclick="rescheduleTask()">
+                    <i class="fas fa-calendar me-2"></i>Reschedule
+                </button>
+                <button class="btn btn-outline-secondary btn-sm" onclick="duplicateTask()">
+                    <i class="fas fa-copy me-2"></i>Duplicate Task
+                </button>
+            </div>
+        </div>
+
+        <!-- Danger Zone -->
+        <div class="mb-0">
+            <small class="text-muted d-block mb-2 fw-medium">Danger Zone</small>
+            <button class="btn btn-outline-danger btn-sm w-100" onclick="deleteTask()">
+                <i class="fas fa-trash me-2"></i>Delete Task
+            </button>
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
+<!-- Task details sidebar -->
+{% macro task_details_card(task) %}
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-info text-white border-0">
+        <h6 class="card-title mb-0 fw-bold">
+            <i class="fas fa-info-circle me-2"></i>Task Details
+        </h6>
+    </div>
+    <div class="card-body">
+        <div class="mb-3">
+            <div class="row">
+                <div class="col-4">
+                    <strong class="text-dark">ID:</strong>
+                </div>
+                <div class="col-8">
+                    <span class="text-dark">#{{ task.id }}</span>
+                </div>
+            </div>
+        </div>
+        <div class="mb-3">
+            <div class="row">
+                <div class="col-4">
+                    <strong class="text-dark">Start Date:</strong>
+                </div>
+                <div class="col-8">
+                    <span class="text-dark">
+                        {% if task.start_date %}
+                            {% if task.start_date.__class__.__name__ == 'str' %}
+                                {{ task.start_date }}
+                            {% else %}
+                                {{ task.start_date.strftime('%m/%d/%Y') }}
+                            {% endif %}
+                        {% else %}
+                            Not Set
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div class="mb-3">
+            <div class="row">
+                <div class="col-4">
+                    <strong class="text-dark">Completed:</strong>
+                </div>
+                <div class="col-8">
+                    <span class="text-dark">
+                        {% if task.completed_date %}
+                            {% if task.completed_date.__class__.__name__ == 'str' %}
+                                {{ task.completed_date }}
+                            {% else %}
+                                {{ task.completed_date.strftime('%m/%d/%Y') }}
+                            {% endif %}
+                        {% else %}
+                            Not Set
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div class="mb-3">
+            <div class="row">
+                <div class="col-4">
+                    <strong class="text-dark">Time Taken:</strong>
+                </div>
+                <div class="col-8">
+                    <span class="text-dark">{{ task.time_taken + ' minutes' if task.time_taken else 'Not tracked' }}</span>
+                </div>
+            </div>
+        </div>
+        <div class="mb-3">
+            <div class="row">
+                <div class="col-4">
+                    <strong class="text-dark">Owner:</strong>
+                </div>
+                <div class="col-8">
+                    <span class="text-dark">{{ task.owner or 'Unassigned' }}</span>
+                </div>
+            </div>
+        </div>
+        <div class="mb-3">
+            <div class="row">
+                <div class="col-4">
+                    <strong class="text-dark">Created:</strong>
+                </div>
+                <div class="col-8">
+                    <span class="text-dark">
+                        {% if task.created_date and task.created_date != 'CURRENT_TIMESTAMP' %}
+                            {% if task.created_date.__class__.__name__ == 'str' %}
+                                {{ task.created_date }}
+                            {% else %}
+                                {{ task.created_date.strftime('%m/%d/%Y') }}
+                            {% endif %}
+                        {% else %}
+                            Unknown
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+        {% if task.related_opportunity_id %}
+        <div class="mb-3">
+            <div class="row">
+                <div class="col-4">
+                    <strong class="text-dark">Related Opp:</strong>
+                </div>
+                <div class="col-8">
+                    <a href="/opportunity/{{ task.related_opportunity_id }}" class="text-primary text-decoration-none">
+                        View Opportunity
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        {% if task.related_account_id %}
+        <div class="mb-3">
+            <small class="text-muted">Related Account</small>
+            <p class="mb-0">
+                <a href="/account/{{ task.related_account_id }}">
+                    View Account
+                </a>
+            </p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endmacro %}
+
+<!-- Task information card - edit mode -->
+{% macro task_info_edit(task) %}
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-tasks me-2 text-primary"></i>Task Information
+        </h5>
+    </div>
+    <div class="card-body">
+        <form id="taskForm">
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="subject" class="form-label">Subject</label>
+                    <input type="text" class="form-control" id="subject" name="subject" value="{{ task.subject }}" required>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label for="status" class="form-label">Status</label>
+                    <select class="form-select" id="status" name="status">
+                        <option value="Not Started" {{ 'selected' if task.status == 'Not Started' }}>Not Started</option>
+                        <option value="In Progress" {{ 'selected' if task.status == 'In Progress' }}>In Progress</option>
+                        <option value="Waiting" {{ 'selected' if task.status == 'Waiting' }}>Waiting</option>
+                        <option value="Deferred" {{ 'selected' if task.status == 'Deferred' }}>Deferred</option>
+                        <option value="Completed" {{ 'selected' if task.status == 'Completed' }}>Completed</option>
+                    </select>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label for="priority" class="form-label">Priority</label>
+                    <select class="form-select" id="priority" name="priority">
+                        <option value="Low" {{ 'selected' if task.priority == 'Low' }}>Low</option>
+                        <option value="Medium" {{ 'selected' if task.priority == 'Medium' }}>Medium</option>
+                        <option value="High" {{ 'selected' if task.priority == 'High' }}>High</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label for="work_date" class="form-label">Work Date</label>
+                    <input type="date" class="form-control" id="work_date" name="work_date" value="{{ task.work_date }}">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label for="due_date" class="form-label">Due Date</label>
+                    <input type="date" class="form-control" id="due_date" name="due_date" value="{{ task.due_date }}">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label for="owner" class="form-label">Owner</label>
+                    <input type="text" class="form-control" id="owner" name="owner" value="{{ task.owner }}">
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label for="start_date" class="form-label">Start Date</label>
+                    <input type="date" class="form-control" id="start_date" name="start_date" value="{{ task.start_date }}">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label for="completed_date" class="form-label">Completed Date</label>
+                    <input type="date" class="form-control" id="completed_date" name="completed_date" value="{{ task.completed_date }}">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label for="time_taken" class="form-label">Time Taken (minutes)</label>
+                    <input type="number" class="form-control" id="time_taken" name="time_taken" value="{{ task.time_taken }}">
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="contact_id" class="form-label">Contact</label>
+                    <select class="form-select" id="contact_id" name="contact_id">
+                        <option value="">Select Contact</option>
+                        <!-- Contacts will be loaded via JavaScript -->
+                    </select>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="account_id" class="form-label">Account</label>
+                    <select class="form-select" id="account_id" name="account_id">
+                        <option value="">Select Account</option>
+                        <!-- Accounts will be loaded via JavaScript -->
+                    </select>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="opportunity_id" class="form-label">Opportunity</label>
+                    <select class="form-select" id="opportunity_id" name="opportunity_id">
+                        <option value="">Select Opportunity</option>
+                        <!-- Opportunities will be loaded via JavaScript -->
+                    </select>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="quote_id" class="form-label">Quote</label>
+                    <select class="form-select" id="quote_id" name="quote_id">
+                        <option value="">Select Quote</option>
+                        <!-- Quotes will be loaded via JavaScript -->
+                    </select>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label for="description" class="form-label">Description</label>
+                <textarea class="form-control" id="description" name="description" rows="4">{{ task.description }}</textarea>
+            </div>
+        </form>
+    </div>
+</div>
+{% endmacro %}
+
+<!-- Task information card - view mode -->
+{% macro task_info_view(task) %}
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-tasks me-2 text-primary"></i>Task Information
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-8 mb-3">
+                <h6 class="text-muted">Subject</h6>
+                <p class="mb-0">{{ task.subject }}</p>
+            </div>
+            <div class="col-md-2 mb-3">
+                <h6 class="text-muted">Status</h6>
+                <span class="badge bg-{{ 'secondary' if task.status == 'Not Started' else 'primary' if task.status == 'In Progress' else 'warning' if task.status == 'Waiting' else 'info' if task.status == 'Deferred' else 'success' }}">
+                    {{ task.status }}
+                </span>
+            </div>
+            <div class="col-md-2 mb-3">
+                <h6 class="text-muted">Priority</h6>
+                <span class="badge bg-{{ 'danger' if task.priority == 'High' else 'warning' if task.priority == 'Medium' else 'secondary' }}">
+                    {{ task.priority or 'Medium' }}
+                </span>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <div class="border rounded p-2 bg-light">
+                    <h6 class="text-muted mb-1"><i class="fas fa-calendar-alt me-1"></i>Work Date</h6>
+                    <p class="mb-0 fw-semibold">{{ task.work_date or 'Not set' }}</p>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="border rounded p-2 bg-light">
+                    <h6 class="text-muted mb-1"><i class="fas fa-clock me-1"></i>Due Date</h6>
+                    <p class="mb-0 fw-semibold">{{ task.due_date or 'Not set' }}</p>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="border rounded p-2 bg-light">
+                    <h6 class="text-muted mb-1"><i class="fas fa-hourglass-half me-1"></i>Days Till Due</h6>
+                    {% if task.days_till_due is not none %}
+                        <span class="badge bg-{{ 'danger' if task.days_till_due < 0 else 'warning' if task.days_till_due == 0 else 'success' }} fs-6">
+                            {{ task.days_till_due }} days
+                        </span>
+                    {% else %}
+                        <span class="text-muted">-</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <div class="border rounded p-2 bg-light">
+                    <h6 class="text-muted mb-1"><i class="fas fa-exclamation-triangle me-1"></i>Past Due</h6>
+                    {% if task.past_due %}
+                        <span class="badge bg-danger fs-6"><i class="fas fa-times me-1"></i>Yes</span>
+                    {% else %}
+                        <span class="badge bg-success fs-6"><i class="fas fa-check me-1"></i>No</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <div class="border rounded p-2 bg-light">
+                    <h6 class="text-muted mb-1"><i class="fas fa-calendar-check me-1"></i>Scheduled</h6>
+                    <span class="badge bg-{{ 'success' if task.scheduled == 'Scheduled' else 'warning' }} fs-6">
+                        {{ task.scheduled }}
+                    </span>
+                </div>
+            </div>
+            <div class="col-md-6 mb-3">
+                <div class="border rounded p-2 bg-light">
+                    <h6 class="text-muted mb-1"><i class="fas fa-stopwatch me-1"></i>Countdown</h6>
+                    <span class="badge bg-{{ 'success' if 'Completed' in task.countdown else 'danger' if 'overdue' in task.countdown else 'warning' if 'Due Today' in task.countdown else 'primary' }} fs-6">
+                        {{ task.countdown }}
+                    </span>
+                </div>
+            </div>
+        </div>
+        
+        {% if task.parent_item_type %}
+        <div class="row">
+            <div class="col-md-12 mb-3">
+                <h6 class="text-muted">Parent Item</h6>
+                <div class="d-flex flex-wrap gap-1">
+                    {% if task.parent_item_type == 'Account' and task.account_name %}
+                        <span class="badge bg-light text-dark">
+                            <i class="fas fa-building me-1"></i>{{ task.account_name }}
+                        </span>
+                    {% elif task.parent_item_type == 'Contact' and task.contact_name %}
+                        <span class="badge bg-light text-dark">
+                            <i class="fas fa-user me-1"></i>{{ task.contact_name }}
+                        </span>
+                    {% elif task.parent_item_type == 'Opportunity' and task.opportunity_name %}
+                        <span class="badge bg-light text-dark">
+                            <i class="fas fa-handshake me-1"></i>{{ task.opportunity_name }}
+                        </span>
+                    {% elif task.parent_item_type == 'Product' and task.product_name %}
+                        <span class="badge bg-light text-dark">
+                            <i class="fas fa-box me-1"></i>{{ task.product_name }}
+                        </span>
+                    {% else %}
+                        <span class="text-muted">{{ task.parent_item_type }} #{{ task.parent_item_id }}</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if task.clean_description or task.description %}
+        <div class="mb-3">
+            <h6 class="text-muted">Description</h6>
+            <div class="border rounded p-3 bg-light" id="taskDescription">
+                {% if task.clean_description %}
+                    {{ task.clean_description | replace('\n', '<br>') | safe }}
+                {% else %}
+                    {{ task.description | replace('\n', '<br>') | safe }}
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endmacro %}
+
+<!-- Related opportunities table -->
+{% macro related_opportunities_table(opportunities) %}
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-handshake me-2 text-primary"></i>Newly Created Opportunities
+        </h5>
+        <small class="text-muted">Opportunities created during this PDF processing session</small>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm table-hover" id="opportunitiesTable">
+                <thead class="table-light">
+                    <tr>
+                        <th>Request Number</th>
+                        <th>NSN</th>
+                        <th>Quantity</th>
+                        <th>Buyer</th>
+                        <th>Close Date</th>
+                        <th>Stage</th>
+                        <th class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for opp in opportunities %}
+                    <tr ondblclick="viewOpportunity({{ opp.id }})" style="cursor: pointer;">
+                        <td>
+                            <code class="small">{{ opp.name or opp.request_number or opp.solicitation_number or 'N/A' }}</code>
+                        </td>
+                        <td>
+                            <span class="small">{{ opp.product_nsn or 'N/A' }}</span>
+                        </td>
+                        <td>
+                            <span class="fw-bold">{{ opp.quantity or 'N/A' }}</span>
+                            {% if opp.unit %}
+                            <small class="text-muted">{{ opp.unit }}</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="text-truncate" style="max-width: 120px;" title="{{ opp.buyer or 'Unknown' }}">
+                                {{ opp.buyer or 'Unknown' }}
+                            </div>
+                        </td>
+                        <td>
+                            {% if opp.close_date %}
+                            <small>{{ opp.close_date | date }}</small>
+                            {% else %}
+                            <span class="text-muted">Not set</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge bg-{{ 'primary' if opp.stage == 'Prospecting' else 'info' if opp.stage == 'Qualification' else 'warning' if opp.stage == 'Proposal' else 'success' if opp.stage == 'Won' else 'danger' if opp.stage == 'Lost' else 'secondary' }}">
+                                {{ opp.stage or 'Unknown' }}
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <div class="btn-group btn-group-sm">
+                                <button type="button" class="btn btn-outline-primary" onclick="viewOpportunity({{ opp.id }})" title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" onclick="editOpportunity({{ opp.id }})" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-danger" onclick="deleteOpportunity({{ opp.id }})" title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="mt-3">
+            <div class="row text-center">
+                <div class="col-3">
+                    <h6 class="text-primary mb-1">{{ opportunities|length }}</h6>
+                    <small class="text-muted">Total Created</small>
+                </div>
+                <div class="col-3">
+                    <h6 class="text-success mb-1">{{ opportunities|selectattr('stage', 'equalto', 'Qualification')|list|length }}</h6>
+                    <small class="text-muted">In Qualification</small>
+                </div>
+                <div class="col-3">
+                    <h6 class="text-info mb-1">{{ opportunities|selectattr('stage', 'equalto', 'Proposal')|list|length }}</h6>
+                    <small class="text-muted">In Proposal</small>
+                </div>
+                <div class="col-3">
+                    <h6 class="text-warning mb-1">{{ opportunities|selectattr('stage', 'equalto', 'Prospecting')|list|length }}</h6>
+                    <small class="text-muted">New/Prospecting</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
+<!-- Processing data report -->
+{% macro processing_data_report(processing_data) %}
+<div class="card mb-4">
+    <div class="card-header d-flex align-items-center">
+        <div class="bg-success bg-opacity-10 rounded-circle p-2 me-3">
+            <i class="fas fa-chart-bar text-success"></i>
+        </div>
+        <div>
+            <h5 class="card-title mb-0">Records Created During Processing</h5>
+            <small class="text-muted">Double-click any record to view details</small>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <!-- Opportunities -->
+            <div class="col-md-6 mb-4">
+                <div class="d-flex align-items-center mb-2">
+                    <i class="fas fa-handshake text-primary me-2"></i>
+                    <h6 class="text-primary mb-0">Opportunities ({{ processing_data.created_opportunities|length if processing_data.created_opportunities else 0 }})</h6>
+                </div>
+                {% if processing_data.created_opportunities %}
+                    {% for opp in processing_data.created_opportunities %}
+                    <div class="mb-2 p-2 bg-light rounded small" ondblclick="viewOpportunity({{ opp.id }})" style="cursor: pointer;" title="Double-click to view details">
+                        <div class="fw-bold">{{ opp.request_number or 'Unknown' }}</div>
+                        <div class="text-muted">NSN: {{ opp.nsn or 'N/A' }}</div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-muted small">• None</div>
+                {% endif %}
+            </div>
+            
+            <!-- Contacts -->
+            <div class="col-md-6 mb-4">
+                <div class="d-flex align-items-center mb-2">
+                    <i class="fas fa-user text-success me-2"></i>
+                    <h6 class="text-success mb-0">Contacts ({{ processing_data.created_contacts|length if processing_data.created_contacts else 0 }})</h6>
+                </div>
+                {% if processing_data.created_contacts %}
+                    {% for contact in processing_data.created_contacts %}
+                    <div class="mb-2 p-2 bg-light rounded small" ondblclick="viewContact({{ contact.id }})" style="cursor: pointer;" title="Double-click to view details">
+                        <div class="fw-bold">{{ contact.name or 'Unknown' }}</div>
+                        <div class="text-muted">{{ contact.email or 'No email' }}</div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-muted small">• None</div>
+                {% endif %}
+            </div>
+            
+            <!-- Accounts -->
+            <div class="col-md-6 mb-4">
+                <div class="d-flex align-items-center mb-2">
+                    <i class="fas fa-building text-info me-2"></i>
+                    <h6 class="text-info mb-0">Accounts ({{ processing_data.created_accounts|length if processing_data.created_accounts else 0 }})</h6>
+                </div>
+                {% if processing_data.created_accounts %}
+                    {% for account in processing_data.created_accounts %}
+                    <div class="mb-2 p-2 bg-light rounded small" ondblclick="viewAccount({{ account.id }})" style="cursor: pointer;" title="Double-click to view details">
+                        <div class="fw-bold">{{ account.name or 'Unknown' }}</div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-muted small">• None</div>
+                {% endif %}
+            </div>
+            
+            <!-- Products -->
+            <div class="col-md-6 mb-4">
+                <div class="d-flex align-items-center mb-2">
+                    <i class="fas fa-box text-warning me-2"></i>
+                    <h6 class="text-warning mb-0">Products ({{ processing_data.created_products|length if processing_data.created_products else 0 }})</h6>
+                </div>
+                {% if processing_data.created_products %}
+                    {% for product in processing_data.created_products %}
+                    <div class="mb-2 p-2 bg-light rounded small" ondblclick="viewProduct({{ product.id }})" style="cursor: pointer;" title="Double-click to view details">
+                        <div class="fw-bold">NSN: {{ product.nsn or 'Unknown NSN' }}</div>
+                        <div class="text-muted">{{ product.name or 'Unknown Product' }}</div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-muted small">• None</div>
+                {% endif %}
+            </div>
+            
+            <!-- QPLs -->
+            <div class="col-md-6 mb-4">
+                <div class="d-flex align-items-center mb-2">
+                    <i class="fas fa-list-alt text-purple me-2"></i>
+                    <h6 class="text-purple mb-0">QPLs ({{ processing_data.created_qpls|length if processing_data.created_qpls else 0 }})</h6>
+                </div>
+                {% if processing_data.created_qpls %}
+                    {% for qpl in processing_data.created_qpls %}
+                    <div class="mb-2 p-2 bg-light rounded small" ondblclick="viewQPL({{ qpl.id }})" style="cursor: pointer;" title="Double-click to view details">
+                        <div class="fw-bold">{{ qpl.name or 'Unknown QPL' }}</div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-muted small">• None</div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Records Updated Section -->
+        <div class="border-top pt-3">
+            <div class="d-flex align-items-center mb-2">
+                <i class="fas fa-edit text-secondary me-2"></i>
+                <h6 class="text-secondary mb-0">Records Updated During Processing</h6>
+            </div>
+            {% if processing_data.updated_records %}
+                <div class="text-muted">Updated {{ processing_data.updated_records|length }} existing records</div>
+            {% else %}
+                <div class="text-muted">No records updated</div>
+            {% endif %}
+        </div>
+        
+        <!-- Processing Summary -->
+        <div class="border-top pt-3 mt-3">
+            <h6 class="mb-2">Processing Summary:</h6>
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="text-center p-2 bg-primary bg-opacity-10 rounded">
+                        <div class="h4 text-primary mb-0">{{ processing_data.processed or 0 }}</div>
+                        <small class="text-muted">Processed</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center p-2 bg-success bg-opacity-10 rounded">
+                        {% set total_created = (processing_data.created_opportunities|length if processing_data.created_opportunities else 0) + (processing_data.created_contacts|length if processing_data.created_contacts else 0) + (processing_data.created_accounts|length if processing_data.created_accounts else 0) + (processing_data.created_products|length if processing_data.created_products else 0) + (processing_data.created_qpls|length if processing_data.created_qpls else 0) %}
+                        <div class="h4 text-success mb-0">{{ total_created }}</div>
+                        <small class="text-muted">Created</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center p-2 bg-warning bg-opacity-10 rounded">
+                        <div class="h4 text-warning mb-0">{{ processing_data.skipped or 0 }}</div>
+                        <small class="text-muted">Skipped</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center p-2 bg-danger bg-opacity-10 rounded">
+                        <div class="h4 text-danger mb-0">{{ processing_data.errors|length if processing_data.errors else 0 }}</div>
+                        <small class="text-muted">Errors</small>
+                    </div>
+                </div>
+            </div>
+            
+            {% if processing_data.errors %}
+            <div class="mt-3">
+                <h6 class="text-danger">Errors Encountered:</h6>
+                {% for error in processing_data.errors %}
+                <div class="alert alert-danger small mb-1">• {{ error }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
+<!-- Processing report text -->
+{% macro processing_report_card(processing_report) %}
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-file-alt me-2 text-info"></i>Processing Report
+        </h5>
+        <small class="text-muted">Detailed report from PDF processing operation</small>
+    </div>
+    <div class="card-body">
+        <div class="bg-light p-3 rounded">
+            <pre class="mb-0 small">{{ processing_report }}</pre>
+        </div>
+    </div>
+</div>
+{% endmacro %}
+{# ========== TASK LIST PAGE MACROS ========== #}
+{# These macros are for the tasks listing page #}
+
+{# Consolidated macros for tasks page #}
+{% from 'macros/common_macros.html' import empty_state_card %}
+
+{# Tasks Page Header Macro #}
+{% macro tasks_page_header() %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1>Tasks</h1>
+        <p class="text-muted mb-0">Track and manage work items across the organization</p>
+    </div>
+    <div>
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addTaskModal">
+            <i class="fas fa-plus me-2"></i>
+            Add Task
+        </button>
+    </div>
+</div>
+{% endmacro %}
+
+{# Task Status Lifecycle Bar Macro #}
+{% macro task_lifecycle_bar(stats) %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-project-diagram me-2"></i>
+                    Task Status Lifecycle
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col">
+                        <div class="lifecycle-step">
+                            <a href="/tasks?status=Not%20Started" class="text-decoration-none">
+                                <div class="lifecycle-circle bg-secondary">
+                                    <i class="fas fa-pause"></i>
+                                </div>
+                                <div class="lifecycle-label">Not Started</div>
+                                <div class="lifecycle-count">{{ stats.not_started if stats else 0 }}</div>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="lifecycle-arrow">
+                            <i class="fas fa-arrow-right text-muted"></i>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="lifecycle-step">
+                            <a href="/tasks?status=In%20Progress" class="text-decoration-none">
+                                <div class="lifecycle-circle bg-primary">
+                                    <i class="fas fa-play"></i>
+                                </div>
+                                <div class="lifecycle-label">In Progress</div>
+                                <div class="lifecycle-count">{{ stats.in_progress if stats else 0 }}</div>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="lifecycle-arrow">
+                            <i class="fas fa-arrow-right text-muted"></i>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="lifecycle-step">
+                            <a href="/tasks?status=Waiting" class="text-decoration-none">
+                                <div class="lifecycle-circle bg-warning">
+                                    <i class="fas fa-clock"></i>
+                                </div>
+                                <div class="lifecycle-label">Waiting</div>
+                                <div class="lifecycle-count">{{ stats.waiting if stats else 0 }}</div>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="lifecycle-arrow">
+                            <i class="fas fa-arrow-right text-muted"></i>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="lifecycle-step">
+                            <a href="/tasks?status=Deferred" class="text-decoration-none">
+                                <div class="lifecycle-circle bg-info">
+                                    <i class="fas fa-calendar-alt"></i>
+                                </div>
+                                <div class="lifecycle-label">Deferred</div>
+                                <div class="lifecycle-count">{{ stats.deferred if stats else 0 }}</div>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="lifecycle-arrow">
+                            <i class="fas fa-arrow-right text-muted"></i>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="lifecycle-step">
+                            <a href="/tasks?status=Completed" class="text-decoration-none">
+                                <div class="lifecycle-circle bg-success">
+                                    <i class="fas fa-check"></i>
+                                </div>
+                                <div class="lifecycle-label">Completed</div>
+                                <div class="lifecycle-count">{{ stats.completed if stats else 0 }}</div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
+{# Task Stats Cards Macro #}
+{% macro task_stats_cards(stats) %}
+<div class="row mb-4">
+    <div class="col-md-2">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="text-muted mb-1">Total Tasks</h6>
+                        <h3 class="mb-0">{{ stats.total_tasks if stats else 0 }}</h3>
+                    </div>
+                    <div class="text-primary">
+                        <i class="fas fa-tasks fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="text-muted mb-1">Overdue</h6>
+                        <h3 class="mb-0 text-danger">{{ stats.overdue if stats else 0 }}</h3>
+                    </div>
+                    <div class="text-danger">
+                        <i class="fas fa-exclamation-triangle fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="text-muted mb-1">Due Today</h6>
+                        <h3 class="mb-0 text-warning">{{ stats.due_today if stats else 0 }}</h3>
+                    </div>
+                    <div class="text-warning">
+                        <i class="fas fa-calendar-day fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="text-muted mb-1">In Progress</h6>
+                        <h3 class="mb-0 text-info">{{ stats.in_progress if stats else 0 }}</h3>
+                    </div>
+                    <div class="text-info">
+                        <i class="fas fa-play fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="text-muted mb-1">Completed</h6>
+                        <h3 class="mb-0 text-success">{{ stats.completed if stats else 0 }}</h3>
+                    </div>
+                    <div class="text-success">
+                        <i class="fas fa-check fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="text-muted mb-1">High Priority</h6>
+                        <h3 class="mb-0 text-danger">{{ stats.high_priority if stats else 0 }}</h3>
+                    </div>
+                    <div class="text-danger">
+                        <i class="fas fa-flag fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
+{# Task Search and Filters Macro #}
+{% macro task_search_filters(status='', priority='', due_date_range='', owner='', search='') %}
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-2">
+                <label for="status" class="form-label">Status</label>
+                <select class="form-select" id="status" name="status">
+                    <option value="">All Status</option>
+                    <option value="Not Started" {{ 'selected' if status == 'Not Started' }}>Not Started</option>
+                    <option value="In Progress" {{ 'selected' if status == 'In Progress' }}>In Progress</option>
+                    <option value="Waiting" {{ 'selected' if status == 'Waiting' }}>Waiting</option>
+                    <option value="Deferred" {{ 'selected' if status == 'Deferred' }}>Deferred</option>
+                    <option value="Completed" {{ 'selected' if status == 'Completed' }}>Completed</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="priority" class="form-label">Priority</label>
+                <select class="form-select" id="priority" name="priority">
+                    <option value="">All Priorities</option>
+                    <option value="High" {{ 'selected' if priority == 'High' }}>High</option>
+                    <option value="Medium" {{ 'selected' if priority == 'Medium' }}>Medium</option>
+                    <option value="Low" {{ 'selected' if priority == 'Low' }}>Low</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="due_date_range" class="form-label">Due Date</label>
+                <select class="form-select" id="due_date_range" name="due_date_range">
+                    <option value="">All Dates</option>
+                    <option value="overdue" {{ 'selected' if due_date_range == 'overdue' }}>Overdue</option>
+                    <option value="today" {{ 'selected' if due_date_range == 'today' }}>Due Today</option>
+                    <option value="this_week" {{ 'selected' if due_date_range == 'this_week' }}>This Week</option>
+                    <option value="next_week" {{ 'selected' if due_date_range == 'next_week' }}>Next Week</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="owner" class="form-label">Owner</label>
+                <input type="text" class="form-control" id="owner" name="owner" value="{{ owner }}" placeholder="Search by owner...">
+            </div>
+            <div class="col-md-2">
+                <label for="search" class="form-label">Search</label>
+                <input type="text" class="form-control" id="search" name="search" value="{{ search }}" placeholder="Search title/description...">
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary me-2">
+                    <i class="fas fa-filter me-1"></i>
+                    Filter
+                </button>
+                <a href="{{ url_for('tasks') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times me-1"></i>
+                    Clear
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endmacro %}
+
+{# Tasks Table Macro #}
+{% macro tasks_table(tasks, today) %}
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Task</th>
+                        <th>Status</th>
+                        <th>Due Date</th>
+                        <th>Priority</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for task in tasks %}
+                    <tr class="{{ 'table-danger' if task.past_due else 'table-warning' if task.due_date == today else '' }}" 
+                        style="cursor: pointer;" 
+                        ondblclick="viewTaskDetail({{ task.id }})"
+                        title="Double-click to view details">
+                        
+                        <!-- Task -->
+                        <td>
+                            <div>
+                                <strong>{{ task.subject }}</strong>
+                                {% if task.description %}
+                                    <br><small class="text-muted">{{ (task.description or 'No description')[:100] }}{{ '...' if (task.description or '')|length > 100 else '' }}</small>
+                                {% endif %}
+                            </div>
+                        </td>
+                        
+                        <!-- Status -->
+                        <td>
+                            <span class="badge bg-{{ 'secondary' if task.status == 'Not Started' else 'primary' if task.status == 'In Progress' else 'warning' if task.status == 'Waiting' else 'info' if task.status == 'Deferred' else 'success' }}">
+                                {{ task.status }}
+                            </span>
+                        </td>
+                        
+                        <!-- Due Date -->
+                        <td>{{ task.due_date or '' }}</td>
+                        
+                        <!-- Priority -->
+                        <td>
+                            <span class="badge bg-{{ 'danger' if task.priority == 'High' else 'warning' if task.priority == 'Medium' else 'secondary' }}">
+                                {{ task.priority }}
+                            </span>
+                        </td>
+                        
+                        <!-- Actions -->
+                        <td>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="viewTaskDetail({{ task.id }})" title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="editTask({{ task.id }})" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-danger btn-sm" onclick="deleteTask({{ task.id }})" title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if pagination %}{% include 'pagination.html' %}{% endif %}
+    </div>
+</div>
+{% endmacro %}
+
+{# Tasks Empty State Macro #}
+{# Tasks Empty State using common macro #}
+{% macro tasks_empty_state() %}
+{{ empty_state_card('tasks', 'No Tasks Found', 'No tasks match your current filters or there are no tasks yet.') }}
+{% endmacro %}
+
+{# Add Task Modal Macro #}
+{% macro add_task_modal() %}
+<div class="modal fade" id="addTaskModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Task</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addTaskForm">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="mb-3">
+                                <label for="subject" class="form-label">Task Subject *</label>
+                                <input type="text" class="form-control" id="subject" name="subject" required placeholder="Enter task subject">
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="mb-3">
+                                <label for="task_status" class="form-label">Status</label>
+                                <select class="form-select" id="task_status" name="status">
+                                    <option value="Not Started" selected>Not Started</option>
+                                    <option value="In Progress">In Progress</option>
+                                    <option value="Waiting">Waiting</option>
+                                    <option value="Deferred">Deferred</option>
+                                    <option value="Completed">Completed</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="mb-3">
+                                <label for="task_priority" class="form-label">Priority</label>
+                                <select class="form-select" id="task_priority" name="priority">
+                                    <option value="Medium" selected>Medium</option>
+                                    <option value="High">High</option>
+                                    <option value="Low">Low</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="work_date" class="form-label">Work Date</label>
+                                <input type="date" class="form-control" id="work_date" name="work_date">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="due_date" class="form-label">Due Date</label>
+                                <input type="date" class="form-control" id="due_date" name="due_date">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="owner" class="form-label">Owner</label>
+                                <input type="text" class="form-control" id="owner" name="owner" placeholder="Task owner">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="time_taken" class="form-label">Time (minutes)</label>
+                                <input type="number" class="form-control" id="time_taken" name="time_taken" placeholder="0">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="parent_item_type" class="form-label">Parent Item Type</label>
+                                <select class="form-select" id="parent_item_type" name="parent_item_type">
+                                    <option value="">None</option>
+                                    <option value="Account">Account</option>
+                                    <option value="Contact">Contact</option>
+                                    <option value="Opportunity">Opportunity</option>
+                                    <option value="Product">Product</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="parent_item_id" class="form-label">Parent Item ID</label>
+                                <input type="number" class="form-control" id="parent_item_id" name="parent_item_id" placeholder="ID of parent item">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="3" placeholder="Detailed task description"></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="assigned_to" class="form-label">Assigned To</label>
+                        <input type="text" class="form-control" id="assigned_to" name="assigned_to" placeholder="Task assignee">
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="contact_id" class="form-label">Contact</label>
+                                <select class="form-select" id="contact_id" name="contact_id">
+                                    <option value="">Select Contact</option>
+                                    <!-- Contacts will be loaded via JavaScript -->
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="account_id" class="form-label">Account</label>
+                                <select class="form-select" id="account_id" name="account_id">
+                                    <option value="">Select Account</option>
+                                    <!-- Accounts will be loaded via JavaScript -->
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="opportunity_id" class="form-label">Opportunity</label>
+                                <select class="form-select" id="opportunity_id" name="opportunity_id">
+                                    <option value="">Select Opportunity</option>
+                                    <!-- Opportunities will be loaded via JavaScript -->
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="quote_id" class="form-label">Quote</label>
+                                <select class="form-select" id="quote_id" name="quote_id">
+                                    <option value="">Select Quote</option>
+                                    <!-- Quotes will be loaded via JavaScript -->
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveTask()">Save Task</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
+{# Tasks Page Styles Macro #}
+{% macro tasks_styles() %}
+<style>
+/* Force dropdown to appear above everything */
+.table-responsive {
+    overflow: visible !important;
+    position: static !important;
+}
+
+.table-responsive .dropdown {
+    position: static !important;
+}
+
+.table-responsive .dropdown-menu {
+    position: absolute !important;
+    z-index: 99999 !important;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+    background: white !important;
+    border: 1px solid #dee2e6 !important;
+}
+
+/* Ensure table cells don't clip content */
+.table-responsive td:last-child {
+    position: relative;
+    overflow: visible !important;
+}
+
+/* Ensure table maintains horizontal scroll when needed */
+.table-responsive table {
+    min-width: 800px;
+}
+
+/* Popper.js override */
+.dropdown-menu[data-popper-placement] {
+    position: absolute !important;
+    z-index: 99999 !important;
+}
+
+/* Task Lifecycle Bar Styles */
+.lifecycle-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.lifecycle-step a {
+    text-decoration: none !important;
+    color: inherit;
+}
+
+.lifecycle-step a:hover .lifecycle-circle {
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.lifecycle-circle {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 24px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.lifecycle-label {
+    font-weight: 600;
+    font-size: 14px;
+    color: #495057;
+    margin-top: 5px;
+}
+
+.lifecycle-count {
+    font-weight: bold;
+    font-size: 18px;
+    color: #212529;
+    background: #f8f9fa;
+    padding: 4px 12px;
+    border-radius: 15px;
+    border: 2px solid #e9ecef;
+    transition: all 0.3s ease;
+}
+
+.lifecycle-step a:hover .lifecycle-count {
+    background: #e9ecef;
+    border-color: #dee2e6;
+}
+
+.lifecycle-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 60px;
+    font-size: 20px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .lifecycle-circle {
+        width: 45px;
+        height: 45px;
+        font-size: 18px;
+    }
+    
+    .lifecycle-label {
+        font-size: 12px;
+    }
+    
+    .lifecycle-count {
+        font-size: 14px;
+        padding: 2px 8px;
+    }
+    
+    .lifecycle-arrow {
+        font-size: 16px;
+        height: 45px;
+    }
+}
+</style>
+{% endmacro %}

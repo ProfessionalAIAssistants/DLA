@@ -1863,7 +1863,63 @@ def interaction_detail(interaction_id):
         if not interaction:
             return render_template('error.html', error="Interaction not found"), 404
         
-        return render_template('interaction_detail.html', interaction=interaction)
+        # Get related data
+        related_interactions = []
+        related_tasks = []
+        attachments = []
+        
+        # Get follow-up interactions (interactions that reference this one)
+        try:
+            # Look for follow-ups based on subject patterns or related_to field if exists
+            all_interactions = crm_data.get_interactions({})
+            related_interactions = [i for i in all_interactions 
+                                  if i.get('subject', '').lower().find(f'follow-up') != -1 
+                                  and i.get('id') != interaction_id][:10]  # Limit to 10
+        except Exception as e:
+            print(f"Error loading related interactions: {e}")
+        
+        # Get related tasks
+        try:
+            # Get tasks that mention this interaction or are related to the same contact/opportunity
+            contact_id = interaction.get('contact_id')
+            opportunity_id = interaction.get('opportunity_id')
+            project_id = interaction.get('project_id')
+            
+            if contact_id:
+                contact_tasks = crm_data.get_tasks_for_contact(contact_id)
+                related_tasks.extend(contact_tasks)
+            
+            if opportunity_id:
+                opportunity_tasks = crm_data.get_tasks_by_parent('Opportunity', opportunity_id)
+                related_tasks.extend(opportunity_tasks)
+                
+            if project_id:
+                project_tasks = crm_data.get_tasks_by_parent('Project', project_id)
+                related_tasks.extend(project_tasks)
+            
+            # Remove duplicates and limit
+            tasks_dict = {task['id']: dict(task) for task in related_tasks}
+            related_tasks = list(tasks_dict.values())[:10]
+            
+        except Exception as e:
+            print(f"Error loading related tasks: {e}")
+            related_tasks = []
+        
+        # Get file attachments (if implemented in the database)
+        try:
+            # Check if attachments exist in the interaction record
+            if interaction.get('attachments'):
+                import json
+                attachments = json.loads(interaction['attachments']) if isinstance(interaction['attachments'], str) else interaction['attachments']
+        except Exception as e:
+            print(f"Error loading attachments: {e}")
+            attachments = []
+        
+        return render_template('interaction_detail.html', 
+                             interaction=interaction,
+                             related_interactions=related_interactions,
+                             related_tasks=related_tasks,
+                             attachments=attachments)
     except Exception as e:
         return render_template('error.html', error=str(e)), 500
 

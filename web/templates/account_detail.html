@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from 'macros/account_macros.html' import account_type_badge, quick_stats_card, account_info_card, edit_account_modal %}
+{% from 'macros/account_macros.html' import account_type_badge, quick_stats_card, account_info_card, edit_account_modal, add_contact_modal, add_relationship_modal %}
 
 {% block title %}{{ account.name }} - CDE Prosperity{% endblock %}
 
@@ -15,7 +15,7 @@
                 <i class="fas fa-edit me-1"></i>
                 Edit Account
             </button>
-            <button type="button" class="btn btn-sm btn-outline-secondary">
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="showAddContactModal()">
                 <i class="fas fa-plus me-1"></i>
                 Add Contact
             </button>
@@ -210,7 +210,7 @@
                 <h5 class="card-title mb-0">
                     <i class="fas fa-users me-2"></i>Contacts ({{ contacts|length }})
                 </h5>
-                <button type="button" class="btn btn-sm btn-primary">
+                <button type="button" class="btn btn-sm btn-primary" onclick="showAddContactModal()">
                     <i class="fas fa-plus me-1"></i>Add Contact
                 </button>
             </div>
@@ -267,7 +267,7 @@
                     <i class="fas fa-users fa-2x text-muted mb-3"></i>
                     <h6 class="text-muted">No Contacts</h6>
                     <p class="text-muted">No contacts have been added to this account yet.</p>
-                    <button type="button" class="btn btn-primary" onclick="window.location.href='/contacts?account={{ account.id }}#add'">
+                    <button type="button" class="btn btn-primary" onclick="showAddContactModal()">
                         <i class="fas fa-plus me-1"></i>Add First Contact
                     </button>
                 </div>
@@ -655,7 +655,9 @@
 </div>
 
 <!-- Modals -->
-{{ edit_account_modal() }}
+{{ edit_account_modal(account.id) }}
+{{ add_contact_modal(account.id) }}
+{{ add_relationship_modal(account) }}
 
 {% endblock %}
 
@@ -668,242 +670,83 @@
 <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
 <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
 
-<!-- Add Relationship Modal -->
-<div class="modal fade" id="addRelationshipModal" tabindex="-1" aria-labelledby="addRelationshipModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="addRelationshipModalLabel">
-                    {% if account.type == 'QPL' %}Add Approved Vendor{% else %}Add QPL Manufacturer{% endif %}
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <form id="addRelationshipForm">
-                    <div class="mb-3">
-                        <label for="relationshipAccount" class="form-label">
-                            {% if account.type == 'QPL' %}Select Vendor:{% else %}Select QPL Manufacturer:{% endif %}
-                        </label>
-                        <select class="form-select" id="relationshipAccount" name="relationshipAccount" onchange="toggleNewAccountForm()">
-                            <option value="">Choose...</option>
-                            <option value="new">+ Create New {% if account.type == 'QPL' %}Vendor{% else %}QPL Manufacturer{% endif %}</option>
-                        </select>
-                    </div>
-                    
-                    <!-- New Account Form (hidden by default) -->
-                    <div id="newAccountForm" style="display: none;">
-                        <div class="border-top pt-3 mb-3">
-                            <h6>Create New {% if account.type == 'QPL' %}Vendor{% else %}QPL Manufacturer{% endif %}</h6>
-                            <div class="mb-3">
-                                <label for="newAccountName" class="form-label">Account Name *</label>
-                                <input type="text" class="form-control" id="newAccountName" name="newAccountName" required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="newAccountLocation" class="form-label">Location</label>
-                                <input type="text" class="form-control" id="newAccountLocation" name="newAccountLocation">
-                            </div>
-                            <div class="mb-3">
-                                <label for="newAccountEmail" class="form-label">Email</label>
-                                <input type="email" class="form-control" id="newAccountEmail" name="newAccountEmail">
-                            </div>
-                            {% if account.type != 'QPL' %}
-                            <div class="mb-3">
-                                <label for="newAccountCage" class="form-label">CAGE Code</label>
-                                <input type="text" class="form-control" id="newAccountCage" name="newAccountCage" maxlength="5">
-                            </div>
-                            {% endif %}
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label for="relationshipNotes" class="form-label">Notes (Optional)</label>
-                        <textarea class="form-control" id="relationshipNotes" name="relationshipNotes" rows="3" 
-                                  placeholder="Add any notes about this relationship..."></textarea>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="addRelationship()">Add Relationship</button>
-            </div>
-        </div>
-    </div>
-</div>
+<!-- Load CRM Form Utils -->
+<script src="{{ url_for('static', filename='js/crm-form-utils.js') }}"></script>
 
-<!-- Load account detail JavaScript after jQuery -->
-<script src="{{ url_for('static', filename='js/account_detail.js') }}"></script>
-
-<!-- QPL-Vendor Relationship JavaScript -->
+<!-- Initialize Account Forms -->
 <script>
-function toggleNewAccountForm() {
-    const select = document.getElementById('relationshipAccount');
-    const newAccountForm = document.getElementById('newAccountForm');
-    
-    if (select.value === 'new') {
-        newAccountForm.style.display = 'block';
-        // Remove required attribute from select since we're creating new
-        select.removeAttribute('required');
-    } else {
-        newAccountForm.style.display = 'none';
-        // Clear new account form
-        document.getElementById('newAccountName').value = '';
-        document.getElementById('newAccountLocation').value = '';
-        document.getElementById('newAccountEmail').value = '';
-        const cageField = document.getElementById('newAccountCage');
-        if (cageField) cageField.value = '';
-        // Restore required attribute to select
-        select.setAttribute('required', 'required');
-    }
-}
+// Initialize form handlers
+let accountFormHandler, contactFormHandler, relationshipFormHandler;
 
-function showAddRelationshipModal() {
-    // Load available accounts for relationship
-    const accountType = '{{ account.type }}';
-    const targetType = accountType === 'QPL' ? 'Vendor' : 'QPL';
+// Initialize form handlers when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize account form handler
+    accountFormHandler = new AccountFormHandler('editAccountModal', 'editAccountFormContainer', {{ account.id }});
     
-    fetch(`/api/accounts/${targetType.toLowerCase()}`)
-        .then(response => response.json())
-        .then(data => {
-            const select = document.getElementById('relationshipAccount');
-            select.innerHTML = '<option value="">Choose...</option>';
-            select.innerHTML += `<option value="new">+ Create New ${targetType}</option>`;
-            
-            // Check if data has accounts array
-            const accounts = data.accounts || data;
-            accounts.forEach(account => {
-                const option = document.createElement('option');
-                option.value = account.id;
-                option.textContent = `${account.name} ${account.location ? '(' + account.location + ')' : ''}`;
-                select.appendChild(option);
-            });
-            
-            // Reset form
-            document.getElementById('newAccountForm').style.display = 'none';
-            toggleNewAccountForm();
-            
-            // Show modal
-            new bootstrap.Modal(document.getElementById('addRelationshipModal')).show();
-        })
-        .catch(error => {
-            console.error('Error loading accounts:', error);
-            alert('Error loading available accounts. Please try again.');
+    // Initialize contact form handler
+    contactFormHandler = new ContactFormHandler('addContactModal', 'addContactFormContainer', {{ account.id }});
+    
+    // Initialize relationship form handler  
+    relationshipFormHandler = new RelationshipFormHandler('addRelationshipModal', 'addRelationshipFormContainer', {{ account.id }}, '{{ account.type }}');
+});
+
+// Show edit account modal - override the existing function
+function editAccount(accountId) {
+    console.log('Opening edit account modal for account:', accountId);
+    accountFormHandler.loadParentCompanies().then(() => {
+        accountFormHandler.loadAccountData().then(() => {
+            CRMFormUtils.showModal('editAccountModal');
         });
-}
-
-async function createNewAccount() {
-    const accountType = '{{ account.type }}';
-    const targetType = accountType === 'QPL' ? 'Vendor' : 'QPL';
-    
-    const newAccountData = {
-        name: document.getElementById('newAccountName').value,
-        type: targetType,
-        location: document.getElementById('newAccountLocation').value,
-        email: document.getElementById('newAccountEmail').value
-    };
-    
-    // Add CAGE code for QPL accounts
-    if (targetType === 'QPL') {
-        newAccountData.cage = document.getElementById('newAccountCage').value;
-    }
-    
-    // Validate required fields
-    if (!newAccountData.name) {
-        alert('Account name is required.');
-        return null;
-    }
-    
-    try {
-        const response = await fetch('/api/create_account', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(newAccountData)
-        });
-        
-        const result = await response.json();
-        if (result.success) {
-            return result.account_id;
-        } else {
-            alert('Error creating account: ' + (result.error || 'Unknown error'));
-            return null;
-        }
-    } catch (error) {
-        console.error('Error creating account:', error);
-        alert('Error creating account. Please try again.');
-        return null;
-    }
-}
-
-async function addRelationship() {
-    const accountType = '{{ account.type }}';
-    const currentAccountId = {{ account.id }};
-    let targetAccountId = document.getElementById('relationshipAccount').value;
-    
-    // Handle new account creation
-    if (targetAccountId === 'new') {
-        targetAccountId = await createNewAccount();
-        if (!targetAccountId) {
-            return; // Account creation failed
-        }
-    } else if (!targetAccountId) {
-        alert('Please select an account or create a new one.');
-        return;
-    }
-    
-    // Determine the relationship direction
-    let qplAccountId, vendorAccountId;
-    if (accountType === 'QPL') {
-        qplAccountId = currentAccountId;
-        vendorAccountId = targetAccountId;
-    } else {
-        qplAccountId = targetAccountId;
-        vendorAccountId = currentAccountId;
-    }
-    
-    const data = {
-        qpl_account_id: qplAccountId,
-        vendor_account_id: vendorAccountId
-    };
-    
-    fetch('/api/qpl-vendors', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data)
-    })
-    .then(response => response.json())
-    .then(result => {
-        if (result.success) {
-            // Close modal
-            bootstrap.Modal.getInstance(document.getElementById('addRelationshipModal')).hide();
-            // Reload page to show updated relationships
-            location.reload();
-        } else {
-            alert('Error: ' + (result.error || 'Failed to create relationship'));
-        }
-    })
-    .catch(error => {
-        console.error('Error creating relationship:', error);
-        alert('Error creating relationship. Please try again.');
     });
 }
 
-function removeRelationship(qplAccountId, vendorAccountId) {
+// Show add contact modal
+function showAddContactModal() {
+    console.log('Opening add contact modal');
+    CRMFormUtils.showModal('addContactModal');
+}
+
+// Show add relationship modal
+function showAddRelationshipModal() {
+    console.log('Opening add relationship modal');
+    relationshipFormHandler.loadRelationshipOptions().then(() => {
+        CRMFormUtils.showModal('addRelationshipModal');
+    });
+}
+
+// Save functions
+async function saveAccount() {
+    await accountFormHandler.saveAccount();
+}
+
+async function saveContact() {
+    await contactFormHandler.saveContact();
+}
+
+async function saveRelationship() {
+    await relationshipFormHandler.saveRelationship();
+}
+
+// Toggle new account form in relationship modal
+function toggleNewAccountForm() {
+    relationshipFormHandler.toggleNewAccountForm();
+}
+
+// Legacy functions for existing functionality (keep removeRelationship with updated API)
+function removeRelationship(sourceAccountId, targetAccountId) {
     if (!confirm('Are you sure you want to remove this relationship?')) {
         return;
     }
     
-    fetch(`/api/qpl-vendors/${qplAccountId}/${vendorAccountId}`, {
+    fetch(`/api/account-relationships/${sourceAccountId}/${targetAccountId}`, {
         method: 'DELETE'
     })
     .then(response => response.json())
     .then(result => {
         if (result.success) {
-            // Reload page to show updated relationships
             location.reload();
         } else {
-            alert('Error: ' + (result.error || 'Failed to remove relationship'));
+            alert('Error: ' + (result.message || 'Failed to remove relationship'));
         }
     })
     .catch(error => {
@@ -912,6 +755,9 @@ function removeRelationship(qplAccountId, vendorAccountId) {
     });
 }
 </script>
+
+<!-- Load account detail JavaScript after form handlers -->
+<script src="{{ url_for('static', filename='js/account_detail.js') }}"></script>
 
 <style>
 /* Custom styles for enhanced visual appeal */

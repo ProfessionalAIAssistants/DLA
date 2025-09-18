@@ -1,0 +1,261 @@
+<style>
+/* Enhanced table row styling for double-click functionality */
+.account-row {
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.account-row:hover {
+    background-color: #f8f9fa !important;
+    transform: scale(1.01);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.account-row:active {
+    transform: scale(0.99);
+}
+
+/* Prevent text selection during double-click */
+.account-row {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+/* Allow text selection for links and input fields */
+.account-row a, .account-row input, .account-row textarea {
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
+}
+
+/* Enhanced visual feedback for double-click target */
+.account-row::after {
+    content: '💼 Double-click to view details';
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    transform: translateY(-50%);
+    background: rgba(13, 110, 253, 0.9);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.account-row:hover::after {
+    opacity: 1;
+}
+
+/* Hide the tooltip when hovering over action buttons */
+.account-row:hover .btn-group ~ * .account-row::after {
+    opacity: 0;
+}
+</style>
+
+<script>
+// Handle account creation form
+document.getElementById('createAccountForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData.entries());
+    
+    fetch('/api/create_account', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error creating account');
+    });
+});
+
+function editAccount(accountId) {
+    // Fetch account details and populate edit modal
+    fetch(`/api/accounts/${accountId}`)
+        .then(response => response.json())
+        .then(account => {
+            if (account.error) {
+                alert('Error: ' + account.error);
+                return;
+            }
+            
+            // Populate edit modal fields with actual database fields
+            document.getElementById('editAccountId').value = account.id || '';
+            document.getElementById('editAccountName').value = account.name || '';
+            document.getElementById('editAccountType').value = account.type || '';
+            document.getElementById('editWebsite').value = account.website || '';
+            document.getElementById('editEmail').value = account.email || '';
+            document.getElementById('editLocation').value = account.location || '';
+            document.getElementById('editLinkedin').value = account.linkedin || '';
+            document.getElementById('editParentCo').value = account.parent_co || '';
+            document.getElementById('editCage').value = account.cage || '';
+            document.getElementById('editImage').value = account.image || '';
+            document.getElementById('editVideo').value = account.video || '';
+            document.getElementById('editSummary').value = account.summary || '';
+            document.getElementById('editDetail').value = account.detail || '';
+            
+            // Store account ID for form submission
+            document.getElementById('editAccountForm').dataset.accountId = accountId;
+            
+            // Show the modal
+            new bootstrap.Modal(document.getElementById('editAccountModal')).show();
+        })
+        .catch(error => {
+            console.error('Error fetching account:', error);
+            alert('Error loading account details. Please try again.');
+        });
+}
+
+// Handle edit account form submission
+document.getElementById('editAccountForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const accountId = this.dataset.accountId;
+    const formData = new FormData(this);
+    const data = {};
+    
+    // Convert FormData to JSON, excluding empty values
+    for (let [key, value] of formData.entries()) {
+        if (value !== '') {
+            data[key] = value;
+        }
+    }
+    
+    fetch(`/api/accounts/${accountId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.error) {
+            alert('Error: ' + result.error);
+        } else {
+            alert('Account updated successfully!');
+            bootstrap.Modal.getInstance(document.getElementById('editAccountModal')).hide();
+            location.reload(); // Refresh the page to show updates
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error updating account. Please try again.');
+    });
+});
+
+function deleteAccount(accountId, accountName) {
+    if (confirm(`Are you sure you want to delete the account "${accountName}"? This action cannot be undone.`)) {
+        fetch(`/api/accounts/${accountId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => {
+            return response.json().then(data => {
+                if (response.ok) {
+                    return data;
+                } else {
+                    throw new Error(data.error || data.message || 'Failed to delete account');
+                }
+            });
+        })
+        .then(data => {
+            alert('Account deleted successfully!');
+            location.reload(); // Refresh the page to show updates
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error deleting account: ' + error.message);
+        });
+    }
+}
+
+// Handle URL parameters for pre-populating forms
+document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    // If 'add' parameter is present, show the create modal
+    if (urlParams.get('add') === 'true') {
+        const modal = new bootstrap.Modal(document.getElementById('createAccountModal'));
+        modal.show();
+        
+        // Pre-populate account type if specified
+        const accountType = urlParams.get('type');
+        if (accountType) {
+            const typeSelect = document.getElementById('accountType');
+            if (typeSelect) {
+                typeSelect.value = accountType;
+            }
+        }
+        
+        // Clean up URL parameters
+        const cleanUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, cleanUrl);
+    }
+    
+    // Add double-click functionality to account table rows
+    const accountRows = document.querySelectorAll('.account-row');
+    accountRows.forEach(row => {
+        row.addEventListener('dblclick', function(e) {
+            // Prevent double-click if clicking on action buttons
+            if (e.target.closest('.btn-group') || e.target.closest('.btn')) {
+                return;
+            }
+            
+            const accountId = this.dataset.accountId;
+            if (accountId) {
+                // Add visual feedback
+                this.style.backgroundColor = '#e3f2fd';
+                this.style.transform = 'scale(1.02)';
+                
+                // Show loading indicator
+                const loadingIndicator = document.createElement('div');
+                loadingIndicator.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Opening account details...';
+                loadingIndicator.className = 'alert alert-info position-fixed';
+                loadingIndicator.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 250px;';
+                document.body.appendChild(loadingIndicator);
+                
+                // Navigate to account detail page after a brief delay for visual feedback
+                setTimeout(() => {
+                    window.location.href = `/account/${accountId}`;
+                }, 300);
+            }
+        });
+        
+        // Add click feedback for single clicks too
+        row.addEventListener('click', function(e) {
+            // Prevent single-click feedback if clicking on action buttons or links
+            if (e.target.closest('.btn-group') || e.target.closest('.btn') || e.target.closest('a')) {
+                return;
+            }
+            
+            // Add subtle click feedback
+            this.style.backgroundColor = '#f1f8e9';
+            setTimeout(() => {
+                this.style.backgroundColor = '';
+            }, 200);
+        });
+    });
+});
+</script>

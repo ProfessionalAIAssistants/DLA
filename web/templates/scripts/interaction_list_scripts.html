@@ -1,0 +1,254 @@
+<script>
+let currentInteractionId = null;
+
+// Load contacts and opportunities for dropdowns
+document.addEventListener('DOMContentLoaded', function() {
+    loadContactsAndOpportunities();
+    
+    // Set default datetime to now
+    const now = new Date();
+    const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    document.getElementById('add_interaction_date').value = localDateTime;
+});
+
+function loadContactsAndOpportunities() {
+    // Load contacts
+    fetch('/api/contacts')
+        .then(response => response.json())
+        .then(contacts => {
+            const addContactSelect = document.getElementById('add_contact_id');
+            const editContactSelect = document.getElementById('edit_contact_id');
+            
+            contacts.forEach(contact => {
+                const option = new Option(`${contact.name} (${contact.email})`, contact.id);
+                addContactSelect.add(option.cloneNode(true));
+                editContactSelect.add(option);
+            });
+        })
+        .catch(error => console.error('Error loading contacts:', error));
+    
+    // Load opportunities
+    fetch('/api/opportunities')
+        .then(response => response.json())
+        .then(opportunities => {
+            const addOpportunitySelect = document.getElementById('add_opportunity_id');
+            const editOpportunitySelect = document.getElementById('edit_opportunity_id');
+            
+            opportunities.forEach(opportunity => {
+                const option = new Option(opportunity.name, opportunity.id);
+                addOpportunitySelect.add(option.cloneNode(true));
+                editOpportunitySelect.add(option);
+            });
+        })
+        .catch(error => console.error('Error loading opportunities:', error));
+    
+    // Load projects
+    fetch('/api/projects')
+        .then(response => response.json())
+        .then(projects => {
+            const addProjectSelect = document.getElementById('add_project_id');
+            const editProjectSelect = document.getElementById('edit_project_id');
+            const filterProjectSelect = document.getElementById('project_filter');
+            
+            projects.forEach(project => {
+                const option = new Option(project.name, project.id);
+                if (addProjectSelect) addProjectSelect.add(option.cloneNode(true));
+                if (editProjectSelect) editProjectSelect.add(option.cloneNode(true));
+                if (filterProjectSelect) filterProjectSelect.add(option.cloneNode(true));
+            });
+        })
+        .catch(error => console.error('Error loading projects:', error));
+}
+
+function saveInteraction() {
+    const form = document.getElementById('addInteractionForm');
+    const formData = new FormData(form);
+    
+    // Convert FormData to JSON
+    const data = {};
+    formData.forEach((value, key) => {
+        if (value) data[key] = value;
+    });
+    
+    // Map interaction_date to date for API compatibility
+    if (data.interaction_date) {
+        data.date = data.interaction_date;
+        delete data.interaction_date;
+    }
+    
+    fetch('/api/interactions', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            location.reload();
+        } else {
+            alert('Error saving interaction: ' + result.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error saving interaction');
+    });
+}
+
+function viewInteraction(interactionId) {
+    fetch(`/api/interactions/${interactionId}`)
+        .then(response => response.json())
+        .then(interaction => {
+            let html = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <strong>Type:</strong> ${interaction.type || 'N/A'}<br>
+                        <strong>Direction:</strong> ${interaction.direction || 'N/A'}<br>
+                        <strong>Status:</strong> ${interaction.status || 'N/A'}<br>
+                        <strong>Date/Time:</strong> ${interaction.interaction_date ? new Date(interaction.interaction_date).toLocaleString() : 'N/A'}<br>
+                        <strong>Duration:</strong> ${interaction.duration_minutes ? interaction.duration_minutes + ' minutes' : 'N/A'}<br>
+                        <strong>Location:</strong> ${interaction.location || 'N/A'}
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Contact:</strong> ${interaction.contact_name || 'N/A'}<br>
+                        <strong>Contact Email:</strong> ${interaction.contact_email_addr || 'N/A'}<br>
+                        <strong>Opportunity:</strong> ${interaction.opportunity_name || 'N/A'}<br>
+                        <strong>Account:</strong> ${interaction.account_name || 'N/A'}
+                    </div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-12">
+                        <strong>Subject:</strong><br>
+                        <p>${interaction.subject || 'No subject'}</p>
+                        
+                        <strong>Description/Notes:</strong><br>
+                        <p>${interaction.description || 'No description'}</p>
+                        
+                        <strong>Outcome:</strong><br>
+                        <p>${interaction.outcome || 'No outcome recorded'}</p>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('viewInteractionContent').innerHTML = html;
+            currentInteractionId = interactionId;
+            new bootstrap.Modal(document.getElementById('viewInteractionModal')).show();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error loading interaction details');
+        });
+}
+
+function editInteraction(interactionId) {
+    fetch(`/api/interactions/${interactionId}`)
+        .then(response => response.json())
+        .then(interaction => {
+            // Populate edit form
+            document.getElementById('edit_interaction_id').value = interaction.id;
+            document.getElementById('edit_type').value = interaction.type || '';
+            document.getElementById('edit_direction').value = interaction.direction || '';
+            document.getElementById('edit_status').value = interaction.status || '';
+            document.getElementById('edit_subject').value = interaction.subject || '';
+            document.getElementById('edit_description').value = interaction.description || '';
+            document.getElementById('edit_contact_id').value = interaction.contact_id || '';
+            document.getElementById('edit_opportunity_id').value = interaction.opportunity_id || '';
+            document.getElementById('edit_project_id').value = interaction.project_id || '';
+            document.getElementById('edit_duration_minutes').value = interaction.duration_minutes || '';
+            document.getElementById('edit_location').value = interaction.location || '';
+            document.getElementById('edit_outcome').value = interaction.outcome || '';
+            
+            // Handle datetime
+            if (interaction.interaction_date) {
+                const date = new Date(interaction.interaction_date);
+                const localDateTime = new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+                document.getElementById('edit_interaction_date').value = localDateTime;
+            }
+            
+            currentInteractionId = interactionId;
+            new bootstrap.Modal(document.getElementById('editInteractionModal')).show();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error loading interaction details');
+        });
+}
+
+function editInteractionFromView() {
+    document.querySelector('#viewInteractionModal .btn-close').click();
+    setTimeout(() => editInteraction(currentInteractionId), 300);
+}
+
+function updateInteraction() {
+    const form = document.getElementById('editInteractionForm');
+    const formData = new FormData(form);
+    
+    // Convert FormData to JSON
+    const data = {};
+    formData.forEach((value, key) => {
+        if (value) data[key] = value;
+    });
+    
+    const interactionId = data.id;
+    delete data.id; // Remove id from data to send
+    
+    fetch(`/api/interactions/${interactionId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            location.reload();
+        } else {
+            alert('Error updating interaction: ' + result.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error updating interaction');
+    });
+}
+
+function deleteInteraction(interactionId) {
+    if (confirm('Are you sure you want to delete this interaction?')) {
+        fetch(`/api/interactions/${interactionId}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                location.reload();
+            } else {
+                alert('Error deleting interaction: ' + result.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error deleting interaction');
+        });
+    }
+}
+
+// Auto-open interaction modal if interaction_id is in URL
+document.addEventListener('DOMContentLoaded', function() {
+    // Load dropdown data on page load
+    loadContactsAndOpportunities();
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    const interactionId = urlParams.get('interaction_id');
+    
+    if (interactionId) {
+        // Small delay to ensure page is fully loaded
+        setTimeout(() => {
+            viewInteraction(parseInt(interactionId));
+        }, 500);
+    }
+});
+</script>

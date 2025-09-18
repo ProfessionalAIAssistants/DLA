@@ -1,0 +1,308 @@
+{# Common JavaScript utility functions for all pages #}
+
+{% macro common_ajax_helpers() %}
+<script>
+// Common AJAX utility functions
+const CRMUtils = {
+    // Standard fetch wrapper with error handling
+    async fetchJSON(url, options = {}) {
+        try {
+            const response = await fetch(url, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...options.headers
+                },
+                ...options
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.error('Fetch error:', error);
+            this.showErrorMessage('Network error occurred. Please try again.');
+            throw error;
+        }
+    },
+
+    // Common success/error message display
+    showSuccessMessage(message, duration = 3000) {
+        this.showMessage(message, 'success', duration);
+    },
+
+    showErrorMessage(message, duration = 5000) {
+        this.showMessage(message, 'danger', duration);
+    },
+
+    showWarningMessage(message, duration = 4000) {
+        this.showMessage(message, 'warning', duration);
+    },
+
+    showMessage(message, type = 'info', duration = 3000) {
+        // Create alert element
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+        alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        document.body.appendChild(alertDiv);
+        
+        // Auto-remove after duration
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.remove();
+            }
+        }, duration);
+    },
+
+    // Common form validation
+    validateForm(formElement) {
+        const inputs = formElement.querySelectorAll('input[required], select[required], textarea[required]');
+        let isValid = true;
+        
+        inputs.forEach(input => {
+            if (!input.value.trim()) {
+                input.classList.add('is-invalid');
+                isValid = false;
+            } else {
+                input.classList.remove('is-invalid');
+            }
+        });
+        
+        return isValid;
+    },
+
+    // Common form reset
+    resetForm(formElement) {
+        formElement.reset();
+        formElement.querySelectorAll('.is-invalid, .is-valid').forEach(input => {
+            input.classList.remove('is-invalid', 'is-valid');
+        });
+    },
+
+    // Common confirmation dialog
+    async confirmAction(message, actionName = 'this action') {
+        return confirm(`Are you sure you want to ${actionName}? ${message}`);
+    },
+
+    // Common data loading with spinner
+    async loadWithSpinner(containerId, loadFunction) {
+        const container = document.getElementById(containerId);
+        const originalContent = container.innerHTML;
+        
+        // Show spinner
+        container.innerHTML = `
+            <div class="d-flex justify-content-center p-4">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        `;
+        
+        try {
+            await loadFunction();
+        } catch (error) {
+            container.innerHTML = originalContent;
+            throw error;
+        }
+    },
+
+    // Common duplicate checking with debounce
+    createDuplicateChecker(apiEndpoint, inputElement, alertElement, debounceMs = 500) {
+        let checkTimeout;
+        
+        return function() {
+            const value = inputElement.value.trim();
+            
+            if (!value) {
+                alertElement.style.display = 'none';
+                inputElement.classList.remove('is-invalid');
+                return;
+            }
+            
+            clearTimeout(checkTimeout);
+            checkTimeout = setTimeout(async () => {
+                try {
+                    const result = await CRMUtils.fetchJSON(apiEndpoint, {
+                        method: 'POST',
+                        body: JSON.stringify({ value: value })
+                    });
+                    
+                    if (result.has_duplicates) {
+                        const messages = result.duplicates.map(dup => dup.message).join('; ');
+                        alertElement.querySelector('.duplicate-message').textContent = messages;
+                        alertElement.style.display = 'block';
+                        inputElement.classList.add('is-invalid');
+                    } else {
+                        alertElement.style.display = 'none';
+                        inputElement.classList.remove('is-invalid');
+                    }
+                } catch (error) {
+                    console.error('Duplicate check error:', error);
+                }
+            }, debounceMs);
+        };
+    },
+
+    // Common table row double-click navigation
+    setupTableNavigation(tableSelector, urlCallback) {
+        document.querySelectorAll(`${tableSelector} tbody tr`).forEach(row => {
+            row.style.cursor = 'pointer';
+            row.title = 'Double-click to view details';
+            row.addEventListener('dblclick', function() {
+                const url = urlCallback(this);
+                if (url) {
+                    window.location.href = url;
+                }
+            });
+        });
+    },
+
+    // Common modal handling
+    openModal(modalId) {
+        const modal = new bootstrap.Modal(document.getElementById(modalId));
+        modal.show();
+    },
+
+    closeModal(modalId) {
+        const modal = bootstrap.Modal.getInstance(document.getElementById(modalId));
+        if (modal) {
+            modal.hide();
+        }
+    },
+
+    // Common dropdown population
+    async populateDropdown(selectElement, apiEndpoint, valueField = 'id', textField = 'name') {
+        try {
+            const data = await this.fetchJSON(apiEndpoint);
+            
+            // Clear existing options except first (usually "Select..." option)
+            const firstOption = selectElement.firstElementChild;
+            selectElement.innerHTML = '';
+            if (firstOption) {
+                selectElement.appendChild(firstOption);
+            }
+            
+            // Add new options
+            data.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item[valueField];
+                option.textContent = item[textField];
+                selectElement.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Error populating dropdown:', error);
+        }
+    }
+};
+
+// Make available globally
+window.CRMUtils = CRMUtils;
+</script>
+{% endmacro %}
+
+{% macro common_datatable_setup() %}
+<script>
+// Common DataTable configuration
+const CRMDataTables = {
+    defaultConfig: {
+        responsive: true,
+        pageLength: 25,
+        lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+        language: {
+            search: "Search:",
+            lengthMenu: "Show _MENU_ entries",
+            info: "Showing _START_ to _END_ of _TOTAL_ entries",
+            infoEmpty: "No entries found",
+            infoFiltered: "(filtered from _MAX_ total entries)",
+            zeroRecords: "No matching records found",
+            paginate: {
+                first: "First",
+                last: "Last",
+                next: "Next",
+                previous: "Previous"
+            }
+        },
+        dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>' +
+             '<"row"<"col-sm-12"tr>>' +
+             '<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+        order: [[0, 'desc']] // Default sort by first column descending
+    },
+
+    init(tableSelector, customConfig = {}) {
+        const config = { ...this.defaultConfig, ...customConfig };
+        return $(tableSelector).DataTable(config);
+    }
+};
+
+window.CRMDataTables = CRMDataTables;
+</script>
+{% endmacro %}
+
+{% macro common_form_handlers() %}
+<script>
+// Common form submission handlers
+const CRMForms = {
+    // Standard form submission with AJAX
+    async submitForm(formElement, apiEndpoint, options = {}) {
+        const {
+            method = 'POST',
+            onSuccess = () => window.location.reload(),
+            onError = (error) => CRMUtils.showErrorMessage('Operation failed: ' + error),
+            beforeSubmit = () => true,
+            afterSubmit = () => {}
+        } = options;
+
+        if (!CRMUtils.validateForm(formElement)) {
+            CRMUtils.showWarningMessage('Please fill in all required fields.');
+            return false;
+        }
+
+        if (!beforeSubmit()) {
+            return false;
+        }
+
+        try {
+            const formData = new FormData(formElement);
+            const data = Object.fromEntries(formData.entries());
+            
+            const result = await CRMUtils.fetchJSON(apiEndpoint, {
+                method: method,
+                body: JSON.stringify(data)
+            });
+
+            if (result.success) {
+                CRMUtils.showSuccessMessage(result.message || 'Operation completed successfully');
+                afterSubmit(result);
+                onSuccess(result);
+                return true;
+            } else {
+                onError(result.error || 'Operation failed');
+                return false;
+            }
+        } catch (error) {
+            onError(error.message);
+            return false;
+        }
+    },
+
+    // Setup common form event listeners
+    setupForm(formId, apiEndpoint, options = {}) {
+        const form = document.getElementById(formId);
+        if (!form) return;
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await this.submitForm(form, apiEndpoint, options);
+        });
+    }
+};
+
+window.CRMForms = CRMForms;
+</script>
+{% endmacro %}

@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from 'macros/modal_macros.html' import task_modal %}
 
 {% block title %}{{ opportunity.name }} - CDE Prosperity{% endblock %}
 
@@ -1192,128 +1193,8 @@
     </div>
 </div>
 
-<!-- Add Task Modal -->
-<div class="modal fade" id="addTaskModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    <i class="fas fa-plus-circle me-2"></i>Add New Task
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div id="addTaskFormContainer">
-                    <div class="row">
-                        <div class="col-md-8">
-                            <div class="mb-3">
-                                <label for="taskSubject" class="form-label">Task Subject *</label>
-                                <input type="text" class="form-control" id="taskSubject" name="subject" placeholder="Enter task subject" required>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="taskPriority" class="form-label">Priority</label>
-                                <select class="form-select" id="taskPriority" name="priority">
-                                    <option value="Low">Low</option>
-                                    <option value="Medium" selected>Medium</option>
-                                    <option value="High">High</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="taskStatus" class="form-label">Status</label>
-                                <select class="form-select" id="taskStatus" name="status">
-                                    <option value="Not Started" selected>Not Started</option>
-                                    <option value="In Progress">In Progress</option>
-                                    <option value="Completed">Completed</option>
-                                    <option value="Cancelled">Cancelled</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="taskWorkDate" class="form-label">Work Date</label>
-                                <input type="date" class="form-control" id="taskWorkDate" name="work_date">
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="taskDueDate" class="form-label">Due Date</label>
-                                <input type="date" class="form-control" id="taskDueDate" name="due_date">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-8">
-                            <div class="mb-3">
-                                <label for="taskAssignedTo" class="form-label">Assigned To</label>
-                                <input type="text" class="form-control" id="taskAssignedTo" name="assigned_to" placeholder="Task assignee">
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="taskOwner" class="form-label">Owner</label>
-                                <input type="text" class="form-control" id="taskOwner" name="owner" placeholder="Task owner">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label for="taskDescription" class="form-label">Description</label>
-                        <textarea class="form-control" id="taskDescription" name="description" rows="4" placeholder="Detailed task description"></textarea>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="task_contact_id" class="form-label">Contact</label>
-                                <select class="form-select" id="task_contact_id" name="contact_id">
-                                    <option value="">Select Contact</option>
-                                    <!-- Contacts will be loaded via JavaScript -->
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="task_account_id" class="form-label">Account</label>
-                                <select class="form-select" id="task_account_id" name="account_id">
-                                    <option value="">Select Account</option>
-                                    <!-- Accounts will be loaded via JavaScript -->
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="task_opportunity_id" class="form-label">Opportunity</label>
-                                <select class="form-select" id="task_opportunity_id" name="opportunity_id">
-                                    <option value="">Select Opportunity</option>
-                                    <!-- Opportunities will be loaded via JavaScript -->
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="task_quote_id" class="form-label">Quote</label>
-                                <select class="form-select" id="task_quote_id" name="quote_id">
-                                    <option value="">Select Quote</option>
-                                    <!-- Quotes will be loaded via JavaScript -->
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" id="saveTaskBtn">Add Task</button>
-            </div>
-        </div>
-    </div>
-</div>
+<!-- Add Task Modal - Using Modular Structure -->
+{{ task_modal('addTaskModal', 'Add New Task', opportunity.id) }}
 
 <!-- Email Preview Modal -->
 <div class="modal fade" id="emailPreviewModal" tabindex="-1">
@@ -2653,121 +2534,16 @@ function createTask(opportunityId) {
     modal.show();
 }
 
+/* OLD SAVETASK FUNCTION - REPLACED BY MODULAR VERSION
 function saveTask() {
-    console.log('=== SAVETASK FUNCTION STARTED ===');
-    
-    try {
-        const opportunityId = {{ opportunity.id }};
-        console.log('Opportunity ID:', opportunityId);
-        
-        // Get form values
-        const subject = document.getElementById('taskSubject')?.value || '';
-        const priority = document.getElementById('taskPriority')?.value || 'Medium';
-        const status = document.getElementById('taskStatus')?.value || 'Not Started';
-        const workDate = document.getElementById('taskWorkDate')?.value || '';
-        const dueDate = document.getElementById('taskDueDate')?.value || '';
-        const assignedTo = document.getElementById('taskAssignedTo')?.value || '';
-        const owner = document.getElementById('taskOwner')?.value || '';
-        const description = document.getElementById('taskDescription')?.value || '';
-        
-        console.log('Form values extracted:', { subject, priority, status, workDate, dueDate, assignedTo, owner, description });
-        
-        // Get relationship selections
-        const contactId = document.getElementById('task_contact_id')?.value || '';
-        const accountId = document.getElementById('task_account_id')?.value || '';
-        const opportunityIdSelected = document.getElementById('task_opportunity_id')?.value || '';
-        const quoteId = document.getElementById('task_quote_id')?.value || '';
-        
-        console.log('Relationship selections:', { contactId, accountId, opportunityIdSelected, quoteId });
-        
-        // Validate required fields
-        if (!subject.trim()) {
-            console.error('Subject is required');
-            alert('Subject is required');
-            return false;
-        }
-        
-        // Prepare data - if created from opportunity page, default to this opportunity
-        const taskData = {
-            subject: subject.trim(),
-            description: description.trim() || null,
-            status: status,
-            priority: priority,
-            work_date: workDate || null,
-            due_date: dueDate || null,
-            assigned_to: assignedTo.trim() || null,
-            owner: owner.trim() || null,
-            contact_id: contactId || null,
-            account_id: accountId || null,
-            opportunity_id: opportunityIdSelected || opportunityId, // Default to current opportunity
-            quote_id: quoteId || null
-        };
-        
-        console.log('Creating task with data:', taskData);
-        
-        // Create task via API
-        console.log('About to make fetch request to /api/tasks');
-        fetch('/api/tasks', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(taskData)
-        })
-        .then(response => {
-            console.log('Response received:', response);
-            console.log('Response status:', response.status);
-            console.log('Response ok:', response.ok);
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            console.log('Response data:', data);
-            if (data.success) {
-                console.log('Task created successfully, closing modal');
-                // Close modal
-                const modal = bootstrap.Modal.getInstance(document.getElementById('addTaskModal'));
-                if (modal) {
-                    modal.hide();
-                }
-                
-                // Reset form fields individually
-                document.getElementById('taskSubject').value = '';
-                document.getElementById('taskPriority').value = 'Medium';
-                document.getElementById('taskStatus').value = 'Not Started';
-                document.getElementById('taskWorkDate').value = '';
-                document.getElementById('taskDueDate').value = '';
-                document.getElementById('taskAssignedTo').value = '';
-                document.getElementById('taskOwner').value = '';
-                document.getElementById('taskDescription').value = '';
-                document.getElementById('task_contact_id').value = '';
-                document.getElementById('task_account_id').value = '';
-                document.getElementById('task_opportunity_id').value = '';
-                document.getElementById('task_quote_id').value = '';
-                
-                // Reload page to show new task
-                console.log('Reloading page');
-                location.reload();
-            } else {
-                console.error('Task creation failed:', data);
-                alert('Error creating task: ' + (data.message || 'Unknown error'));
-            }
-        })
-        .catch(error => {
-            console.error('Fetch error:', error);
-            alert('Error creating task. Please try again. Error: ' + error.message);
-        });
-        
-    } catch (error) {
-        console.error('Error in saveTask function:', error);
-        alert('An error occurred while saving the task: ' + error.message);
-    }
-    
-    console.log('=== SAVETASK FUNCTION COMPLETED ===');
-    return false; // Prevent any form submission
-}function completeTask(taskId) {
+    // This function has been replaced by the modular TaskFormHandler
+    // Keeping for reference during migration
+    console.log('=== OLD SAVETASK FUNCTION - DEPRECATED ===');
+    console.log('Please use the new modular TaskFormHandler instead');
+}
+*/
+
+function completeTask(taskId) {
     console.log('completeTask called for task:', taskId);
     
     fetch(`/api/tasks/${taskId}/complete`, {
@@ -2897,41 +2673,33 @@ function loadTaskDropdowns() {
         .catch(error => console.error('Error loading quotes:', error));
 }
 
-// Load vendor emails when page loads
+/* OLD DOMCONTENTLOADED - REPLACED BY MODULAR VERSION
+// Load vendor emails when page loads  
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('=== DOMContentLoaded event fired ===');
-    console.log('Page loaded, starting initialization...');
+    // This has been replaced by the new modular task form initialization below
+    console.log('=== OLD DOMCONTENTLOADED - DEPRECATED ===');
     
     loadVendorEmailsList({{ opportunity.id }});
-    loadTaskDropdowns(); // Load task form dropdowns
+    // loadTaskDropdowns(); // Now handled by modular TaskFormHandler
     
     // Apply dynamic colors to stage and state selects
     updateStageColors();
     updateStateColors();
     
-    // Add event listener for Save Task button
-    const saveTaskBtn = document.getElementById('saveTaskBtn');
-    console.log('Save Task button element:', saveTaskBtn);
-    if (saveTaskBtn) {
-        console.log('Adding click event listener to Save Task button');
-        saveTaskBtn.addEventListener('click', function(event) {
-            console.log('=== SAVE TASK BUTTON CLICKED ===');
-            console.log('Event object:', event);
-            event.preventDefault();
-            event.stopPropagation();
-            event.stopImmediatePropagation();
-            console.log('Event prevented, calling saveTask() in 100ms...');
-            
-            // Add a small delay to ensure we can see the logs
-            setTimeout(function() {
-                saveTask();
-            }, 100);
-            
-            return false; // Extra prevention
-        });
-    } else {
-        console.error('Save Task button not found!');
-    }
+    // Old task button handler - now replaced by modular version
+});
+*/
+
+// Load vendor emails and initialize UI when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('=== DOMContentLoaded event fired ===');
+    console.log('Page loaded, starting initialization...');
+    
+    loadVendorEmailsList({{ opportunity.id }});
+    
+    // Apply dynamic colors to stage and state selects
+    updateStageColors();
+    updateStateColors();
     
     console.log('=== DOMContentLoaded initialization complete ===');
 });
@@ -3067,6 +2835,41 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     });
+});
+</script>
+
+<!-- Include the new CRM Form Utilities -->
+<script src="{{ url_for('static', filename='js/crm-form-utils.js') }}"></script>
+
+<script>
+// Initialize the new modular task form
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('=== INITIALIZING MODULAR TASK FORM ===');
+    
+    // Initialize task form handler
+    const taskHandler = new TaskFormHandler('addTaskModal', 'addTaskModalFormContainer', {{ opportunity.id }});
+    
+    // Load dropdowns when modal is shown
+    document.getElementById('addTaskModal').addEventListener('shown.bs.modal', function() {
+        console.log('Add Task modal shown, loading dropdowns...');
+        taskHandler.loadDropdowns();
+    });
+    
+    // Attach save handler to button
+    const saveBtn = document.getElementById('addTaskModalSaveBtn');
+    if (saveBtn) {
+        console.log('Attaching click handler to save button:', saveBtn);
+        saveBtn.addEventListener('click', function(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            console.log('Save button clicked, calling taskHandler.saveTask()');
+            taskHandler.saveTask();
+        });
+    } else {
+        console.error('Save button not found! Looking for ID: addTaskModalSaveBtn');
+    }
+    
+    console.log('=== MODULAR TASK FORM INITIALIZATION COMPLETE ===');
 });
 </script>
 {% endblock %}

@@ -1,0 +1,242 @@
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('newContactForm');
+    const nameInput = document.getElementById('name');
+    const emailInput = document.getElementById('email');
+    const duplicateAlert = document.getElementById('duplicateAlert');
+    const duplicateMessage = document.getElementById('duplicateMessage');
+    
+    // Real-time duplicate checking
+    let checkTimeout;
+    
+    function checkForDuplicates() {
+        const name = nameInput.value.trim();
+        const email = emailInput.value.trim();
+        
+        if (!name) {
+            duplicateAlert.style.display = 'none';
+            return;
+        }
+        
+        clearTimeout(checkTimeout);
+        checkTimeout = setTimeout(() => {
+            fetch('/api/check_contact_duplicate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    name: name,
+                    email: email
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.has_duplicates) {
+                    const messages = data.duplicates.map(dup => dup.message).join('; ');
+                    duplicateMessage.textContent = messages;
+                    duplicateAlert.style.display = 'block';
+                } else {
+                    duplicateAlert.style.display = 'none';
+                }
+            })
+            .catch(error => {
+                console.error('Error checking duplicates:', error);
+            });
+        }, 500); // Wait 500ms after user stops typing
+    }
+    
+    nameInput.addEventListener('input', checkForDuplicates);
+    emailInput.addEventListener('input', checkForDuplicates);
+    
+    // Form submission
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(form);
+        const contactData = Object.fromEntries(formData.entries());
+        
+        // Remove empty values
+        Object.keys(contactData).forEach(key => {
+            if (!contactData[key]) {
+                delete contactData[key];
+            }
+        });
+        
+        fetch('/api/create_contact', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(contactData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Success - close modal and reload page
+                bootstrap.Modal.getInstance(document.getElementById('newContactModal')).hide();
+                location.reload();
+            } else {
+                // Show error
+                alert('Error creating contact: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error creating contact. Please try again.');
+        });
+    });
+    
+    // Reset form when modal is closed
+    document.getElementById('newContactModal').addEventListener('hidden.bs.modal', function() {
+        form.reset();
+        duplicateAlert.style.display = 'none';
+        // Clear validation states
+        form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+    });
+});
+
+function editContact(contactId) {
+    // Fetch contact details and populate edit modal
+    fetch(`/api/contacts/${contactId}`)
+        .then(response => response.json())
+        .then(contact => {
+            if (contact.error) {
+                alert('Error: ' + contact.error);
+                return;
+            }
+            
+            // Populate edit modal fields - using correct field names from database
+            const nameField = document.getElementById('editName');
+            if (nameField) {
+                nameField.value = `${contact.first_name || ''} ${contact.last_name || ''}`.trim();
+            }
+            
+            const qualityField = document.getElementById('editQuality');
+            if (qualityField) {
+                qualityField.value = contact.quality || '';
+            }
+            
+            const emailField = document.getElementById('editEmail');
+            if (emailField) {
+                emailField.value = contact.email || '';
+            }
+            
+            const phoneField = document.getElementById('editPhone');
+            if (phoneField) {
+                phoneField.value = contact.phone || '';
+            }
+            
+            const titleField = document.getElementById('editTitle');
+            if (titleField) {
+                titleField.value = contact.title || '';
+            }
+            
+            const faxField = document.getElementById('editFax');
+            if (faxField) {
+                faxField.value = contact.fax || '';
+            }
+            
+            const accountField = document.getElementById('editAccountId');
+            if (accountField) {
+                accountField.value = contact.account_id || '';
+            }
+            
+            const statusField = document.getElementById('editStatus');
+            if (statusField) {
+                statusField.value = contact.is_active ? 'Active' : 'Inactive';
+            }
+            
+            const nextCommField = document.getElementById('editNextCommunication');
+            if (nextCommField) {
+                nextCommField.value = contact.next_communication || '';
+            }
+            
+            const frequencyField = document.getElementById('editFrequencyDays');
+            if (frequencyField) {
+                frequencyField.value = contact.frequency_days || '';
+            }
+            
+            const descField = document.getElementById('editDescription');
+            if (descField) {
+                descField.value = contact.description || '';
+            }
+            
+            // Store contact ID for form submission
+            document.getElementById('editContactForm').dataset.contactId = contactId;
+            
+            // Show the modal
+            new bootstrap.Modal(document.getElementById('editContactModal')).show();
+        })
+        .catch(error => {
+            console.error('Error fetching contact:', error);
+            alert('Error loading contact details. Please try again.');
+        });
+}
+
+// Handle edit contact form submission
+document.getElementById('editContactForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const contactId = this.dataset.contactId;
+    const formData = new FormData(this);
+    const data = {};
+    
+    // Convert FormData to JSON, excluding empty values
+    for (let [key, value] of formData.entries()) {
+        if (value !== '') {
+            data[key] = value;
+        }
+    }
+    
+    fetch(`/api/contacts/${contactId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.error) {
+            alert('Error: ' + result.error);
+        } else {
+            alert('Contact updated successfully!');
+            bootstrap.Modal.getInstance(document.getElementById('editContactModal')).hide();
+            location.reload(); // Refresh the page to show updates
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error updating contact. Please try again.');
+    });
+});
+
+function viewContact(contactId) {
+    window.location.href = '/contact/' + contactId;
+}
+
+function deleteContact(contactId) {
+    if (confirm('Are you sure you want to delete this contact? This action cannot be undone.')) {
+        fetch(`/api/contacts/${contactId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                alert('Contact deleted successfully!');
+                location.reload(); // Refresh the page to show updates
+            } else {
+                alert('Error: ' + (result.error || 'Failed to delete contact'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error deleting contact. Please try again.');
+        });
+    }
+}
+</script>

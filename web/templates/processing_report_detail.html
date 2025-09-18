@@ -1,151 +1,24 @@
 {% extends "base.html" %}
-{% from "processing_report_macros.html" import summary_card, badge_with_change, file_table, record_type_card, updated_record_card, card_section %}
+{% from "macros/processing_report_macros.html" import summary_card, badge_with_change, file_table, record_type_card, updated_record_card, card_section, report_header, summary_row, detailed_summary_card, database_changes_card, filter_settings_card %}
 
 {% block title %}Processing Report Details - DLA CRM{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
     <!-- Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h1>
-                <i class="fas fa-file-chart me-3"></i>
-                Processing Report Details
-            </h1>
-            <p class="text-muted mb-0">
-                Report from {{ report.processing_start[:19] | replace('T', ' ') }}
-                {% if report.processing_end %}
-                - {{ report.processing_end[:19] | replace('T', ' ') }}
-                {% endif %}
-            </p>
-        </div>
-        <div>
-            <a href="{{ url_for('processing_reports') }}" class="btn btn-outline-secondary me-2">
-                <i class="fas fa-arrow-left me-2"></i>Back to Reports
-            </a>
-            <button onclick="window.print()" class="btn btn-outline-primary">
-                <i class="fas fa-print me-2"></i>Print Report
-            </button>
-        </div>
-    </div>
+    {{ report_header(report) }}
 
     <!-- Summary Cards -->
-    <div class="row mb-4">
-        {{ summary_card("Files Processed", report.processed or 0, "primary") }}
-        {{ summary_card("Opportunities Created", report.summary.opportunities_created if report.summary else (report.created or 0), "success") }}
-        {{ summary_card("Records Updated", (report.summary.contacts_updated + report.summary.accounts_updated) if report.summary else (report.updated or 0), "info") }}
-        {{ summary_card("Files Skipped", report.skipped or 0, "warning") }}
-        {{ summary_card("Errors", report.errors|length if report.errors else 0, "danger") }}
-        <div class="col-md-2">
-            <div class="card text-center">
-                <div class="card-body">
-                    <h3 class="text-secondary mb-1">
-                        {% if report.processing_start and report.processing_end %}
-                        {{ ((report.processing_end | to_datetime) - (report.processing_start | to_datetime)).total_seconds() | round(1) }}s
-                        {% else %}
-                        -
-                        {% endif %}
-                    </h3>
-                    <small class="text-muted">Processing Time</small>
-                </div>
-            </div>
-        </div>
-    </div>
+    {{ summary_row(report) }}
 
     <!-- Detailed Record Summary -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-chart-bar me-2"></i>Detailed Processing Summary
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        {{ summary_card("Opportunities Created", report.summary.opportunities_created if report.summary else 0, "success") }}
-                        {{ summary_card("Contacts Created", report.summary.contacts_created if report.summary else 0, "success") }}
-                        {{ summary_card("Accounts Created", report.summary.accounts_created if report.summary else 0, "success") }}
-                        {{ summary_card("Products Created", report.summary.products_created if report.summary else 0, "success") }}
-                        {{ summary_card("QPLs Created", report.summary.qpls_created if report.summary else 0, "success") }}
-                        {{ summary_card("Contacts Updated", report.summary.contacts_updated if report.summary else 0, "info") }}
-                        {{ summary_card("Accounts Updated", report.summary.accounts_updated if report.summary else 0, "info") }}
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    {{ detailed_summary_card(report) }}
 
     <!-- Database Changes -->
-    {% if report.database_stats_before and report.database_stats_after %}
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-database me-2"></i>Database Changes
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        {% for table, before_count in report.database_stats_before.items() %}
-                        {% if table != 'error' %}
-                        {% set after_count = report.database_stats_after.get(table, before_count) %}
-                        {% set label = "DLA RFQs" if table == 'rfqs' else table %}
-                        {{ badge_with_change(before_count, after_count, label) }}
-                        {% endif %}
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    {% endif %}
+    {{ database_changes_card(report) }}
 
     <!-- Filter Settings Used -->
-    {% if report.filter_settings %}
-    <div class="row mb-4">
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-filter me-2"></i>Filter Settings Used
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <ul class="list-unstyled mb-0">
-                        <li><strong>Min Delivery Days:</strong> {{ report.filter_settings.min_delivery_days or 'Not set' }}</li>
-                        <li><strong>ISO Required:</strong> {{ report.filter_settings.iso_required or 'ANY' }}</li>
-                        <li><strong>Sampling Required:</strong> {{ report.filter_settings.sampling_required or 'ANY' }}</li>
-                        <li><strong>Inspection Point:</strong> {{ report.filter_settings.inspection_point or 'ANY' }}</li>
-                        <li><strong>Auto Create Opportunities:</strong> {{ 'Yes' if report.filter_settings.auto_create_opportunities else 'No' }}</li>
-                        <li><strong>Move Processed Files:</strong> {{ 'Yes' if report.filter_settings.move_processed_files else 'No' }}</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            {% if report.filter_settings.manufacturer_filter %}
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-industry me-2"></i>Manufacturer Filter
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <ul class="list-unstyled mb-0">
-                        {% for mfr in report.filter_settings.manufacturer_filter.split('\n') %}
-                        {% if mfr.strip() %}
-                        <li>{{ mfr.strip() }}</li>
-                        {% endif %}
-                        {% endfor %}
-                    </ul>
-                </div>
-            </div>
-            {% endif %}
-        </div>
-    </div>
-    {% endif %}
+    {{ filter_settings_card(report) }}
 
     <!-- Processed Files Details -->
     {% if report.processed_files %}
@@ -196,7 +69,23 @@
 </div>
 {% endblock %}
 
-{% block styles %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/processing_report_detail.js') }}"></script>
+<script>
+// Make ProcessingReportJS globally available immediately
+window.ProcessingReportJS = ProcessingReportJS;
+
+// Initialize processing report functionality
+document.addEventListener('DOMContentLoaded', function() {
+    ProcessingReportJS.init('{{ filename }}');
+});
+
+// Ensure record viewing function is globally available for onclick handlers
+window.viewRecord = function(recordType, recordId) {
+    ProcessingReportJS.Records.view(recordType, recordId);
+};
+</script>
+
 <style>
 @media print {
     .btn, .card-header { print-color-adjust: exact; }
@@ -224,14 +113,4 @@
     transform: translateY(0px);
 }
 </style>
-{% endblock %}
-
-{% block scripts %}
-<script src="{{ url_for('static', filename='js/processing_report_detail.js') }}"></script>
-<script>
-// Initialize processing report functionality
-document.addEventListener('DOMContentLoaded', function() {
-    ProcessingReportJS.init('{{ filename }}');
-});
-</script>
 {% endblock %}

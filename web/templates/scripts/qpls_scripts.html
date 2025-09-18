@@ -1,0 +1,541 @@
+<!-- QPL Page JavaScript -->
+<!-- jQuery -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- DataTables -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">
+<script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+
+<script>
+// Initialize DataTables
+$(document).ready(function() {
+    $('#qplsTable').DataTable({
+        "pageLength": 25,
+        "order": [[ 0, "asc" ]],
+        "columnDefs": [
+            { "orderable": false, "targets": -1 }
+        ],
+        "responsive": true,
+        "language": {
+            "search": "Search QPLs:",
+            "lengthMenu": "Show _MENU_ QPLs per page",
+            "info": "Showing _START_ to _END_ of _TOTAL_ QPLs",
+            "infoEmpty": "No QPLs available",
+            "infoFiltered": "(filtered from _MAX_ total QPLs)",
+            "zeroRecords": "No matching QPLs found",
+            "emptyTable": "No QPLs available in table"
+        },
+        "dom": "<'row'<'col-sm-12 col-md-6'l><'col-sm-12 col-md-6'f>>" +
+               "<'row'<'col-sm-12'tr>>" +
+               "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+        "processing": true
+    });
+    
+    // Initialize tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+    
+    // Handle URL parameters for pre-populating forms
+    handleUrlParameters();
+});
+
+// ==================== MERGED from qpl_scripts.html for QPL Detail Pages ====================
+
+// QPL Detail Page Functions  
+function editQpl(qplId) {
+    // Show loading state for list page if button exists
+    const editBtn = document.querySelector(`button[onclick*="editQpl(${qplId})"]`);
+    if (editBtn) {
+        editBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        editBtn.disabled = true;
+    }
+    
+    // For detail page - just show the modal if it exists
+    const detailModal = document.getElementById('editQplModal');
+    if (detailModal) {
+        const modal = new bootstrap.Modal(detailModal);
+        modal.show();
+        return;
+    }
+    
+    // For list page - fetch and populate modal
+    fetch(`/api/qpl/${qplId}`)
+        .then(response => response.json())
+        .then(qpl => {
+            if (qpl.error) {
+                alert('Error loading QPL: ' + qpl.error);
+                return;
+            }
+            
+            // Populate the edit form
+            document.getElementById('edit_qpl_id').value = qpl.id;
+            document.getElementById('edit_manufacturer_name').value = qpl.manufacturer_name || '';
+            document.getElementById('edit_cage_code').value = qpl.cage_code || '';
+            document.getElementById('edit_part_number').value = qpl.part_number || '';
+            
+            if (qpl.product_id) {
+                document.getElementById('edit_product_id').value = qpl.product_id;
+            }
+            
+            if (qpl.account_id) {
+                document.getElementById('edit_account_id').value = qpl.account_id;
+            }
+            
+            document.getElementById('edit_is_active').checked = qpl.is_active;
+            
+            // Show the modal
+            const modal = new bootstrap.Modal(document.getElementById('editQplModal'));
+            modal.show();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error loading QPL data');
+        })
+        .finally(() => {
+            // Reset button state
+            if (editBtn) {
+                editBtn.innerHTML = '<i class="fas fa-edit"></i>';
+                editBtn.disabled = false;
+            }
+        });
+}
+
+function saveQplChanges() {
+    const formData = new FormData(document.getElementById('editQplForm'));
+    const qplId = formData.get('qpl_id');
+    
+    // Convert form data to JSON
+    const data = {
+        manufacturer_name: formData.get('manufacturer_name'),
+        cage_code: formData.get('cage_code'),
+        part_number: formData.get('part_number'),
+        product_id: formData.get('product_id') || null,
+        account_id: formData.get('account_id') || null,
+        is_active: formData.has('is_active')
+    };
+    
+    fetch(`/api/qpl/${qplId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Close modal and reload page
+            const modal = bootstrap.Modal.getInstance(document.getElementById('editQplModal'));
+            modal.hide();
+            location.reload();
+        } else {
+            alert('Error updating QPL: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error updating QPL');
+    });
+}
+
+function removeVendorRelationship(qplAccountId, vendorAccountId) {
+    if (confirm('Are you sure you want to remove this vendor relationship?')) {
+        fetch(`/api/qpl-vendors/${qplAccountId}/${vendorAccountId}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Reload the page to update the vendor list
+                location.reload();
+            } else {
+                alert('Error removing vendor relationship: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error removing vendor relationship');
+        });
+    }
+}
+
+function addVendorRelationship() {
+    // For now, redirect to the account page where they can manage relationships
+    // In the future, this could open a modal to select vendors
+    const qplAccountIdElement = document.getElementById('edit_qpl_id');
+    if (qplAccountIdElement && qplAccountIdElement.dataset.accountId) {
+        const qplAccountId = qplAccountIdElement.dataset.accountId;
+        window.location.href = `/account/${qplAccountId}`;
+    } else {
+        alert('No account associated with this QPL entry');
+    }
+}
+
+// ==================== End merged QPL Detail Functions ==================== 
+
+// Edit QPL function for list page
+function editQplOriginal(qplId) {
+    // Show loading state
+    const editBtn = document.querySelector(`button[onclick="event.stopPropagation(); editQpl(${qplId})"]`);
+    if (editBtn) {
+        editBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        editBtn.disabled = true;
+    }
+    
+    // Fetch QPL data
+    fetch(`/api/qpl/${qplId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const qpl = data.qpl;
+                
+                // Populate edit form
+                document.getElementById('edit_qpl_id').value = qpl.id;
+                document.getElementById('edit_manufacturer_name').value = qpl.manufacturer_name || '';
+                document.getElementById('edit_cage_code').value = qpl.cage_code || '';
+                document.getElementById('edit_part_number').value = qpl.part_number || '';
+                document.getElementById('edit_product_id').value = qpl.product_id || '';
+                document.getElementById('edit_account_id').value = qpl.account_id || '';
+                document.getElementById('edit_is_active').checked = qpl.is_active;
+                
+                // Show modal
+                const modal = new bootstrap.Modal(document.getElementById('editQplModal'));
+                modal.show();
+            } else {
+                alert('Error loading QPL data: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error loading QPL data');
+        })
+        .finally(() => {
+            // Restore button state
+            if (editBtn) {
+                editBtn.innerHTML = '<i class="fas fa-edit"></i>';
+                editBtn.disabled = false;
+            }
+        });
+}
+
+// Save QPL changes
+function saveQplChanges() {
+    const form = document.getElementById('editQplForm');
+    const saveBtn = form.querySelector('.btn-primary');
+    
+    // Validate form
+    if (!validateQplForm(form)) {
+        return;
+    }
+    
+    // Show loading state
+    const originalText = saveBtn.innerHTML;
+    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Saving...';
+    saveBtn.disabled = true;
+    
+    const formData = new FormData(form);
+    const qplId = formData.get('qpl_id');
+    
+    // Convert form data to JSON
+    const data = {
+        manufacturer_name: formData.get('manufacturer_name'),
+        cage_code: formData.get('cage_code'),
+        part_number: formData.get('part_number'),
+        product_id: formData.get('product_id') || null,
+        account_id: formData.get('account_id') || null,
+        is_active: formData.has('is_active')
+    };
+    
+    fetch(`/api/qpl/${qplId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Close modal and reload page
+            const modal = bootstrap.Modal.getInstance(document.getElementById('editQplModal'));
+            modal.hide();
+            location.reload();
+        } else {
+            alert('Error updating QPL: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error updating QPL');
+    })
+    .finally(() => {
+        // Restore button state
+        saveBtn.innerHTML = originalText;
+        saveBtn.disabled = false;
+    });
+}
+
+// Delete QPL function
+function deleteQpl(qplId, manufacturerName) {
+    if (confirm(`Are you sure you want to delete the QPL for "${manufacturerName}"?`)) {
+        // Show loading state
+        const deleteBtn = document.querySelector(`button[onclick*="deleteQpl(${qplId}"]`);
+        if (deleteBtn) {
+            deleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            deleteBtn.disabled = true;
+        }
+        
+        fetch(`/api/qpl/${qplId}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error deleting QPL: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error deleting QPL');
+        })
+        .finally(() => {
+            // Restore button state
+            if (deleteBtn) {
+                deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
+                deleteBtn.disabled = false;
+            }
+        });
+    }
+}
+
+// Form validation
+function validateQplForm(form) {
+    const manufacturerName = form.querySelector('[name="manufacturer_name"]').value.trim();
+    
+    if (!manufacturerName) {
+        alert('Manufacturer name is required');
+        form.querySelector('[name="manufacturer_name"]').focus();
+        return false;
+    }
+    
+    // Validate CAGE code format if provided
+    const cageCode = form.querySelector('[name="cage_code"]').value.trim();
+    if (cageCode && !/^[A-Z0-9]{5}$/.test(cageCode)) {
+        alert('CAGE code must be exactly 5 alphanumeric characters');
+        form.querySelector('[name="cage_code"]').focus();
+        return false;
+    }
+    
+    return true;
+}
+
+// Handle URL parameters for pre-populating forms
+function handleUrlParameters() {
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    // If 'add' parameter is present, show the create modal
+    if (urlParams.get('add') === 'true') {
+        const modal = new bootstrap.Modal(document.getElementById('createQplModal'));
+        modal.show();
+        
+        // Pre-populate product if specified
+        const productId = urlParams.get('product_id');
+        const productName = urlParams.get('product_name');
+        
+        if (productId) {
+            const productSelect = document.getElementById('product_id');
+            if (productSelect) {
+                productSelect.value = productId;
+            }
+        }
+        
+        // Clean up URL parameters
+        const cleanUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, cleanUrl);
+    }
+}
+
+// Enhanced form handling for create modal
+document.addEventListener('DOMContentLoaded', function() {
+    // Add form validation to create modal
+    const createForm = document.querySelector('#createQplModal form');
+    if (createForm) {
+        createForm.addEventListener('submit', function(e) {
+            if (!validateQplForm(this)) {
+                e.preventDefault();
+                return false;
+            }
+            
+            // Show loading state
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Creating...';
+            submitBtn.disabled = true;
+            
+            // Form will submit normally, so no need to restore state
+        });
+    }
+    
+    // Auto-format CAGE code input
+    const cageCodeInputs = document.querySelectorAll('input[name="cage_code"]');
+    cageCodeInputs.forEach(input => {
+        input.addEventListener('input', function(e) {
+            // Convert to uppercase and limit to 5 characters
+            this.value = this.value.toUpperCase().slice(0, 5);
+        });
+    });
+    
+    // Auto-format part number input
+    const partNumberInputs = document.querySelectorAll('input[name="part_number"]');
+    partNumberInputs.forEach(input => {
+        input.addEventListener('input', function(e) {
+            // Remove special characters and limit length
+            this.value = this.value.replace(/[<>\"'&]/g, '').slice(0, 50);
+        });
+    });
+});
+
+// Enhanced table interactions
+function enhanceTableInteractions() {
+    // Add hover effects to table rows
+    const tableRows = document.querySelectorAll('#qplsTable tbody tr[onclick]');
+    tableRows.forEach(row => {
+        row.addEventListener('mouseenter', function() {
+            this.style.backgroundColor = 'rgba(0, 123, 255, 0.1)';
+        });
+        
+        row.addEventListener('mouseleave', function() {
+            this.style.backgroundColor = '';
+        });
+    });
+    
+    // Add click feedback
+    tableRows.forEach(row => {
+        row.addEventListener('click', function() {
+            this.style.backgroundColor = 'rgba(0, 123, 255, 0.2)';
+            setTimeout(() => {
+                this.style.backgroundColor = '';
+            }, 200);
+        });
+    });
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+    // Ctrl+N or Cmd+N to open new QPL modal
+    if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+        e.preventDefault();
+        const createModal = document.getElementById('createQplModal');
+        if (createModal) {
+            new bootstrap.Modal(createModal).show();
+        }
+    }
+    
+    // Escape to close modals
+    if (e.key === 'Escape') {
+        const openModals = document.querySelectorAll('.modal.show');
+        openModals.forEach(modal => {
+            bootstrap.Modal.getInstance(modal)?.hide();
+        });
+    }
+});
+
+// Auto-hide alerts after 5 seconds
+function autoHideAlerts() {
+    const alerts = document.querySelectorAll('.alert:not(.alert-permanent)');
+    alerts.forEach(alert => {
+        setTimeout(() => {
+            if (alert.parentNode) {
+                const bsAlert = new bootstrap.Alert(alert);
+                bsAlert.close();
+            }
+        }, 5000);
+    });
+}
+
+// Search functionality enhancement
+function enhanceSearch() {
+    const searchInputs = document.querySelectorAll('input[name="search"], input[name="cage_code"], input[name="nsn"]');
+    
+    searchInputs.forEach(input => {
+        // Add real-time search feedback
+        input.addEventListener('input', function() {
+            clearTimeout(this.searchTimeout);
+            this.searchTimeout = setTimeout(() => {
+                // Could implement real-time search here if needed
+            }, 500);
+        });
+        
+        // Submit on Enter key
+        input.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                this.form.submit();
+            }
+        });
+    });
+}
+
+// Initialize all enhancements when document is ready
+$(document).ready(function() {
+    enhanceTableInteractions();
+    autoHideAlerts();
+    enhanceSearch();
+});
+
+// Export functions for potential use in other modules
+window.QplsPage = {
+    editQpl: editQpl,
+    deleteQpl: deleteQpl,
+    saveQplChanges: saveQplChanges,
+    validateQplForm: validateQplForm,
+    handleUrlParameters: handleUrlParameters
+};
+
+// DataTables custom search functions
+if (typeof $.fn.DataTable !== 'undefined') {
+    // Custom search for CAGE code
+    $.fn.dataTable.ext.search.push(
+        function(settings, data, dataIndex) {
+            // Only apply to QPLs table
+            if (settings.nTable.id !== 'qplsTable') {
+                return true;
+            }
+            
+            // Custom search logic could be added here if needed
+            return true;
+        }
+    );
+}
+
+// Handle modal events
+document.addEventListener('DOMContentLoaded', function() {
+    const editModal = document.getElementById('editQplModal');
+    const createModal = document.getElementById('createQplModal');
+    
+    if (editModal) {
+        editModal.addEventListener('hidden.bs.modal', function() {
+            // Clear form when modal is hidden
+            document.getElementById('editQplForm').reset();
+        });
+    }
+    
+    if (createModal) {
+        createModal.addEventListener('hidden.bs.modal', function() {
+            // Clear form when modal is hidden
+            const form = createModal.querySelector('form');
+            if (form) {
+                form.reset();
+                // Re-check the active checkbox by default
+                const activeCheckbox = form.querySelector('#is_active');
+                if (activeCheckbox) {
+                    activeCheckbox.checked = true;
+                }
+            }
+        });
+    }
+});
+</script>

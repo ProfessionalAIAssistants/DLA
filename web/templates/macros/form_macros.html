@@ -1,0 +1,82 @@
+{# Form Field Macros #}
+
+{# Standard Text Input #}
+{% macro text_input(id, label, name=None, value='', placeholder='', required=False, readonly=False, type='text') %}
+<div class="mb-3">
+    <label for="{{ id }}" class="form-label">
+        {{ label }}{% if required %} *{% endif %}
+    </label>
+    <input type="{{ type }}" 
+           class="form-control" 
+           id="{{ id }}" 
+           name="{{ name or id }}"
+           value="{{ value }}"
+           placeholder="{{ placeholder }}"
+           {% if required %}required{% endif %}
+           {% if readonly %}readonly{% endif %}>
+</div>
+{% endmacro %}
+
+{# Standard Select Dropdown #}
+{% macro select_input(id, label, options, name=None, selected='', required=False, empty_option='') %}
+<div class="mb-3">
+    <label for="{{ id }}" class="form-label">
+        {{ label }}{% if required %} *{% endif %}
+    </label>
+    <select class="form-select" id="{{ id }}" name="{{ name or id }}" {% if required %}required{% endif %}>
+        {% if empty_option %}
+            <option value="">{{ empty_option }}</option>
+        {% endif %}
+        {% for option in options %}
+            {% if option is string %}
+                <option value="{{ option }}" {% if option == selected %}selected{% endif %}>{{ option }}</option>
+            {% else %}
+                <option value="{{ option.value }}" {% if option.value == selected %}selected{% endif %}>{{ option.label }}</option>
+            {% endif %}
+        {% endfor %}
+    </select>
+</div>
+{% endmacro %}
+
+{# Standard Textarea #}
+{% macro textarea_input(id, label, name=None, value='', placeholder='', rows=3, required=False) %}
+<div class="mb-3">
+    <label for="{{ id }}" class="form-label">
+        {{ label }}{% if required %} *{% endif %}
+    </label>
+    <textarea class="form-control" 
+              id="{{ id }}" 
+              name="{{ name or id }}"
+              rows="{{ rows }}"
+              placeholder="{{ placeholder }}"
+              {% if required %}required{% endif %}>{{ value }}</textarea>
+</div>
+{% endmacro %}
+
+{# Date Input #}
+{% macro date_input(id, label, name=None, value='', required=False) %}
+<div class="mb-3">
+    <label for="{{ id }}" class="form-label">
+        {{ label }}{% if required %} *{% endif %}
+    </label>
+    <input type="date" 
+           class="form-control" 
+           id="{{ id }}" 
+           name="{{ name or id }}"
+           value="{{ value }}"
+           {% if required %}required{% endif %}>
+</div>
+{% endmacro %}
+
+{# Relationship Dropdown (for CRM entities) #}
+{% macro relationship_select(id, label, entity_type, name=None, selected='', required=False) %}
+<div class="mb-3">
+    <label for="{{ id }}" class="form-label">
+        {{ label }}{% if required %} *{% endif %}
+    </label>
+    <select class="form-select" id="{{ id }}" name="{{ name or id }}" {% if required %}required{% endif %}>
+        <option value="">Select {{ label }}</option>
+        <!-- {{ entity_type }} will be loaded via JavaScript -->
+    </select>
+</div>
+{% endmacro %}

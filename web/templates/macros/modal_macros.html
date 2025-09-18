@@ -1,0 +1,104 @@
+{# Modal Macros for consistent modal structure #}
+
+{# Standard Modal Structure #}
+{% macro modal(id, title, size='', body_content='', footer_content='', icon='') %}
+<div class="modal fade" id="{{ id }}" tabindex="-1">
+    <div class="modal-dialog{% if size %} modal-{{ size }}{% endif %}">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    {% if icon %}<i class="{{ icon }} me-2"></i>{% endif %}{{ title }}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                {{ body_content }}
+            </div>
+            {% if footer_content %}
+            <div class="modal-footer">
+                {{ footer_content }}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
+{# Standard Form Modal #}
+{% macro form_modal(id, title, form_content, save_label='Save', cancel_label='Cancel', save_onclick='', size='', icon='') %}
+<div class="modal fade" id="{{ id }}" tabindex="-1">
+    <div class="modal-dialog{% if size %} modal-{{ size }}{% endif %}">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    {% if icon %}<i class="{{ icon }} me-2"></i>{% endif %}{{ title }}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                {{ form_content }}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ cancel_label }}</button>
+                <button type="button" class="btn btn-primary" id="{{ id }}SaveBtn"{% if save_onclick %} onclick="{{ save_onclick }}"{% endif %}>{{ save_label }}</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
+{# Task Form Modal #}
+{% macro task_modal(id, title, opportunity_id=None) %}
+{% from 'macros/form_macros.html' import text_input, select_input, textarea_input, date_input, relationship_select %}
+
+{% set form_content %}
+<div id="{{ id }}FormContainer">
+    <div class="row">
+        <div class="col-md-8">
+            {{ text_input('taskSubject', 'Task Subject', required=True, placeholder='Enter task subject') }}
+        </div>
+        <div class="col-md-4">
+            {{ select_input('taskPriority', 'Priority', ['Low', 'Medium', 'High'], selected='Medium') }}
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-4">
+            {{ select_input('taskStatus', 'Status', ['Not Started', 'In Progress', 'Completed', 'Cancelled'], selected='Not Started') }}
+        </div>
+        <div class="col-md-4">
+            {{ date_input('taskWorkDate', 'Work Date') }}
+        </div>
+        <div class="col-md-4">
+            {{ date_input('taskDueDate', 'Due Date') }}
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-8">
+            {{ text_input('taskAssignedTo', 'Assigned To', placeholder='Task assignee') }}
+        </div>
+        <div class="col-md-4">
+            {{ text_input('taskOwner', 'Owner', placeholder='Task owner') }}
+        </div>
+    </div>
+    {{ textarea_input('taskDescription', 'Description', rows=4, placeholder='Detailed task description') }}
+    <div class="row">
+        <div class="col-md-6">
+            {{ relationship_select('task_contact_id', 'Contact', 'contacts') }}
+        </div>
+        <div class="col-md-6">
+            {{ relationship_select('task_account_id', 'Account', 'accounts') }}
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-6">
+            {{ relationship_select('task_opportunity_id', 'Opportunity', 'opportunities') }}
+        </div>
+        <div class="col-md-6">
+            {{ relationship_select('task_quote_id', 'Quote', 'quotes') }}
+        </div>
+    </div>
+</div>
+{% endset %}
+
+{{ form_modal(id, title, form_content, 'Add Task', 'Cancel', '', 'lg', 'fas fa-plus-circle') }}
+{% endmacro %}

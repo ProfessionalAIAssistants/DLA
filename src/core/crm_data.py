@@ -1209,7 +1209,7 @@ class CRMData:
         
         # For processing tasks, also look for opportunities that reference this task
         task_subject = task.get('subject', '').lower()
-        task_description = task.get('description', '')
+        task_description = task.get('description') or ''
         
         # Check if this is a processing task by subject keywords or if it has processing data
         is_processing_task = (

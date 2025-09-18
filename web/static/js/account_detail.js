@@ -244,6 +244,34 @@ const AccountDetailJS = {
         }
     },
 
+    // DataTables Management for all account tables
+    DataTables: {
+        initialize: function() {
+            // Table configurations
+            const tableConfigs = [
+                { id: 'qplTable', pageLength: 25, order: [[0, 'asc']] },
+                { id: 'vendorsTable', pageLength: 25, order: [[0, 'asc']] },
+                { id: 'qplManufacturersTable', pageLength: 25, order: [[0, 'asc']] },
+                { id: 'qplQualificationsTable', pageLength: 25, order: [[0, 'asc']] }
+            ];
+
+            // Initialize each table if it exists
+            tableConfigs.forEach(config => {
+                const table = document.getElementById(config.id);
+                if (table && typeof $ !== 'undefined' && $.fn.DataTable) {
+                    $(table).DataTable({
+                        responsive: true,
+                        pageLength: config.pageLength,
+                        order: config.order,
+                        columnDefs: [
+                            { orderable: false, targets: [-1] } // Disable sorting for last column (Actions)
+                        ]
+                    });
+                }
+            });
+        }
+    },
+
     // Initialize all functionality
     init: function() {
         // Wait for DOM to be ready
@@ -255,7 +283,8 @@ const AccountDetailJS = {
         // Initialize all components
         AccountDetailJS.Contacts.initializeDeleteButtons();
         AccountDetailJS.Accounts.initializeEditForm();
-        AccountDetailJS.QPL.initializeTable();
+        AccountDetailJS.QPL.initializeTable(); // Keep for backward compatibility
+        AccountDetailJS.DataTables.initialize(); // Initialize all DataTables
     }
 };
 

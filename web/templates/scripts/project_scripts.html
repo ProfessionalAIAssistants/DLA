@@ -1,0 +1,185 @@
+{# 
+=============================================================================
+CONSOLIDATED PROJECT SCRIPTS
+=============================================================================
+This file combines functionality from both project_scripts.html and projects_scripts.html
+- Project Detail Page Scripts (individual project functionality)  
+- Project List/Management Scripts (projects list functionality)
+=============================================================================
+#}
+
+<script>
+// ================================
+// PROJECT DETAIL FUNCTIONS
+// ================================
+function editProject(projectId) {
+    // Redirect to projects page and trigger edit for this project
+    window.location.href = '/projects?edit=' + projectId;
+}
+
+function updateProgress(projectId) {
+    const percentage = prompt('Enter progress percentage (0-100):');
+    if (percentage !== null && !isNaN(percentage) && percentage >= 0 && percentage <= 100) {
+        fetch(`/api/projects/${projectId}/progress`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({percentage: parseInt(percentage)})
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error updating progress');
+        });
+    }
+}
+
+function startProject(projectId) {
+    fetch(`/api/projects/${projectId}/start`, {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error starting project');
+    });
+}
+
+function completeProject(projectId) {
+    if (confirm('Mark this project as complete?')) {
+        fetch(`/api/projects/${projectId}/complete`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error completing project');
+        });
+    }
+}
+
+function addTask(projectId) {
+    // Redirect to tasks page with project pre-selected
+    window.location.href = '/tasks?add=true&project_id=' + projectId;
+}
+
+function linkOpportunity(projectId) {
+    // Redirect to opportunities page with project linking capability
+    alert('Opportunity linking will be implemented - redirect to opportunities page');
+}
+
+function linkProduct(projectId) {
+    // Redirect to products page with project linking capability
+    alert('Product linking will be implemented - redirect to products page');
+}
+
+function addNote(projectId) {
+    // Open note creation modal or redirect to notes section
+    alert('Note creation will be implemented');
+}
+
+// ================================
+// PROJECT LIST/MANAGEMENT FUNCTIONS 
+// ================================
+
+// Save new project
+function saveProject() {
+    const form = document.getElementById('addProjectForm');
+    const formData = new FormData(form);
+    
+    fetch('/api/projects', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const addProjectModal = document.getElementById('addProjectModal');
+            if (addProjectModal) {
+                bootstrap.Modal.getInstance(addProjectModal).hide();
+            }
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while saving the project');
+    });
+}
+
+// View project details
+function viewDetails(projectId) {
+    // Implementation for viewing project details
+    window.location.href = `/projects/${projectId}`;
+}
+
+// Delete project
+function deleteProject(projectId) {
+    if (confirm('Are you sure you want to delete this project?')) {
+        fetch(`/api/projects/${projectId}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while deleting the project');
+        });
+    }
+}
+
+// ================================
+// INITIALIZATION AND EVENT HANDLERS
+// ================================
+document.addEventListener('DOMContentLoaded', function() {
+    // Set today as default start date for new projects
+    const today = new Date().toISOString().split('T')[0];
+    const startDateInput = document.getElementById('start_date');
+    if (startDateInput) {
+        startDateInput.value = today;
+    }
+    
+    // Handle URL parameters for editing projects
+    const urlParams = new URLSearchParams(window.location.search);
+    const editProjectId = urlParams.get('edit');
+    
+    if (editProjectId) {
+        // Trigger edit for specific project
+        editProject(editProjectId);
+        
+        // Clean up URL parameters
+        const cleanUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, cleanUrl);
+    }
+});
+</script>

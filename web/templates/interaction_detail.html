@@ -1,4 +1,7 @@
 {% extends "base.html" %}
+{% from 'macros/form_macros.html' import render_form_group, render_textarea, render_select, render_datetime_input %}
+{% from 'macros/modal_macros.html' import render_modal %}
+{% from 'macros/interaction_macros.html' import edit_interaction_modal, create_followup_modal, duplicate_interaction_modal %}
 
 {% block title %}{{ interaction.subject or 'Interaction Details' }} - CDE Prosperity{% endblock %}
 
@@ -323,28 +326,14 @@
 </div>
 
 <!-- Edit Modal -->
-<div class="modal fade" id="editInteractionModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Edit Interaction</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <form id="editInteractionForm">
-                <div class="modal-body" id="editInteractionContent">
-                    <!-- Content will be loaded here -->
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Save Changes</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
+{{ edit_interaction_modal() }}
+
+<!-- Additional modals for follow-up and duplicate functionality -->
+{{ create_followup_modal() }}
+{{ duplicate_interaction_modal() }}
 {% endblock %}
 
-{% block scripts %}
+{% block extra_css %}
 <style>
     .avatar-circle {
         width: 40px;
@@ -383,7 +372,9 @@
         color: #007bff;
     }
 </style>
+{% endblock %}
 
+{% block extra_js %}
 <script>
 const interactionId = {{ interaction.id }};
 

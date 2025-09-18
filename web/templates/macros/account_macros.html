@@ -95,73 +95,453 @@
 </div>
 {% endmacro %}
 
-{# Edit Account Modal Macro #}
-{% macro edit_account_modal() %}
-<div class="modal fade" id="editAccountModal" tabindex="-1" aria-labelledby="editAccountModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="editAccountModalLabel">Edit Account</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form id="editAccountForm">
-                <div class="modal-body">
-                    <div class="row g-3">
-                        <div class="col-md-12">
-                            <label for="editAccountName" class="form-label">Account Name *</label>
-                            <input type="text" class="form-control" id="editAccountName" name="name" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="editAccountType" class="form-label">Account Type</label>
-                            <select class="form-select" id="editAccountType" name="type">
-                                <option value="">Select Type</option>
-                                <option value="Customer">Customer</option>
-                                <option value="Prospect Customer">Prospect Customer</option>
-                                <option value="Prospect Vendor">Prospect Vendor</option>
-                                <option value="Vendor">Vendor</option>
-                                <option value="QPL">QPL</option>
-                                <option value="Competitor">Competitor</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="editCageCode" class="form-label">CAGE Code</label>
-                            <input type="text" class="form-control" id="editCageCode" name="cage">
-                        </div>
-                        <div class="col-md-6">
-                            <label for="editAccountLocation" class="form-label">Location</label>
-                            <input type="text" class="form-control" id="editAccountLocation" name="location">
-                        </div>
-                        <div class="col-md-6">
-                            <label for="editWebsite" class="form-label">Website</label>
-                            <input type="url" class="form-control" id="editWebsite" name="website" placeholder="https://example.com">
-                        </div>
-                        <div class="col-md-6">
-                            <label for="editEmail" class="form-label">Email</label>
-                            <input type="email" class="form-control" id="editEmail" name="email" placeholder="contact@company.com">
-                        </div>
-                        <div class="col-md-6">
-                            <label for="editLinkedIn" class="form-label">LinkedIn</label>
-                            <input type="url" class="form-control" id="editLinkedIn" name="linkedin" placeholder="https://linkedin.com/company/name">
-                        </div>
-                        <div class="col-md-12">
-                            <label for="editParentCompany" class="form-label">Parent Company</label>
-                            <select class="form-select" id="editParentCompany" name="parent_co">
-                                <option value="">No Parent Company</option>
-                                <!-- Options will be populated by JavaScript -->
-                            </select>
-                        </div>
-                        <div class="col-md-12">
-                            <label for="editAccountSummary" class="form-label">Summary</label>
-                            <textarea class="form-control" id="editAccountSummary" name="summary" rows="3"></textarea>
-                        </div>
-                    </div>
+{# Edit Account Modal Macro - Enhanced with Modular Form #}
+{% macro edit_account_modal(account_id=None) %}
+{% from 'macros/form_macros.html' import text_input, select_input, textarea_input %}
+
+{% set form_content %}
+<div id="editAccountFormContainer">
+    <div class="row g-3">
+        <div class="col-md-12">
+            {{ text_input('editAccountName', 'Account Name', required=True) }}
+        </div>
+        <div class="col-md-6">
+            {{ select_input('editAccountType', 'Account Type', [
+                {'value': '', 'label': 'Select Type'},
+                {'value': 'Customer', 'label': 'Customer'},
+                {'value': 'Prospect Customer', 'label': 'Prospect Customer'},
+                {'value': 'Prospect Vendor', 'label': 'Prospect Vendor'},
+                {'value': 'Vendor', 'label': 'Vendor'},
+                {'value': 'QPL', 'label': 'QPL'},
+                {'value': 'Competitor', 'label': 'Competitor'}
+            ]) }}
+        </div>
+        <div class="col-md-6">
+            {{ text_input('editCageCode', 'CAGE Code') }}
+        </div>
+        <div class="col-md-6">
+            {{ text_input('editAccountLocation', 'Location') }}
+        </div>
+        <div class="col-md-6">
+            {{ text_input('editWebsite', 'Website', type='url', placeholder='https://example.com') }}
+        </div>
+        <div class="col-md-6">
+            {{ text_input('editEmail', 'Email', type='email', placeholder='contact@company.com') }}
+        </div>
+        <div class="col-md-6">
+            {{ text_input('editLinkedIn', 'LinkedIn', type='url', placeholder='https://linkedin.com/company/name') }}
+        </div>
+        <div class="col-md-12">
+            {{ select_input('editParentCompany', 'Parent Company', [{'value': '', 'label': 'No Parent Company'}], empty_option='') }}
+        </div>
+        <div class="col-md-12">
+            {{ textarea_input('editAccountSummary', 'Summary', rows=3) }}
+        </div>
+        {% if account_id %}
+        <input type="hidden" id="editAccountId" value="{{ account_id }}">
+        {% endif %}
+    </div>
+</div>
+{% endset %}
+
+{% from 'macros/modal_macros.html' import form_modal %}
+{{ form_modal('editAccountModal', 'Edit Account', form_content, 'Save Changes', 'Cancel', 'saveAccount()', 'lg', 'fas fa-edit') }}
+{% endmacro %}
+
+{# Add Contact Modal Macro #}
+{% macro add_contact_modal(account_id) %}
+{% from 'macros/form_macros.html' import text_input, select_input, textarea_input %}
+
+{% set form_content %}
+<div id="addContactFormContainer">
+    <div class="row g-3">
+        <div class="col-md-6">
+            {{ text_input('contactFirstName', 'First Name', required=True) }}
+        </div>
+        <div class="col-md-6">
+            {{ text_input('contactLastName', 'Last Name', required=True) }}
+        </div>
+        <div class="col-md-6">
+            {{ text_input('contactTitle', 'Title/Position') }}
+        </div>
+        <div class="col-md-6">
+            {{ text_input('contactDepartment', 'Department') }}
+        </div>
+        <div class="col-md-6">
+            {{ text_input('contactEmail', 'Email', type='email') }}
+        </div>
+        <div class="col-md-6">
+            {{ text_input('contactPhone', 'Phone', type='tel') }}
+        </div>
+        <div class="col-md-6">
+            {{ text_input('contactMobile', 'Mobile', type='tel') }}
+        </div>
+        <div class="col-md-6">
+            {{ text_input('contactLinkedIn', 'LinkedIn', type='url', placeholder='https://linkedin.com/in/name') }}
+        </div>
+        <div class="col-md-12">
+            {{ textarea_input('contactNotes', 'Notes', rows=3, placeholder='Additional notes about this contact...') }}
+        </div>
+        <input type="hidden" id="contactAccountId" value="{{ account_id }}">
+    </div>
+</div>
+{% endset %}
+
+{% from 'macros/modal_macros.html' import form_modal %}
+{{ form_modal('addContactModal', 'Add New Contact', form_content, 'Add Contact', 'Cancel', 'saveContact()', 'lg', 'fas fa-user-plus') }}
+{% endmacro %}
+
+{# Add Relationship Modal Macro #}
+{% macro add_relationship_modal(account) %}
+{% from 'macros/form_macros.html' import text_input, select_input, textarea_input %}
+
+{% set relationship_type = 'Vendor' if account.type == 'QPL' else 'QPL Manufacturer' %}
+{% set form_content %}
+<div id="addRelationshipFormContainer">
+    <div class="mb-3">
+        {{ select_input('relationshipAccount', 'Select ' + relationship_type, [
+            {'value': '', 'label': 'Choose...'},
+            {'value': 'new', 'label': '+ Create New ' + relationship_type}
+        ], empty_option='') }}
+    </div>
+    
+    <!-- New Account Form (hidden by default) -->
+    <div id="newAccountForm" style="display: none;">
+        <div class="border-top pt-3 mb-3">
+            <h6>Create New {{ relationship_type }}</h6>
+            <div class="row g-3">
+                <div class="col-md-12">
+                    {{ text_input('newAccountName', 'Account Name', required=True) }}
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                <div class="col-md-6">
+                    {{ text_input('newAccountLocation', 'Location') }}
+                </div>
+                <div class="col-md-6">
+                    {{ text_input('newAccountEmail', 'Email', type='email') }}
+                </div>
+                {% if account.type != 'QPL' %}
+                <div class="col-md-6">
+                    {{ text_input('newAccountCage', 'CAGE Code', placeholder='5-character code') }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    {{ textarea_input('relationshipNotes', 'Notes (Optional)', rows=3, placeholder='Add any notes about this relationship...') }}
+</div>
+{% endset %}
+
+{% from 'macros/modal_macros.html' import form_modal %}
+{{ form_modal('addRelationshipModal', 'Add ' + relationship_type, form_content, 'Add Relationship', 'Cancel', 'saveRelationship()', '', 'fas fa-link') }}
+{% endmacro %}
+
+
+{# ========== ACCOUNT LIST PAGE MACROS ========== #}
+{# These macros are for the accounts listing page #}
+
+{# Account List Header #}
+{% macro account_header() %}
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">Accounts</h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <div class="btn-group me-2">
+                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#createAccountModal">
+                    <i class="fas fa-plus me-1"></i>
+                    New Account
+                </button>
+            </div>
+        </div>
+    </div>
+{% endmacro %}
+
+{# Search and Filters Section #}
+{% macro search_filters(search, account_type) %}
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-4">
+                    <label for="search" class="form-label">Search Accounts</label>
+                    <input type="text" class="form-control" id="search" name="search" 
+                           value="{{ search }}" placeholder="Search by name...">
+                </div>
+                <div class="col-md-3">
+                    <label for="type" class="form-label">Account Type</label>
+                    <select class="form-select" id="type" name="type">
+                        <option value="">All Types</option>
+                        <option value="Competitor" {{ 'selected' if account_type == 'Competitor' }}>Competitor</option>
+                        <option value="Prospect Customer" {{ 'selected' if account_type == 'Prospect Customer' }}>Prospect Customer</option>
+                        <option value="Customer" {{ 'selected' if account_type == 'Customer' }}>Customer</option>
+                        <option value="Former Customer" {{ 'selected' if account_type == 'Former Customer' }}>Former Customer</option>
+                        <option value="Prospect Vendor" {{ 'selected' if account_type == 'Prospect Vendor' }}>Prospect Vendor</option>
+                        <option value="Vendor" {{ 'selected' if account_type == 'Vendor' }}>Vendor</option>
+                        <option value="QPL" {{ 'selected' if account_type == 'QPL' }}>QPL</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="fas fa-search me-1"></i>
+                        Search
+                    </button>
+                    <a href="{{ url_for('accounts') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times me-1"></i>
+                        Clear
+                    </a>
                 </div>
             </form>
         </div>
     </div>
-</div>
+{% endmacro %}
+
+{# Accounts Table #}
+{% macro accounts_table(accounts, pagination) %}
+    <div class="card">
+        <div class="card-body">
+            {% if accounts %}
+            <div class="table-responsive">
+                <table class="table table-hover" id="accountsTable">
+                    <thead>
+                        <tr>
+                            <th>Account Name</th>
+                            <th>Type</th>
+                            <th>Location</th>
+                            <th>Parent Company</th>
+                            <th>CAGE</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for account in accounts %}
+                        <tr class="account-row" data-account-id="{{ account.id }}" style="cursor: pointer; transition: all 0.2s ease;" 
+                            onmouseover="this.style.backgroundColor='#f8f9fa'; this.style.transform='scale(1.01)'" 
+                            onmouseout="this.style.backgroundColor=''; this.style.transform='scale(1)'">
+                            <td>
+                                <a href="{{ url_for('account_detail', account_id=account.id) }}" class="text-decoration-none">
+                                    <strong>{{ account.name }}</strong>
+                                </a>
+                                {% if account.website %}
+                                <br><small class="text-muted"><i class="fas fa-globe me-1"></i>{{ account.website }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-{{ 'primary' if account.type == 'Customer' else 'warning' if account.type == 'Prospect Customer' else 'info' if account.type == 'Prospect Vendor' else 'success' if account.type == 'Vendor' else 'dark' if account.type == 'QPL' else 'danger' if account.type == 'Competitor' else 'secondary' }}">
+                                    {{ account.type or 'N/A' }}
+                                </span>
+                            </td>
+                            <td>{{ account.location or 'N/A' }}</td>
+                            <td>{{ account.parent_co or 'N/A' }}</td>
+                            <td>{{ account.cage or 'N/A' }}</td>
+                            <td>{{ account.created_date[:10] if account.created_date else 'N/A' }}</td>
+                            <td>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="{{ url_for('account_detail', account_id=account.id) }}" class="btn btn-outline-primary">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <button class="btn btn-outline-secondary" onclick="editAccount({{ account.id }})">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-outline-danger" onclick="deleteAccount({{ account.id }}, '{{ account.name }}')" title="Delete Account">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-building fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No Accounts Found</h5>
+                <p class="text-muted">No accounts match your current search criteria.</p>
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createAccountModal">
+                    <i class="fas fa-plus me-1"></i>
+                    Create First Account
+                </button>
+            </div>
+            {% endif %}
+            
+            <!-- Pagination -->
+            {% if pagination %}{% include 'pagination.html' %}{% endif %}
+        </div>
+    </div>
+{% endmacro %}
+
+{# Create Account Modal #}
+{% macro create_account_modal() %}
+    <div class="modal fade" id="createAccountModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Create New Account</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="createAccountForm">
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="accountName" class="form-label">Account Name *</label>
+                                    <input type="text" class="form-control" id="accountName" name="name" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="accountType" class="form-label">Account Type</label>
+                                    <select class="form-select" id="accountType" name="type">
+                                        <option value="">Select Type</option>
+                                        <option value="Prospect Customer">Prospect Customer</option>
+                                        <option value="Customer">Customer</option>
+                                        <option value="Partner">Partner</option>
+                                        <option value="Vendor">Vendor</option>
+                                        <option value="QPL">QPL</option>
+                                        <option value="Government">Government</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="website" class="form-label">Website</label>
+                                    <input type="url" class="form-control" id="website" name="website">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="email" class="form-label">Email</label>
+                                    <input type="email" class="form-control" id="email" name="email">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="location" class="form-label">Location</label>
+                                    <input type="text" class="form-control" id="location" name="location" placeholder="City, State or Country">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="linkedin" class="form-label">LinkedIn</label>
+                                    <input type="url" class="form-control" id="linkedin" name="linkedin">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="parentCo" class="form-label">Parent Company</label>
+                                    <input type="text" class="form-control" id="parentCo" name="parent_co">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="cage" class="form-label">CAGE Code</label>
+                                    <input type="text" class="form-control" id="cage" name="cage" maxlength="5" placeholder="5-character CAGE code">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="image" class="form-label">Image URL</label>
+                                    <input type="url" class="form-control" id="image" name="image">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="video" class="form-label">Video URL</label>
+                                    <input type="url" class="form-control" id="video" name="video">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="mb-3">
+                                    <label for="summary" class="form-label">Summary</label>
+                                    <textarea class="form-control" id="summary" name="summary" rows="2" placeholder="Brief summary of the account"></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="detail" class="form-label">Details</label>
+                                    <textarea class="form-control" id="detail" name="detail" rows="3" placeholder="Detailed information about the account"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Create Account</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endmacro %}
+
+{# Edit Account Modal #}
+{% macro edit_account_modal() %}
+    <div class="modal fade" id="editAccountModal" tabindex="-1" aria-labelledby="editAccountModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editAccountModalLabel">Edit Account</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="editAccountForm">
+                    <input type="hidden" id="editAccountId" name="id">
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="editAccountName" class="form-label">Account Name *</label>
+                                    <input type="text" class="form-control" id="editAccountName" name="name" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="editAccountType" class="form-label">Account Type</label>
+                                    <select class="form-select" id="editAccountType" name="type">
+                                        <option value="">Select Type</option>
+                                        <option value="Prospect Customer">Prospect Customer</option>
+                                        <option value="Customer">Customer</option>
+                                        <option value="Partner">Partner</option>
+                                        <option value="Vendor">Vendor</option>
+                                        <option value="QPL">QPL</option>
+                                        <option value="Government">Government</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="editWebsite" class="form-label">Website</label>
+                                    <input type="url" class="form-control" id="editWebsite" name="website">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="editEmail" class="form-label">Email</label>
+                                    <input type="email" class="form-control" id="editEmail" name="email">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="editLocation" class="form-label">Location</label>
+                                    <input type="text" class="form-control" id="editLocation" name="location" placeholder="City, State or Country">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="editLinkedin" class="form-label">LinkedIn</label>
+                                    <input type="url" class="form-control" id="editLinkedin" name="linkedin">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="editParentCo" class="form-label">Parent Company</label>
+                                    <input type="text" class="form-control" id="editParentCo" name="parent_co">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="editCage" class="form-label">CAGE Code</label>
+                                    <input type="text" class="form-control" id="editCage" name="cage" maxlength="5" placeholder="5-character CAGE code">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="editImage" class="form-label">Image URL</label>
+                                    <input type="url" class="form-control" id="editImage" name="image">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="editVideo" class="form-label">Video URL</label>
+                                    <input type="url" class="form-control" id="editVideo" name="video">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="mb-3">
+                                    <label for="editSummary" class="form-label">Summary</label>
+                                    <textarea class="form-control" id="editSummary" name="summary" rows="2" placeholder="Brief summary of the account"></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="editDetail" class="form-label">Details</label>
+                                    <textarea class="form-control" id="editDetail" name="detail" rows="3" placeholder="Detailed information about the account"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 {% endmacro %}
